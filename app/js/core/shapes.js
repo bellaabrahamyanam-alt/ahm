@@ -22,7 +22,26 @@ const isRouteType = (t) => !!(SHAPE_TYPES[t] && SHAPE_TYPES[t].route);
 const isRoute = (s) => isRouteType(s.type);
 const BORDER_TYPES = Object.keys(SHAPE_TYPES).filter((t) => !isRouteType(t));
 const ROUTE_TYPE_LIST = Object.keys(SHAPE_TYPES).filter(isRouteType);
-const shapeType = (t) => SHAPE_TYPES[t] || SHAPE_TYPES.territory;
+const SHAPE_FALLBACK = { label: 'Area', dash: 'solid', width: 1.4, color: '#2e7d32', fill: 0.2 };
+// A stored shape whose type is gone from the dictionary is drawn like the first area type.
+const shapeType = (t) => SHAPE_TYPES[t] || SHAPE_TYPES[BORDER_TYPES[0]] || SHAPE_FALLBACK;
+const MAP_DASH = ['solid', 'dashed', 'dotted', 'dashdot']; // the patterns the map draws; double and triple are drawn solid for now
+/** The line and area types of the types dictionary replace the built-in ones above (a dictionary without any keeps them). Call it when the dictionary loads or changes. */
+function setShapeTypes(list) {
+  const kinds = (list || []).filter((t) => t.geometry === 'line' || t.geometry === 'area');
+  if (!kinds.length) return;
+  Object.keys(SHAPE_TYPES).forEach((k) => delete SHAPE_TYPES[k]);
+  BORDER_TYPES.length = 0;
+  ROUTE_TYPE_LIST.length = 0;
+  kinds.forEach((t) => {
+    const st = t.style || {},
+      o = t.geometry === 'area' ? st.outline || {} : st,
+      label = ((t.names || []).find((n) => n.lang === 'en') || (t.names || [])[0] || {}).name || t.code,
+      look = { label, dash: MAP_DASH.includes(o.pattern) ? o.pattern : 'solid', width: o.width || 2, color: t.color };
+    SHAPE_TYPES[t.code] = t.geometry === 'line' ? { ...look, fill: 1, route: true, twoway: st.arrow !== true } : { ...look, fill: st.fill_opacity == null ? 0.15 : st.fill_opacity };
+    (t.geometry === 'line' ? ROUTE_TYPE_LIST : BORDER_TYPES).push(t.code);
+  });
+}
 const MAX_SHAPE_POINTS = 20000; // the server refuses more; imports are simplified to IMPORT_POINTS
 const IMPORT_POINTS = 3000;
 let shapes = []; // [{ id, names, type, color, opacity, label, date_from, date_to, source, geometry, from_place?, to_place? }] (routes: stops = ordered ids of the places the line passes, twoway = boolean)
@@ -180,10 +199,11 @@ function geomToDraw(g) {
 // A guess of the border type from what OpenStreetMap says about a search result (addresstype).
 function guessShapeType(x) {
   const t = x.addresstype || x.type || '';
-  if (t === 'country') return 'country';
-  if (['state', 'region', 'province', 'state_district'].includes(t)) return 'region';
-  if (['county', 'district', 'municipality', 'city', 'town', 'village', 'suburb', 'borough', 'city_district'].includes(t)) return 'district';
-  return 'territory';
+  const pick = (c) => (SHAPE_TYPES[c] ? c : BORDER_TYPES[0] || 'territory'); // the guess names a type that exists
+  if (t === 'country') return pick('country');
+  if (['state', 'region', 'province', 'state_district'].includes(t)) return pick('region');
+  if (['county', 'district', 'municipality', 'city', 'town', 'village', 'suburb', 'borough', 'city_district'].includes(t)) return pick('district');
+  return pick('territory');
 }
 /** The colour of the name drawn on the map: the shape colour, darkened so it reads on the white halo. */
 function shapeInk(hex) {

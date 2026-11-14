@@ -29,9 +29,9 @@ A date is either **`null` (unknown)** or an object:
 - Calendar: proleptic Gregorian with year numbering 1 BCE, 1 CE (no year 0 for people; years 1 to 99999 either side). Julian dates are not converted: enter them as written.
 - The server checks that `ts` really is the start of a period of the chosen format, that a range ends after it starts, and that a place does not end before it begins.
 
-### Place types
+### Types (places, lines and areas)
 
-`types.json` is the dictionary every place type is chosen from, like languages and categories. Only administrators add, change or remove a type (More tab, "Place types"). A place points to a type by its `code`.
+`types.json` is the dictionary every place, border and route type is chosen from, like languages and categories. Only administrators add, change or remove a type (More tab, "Types"). A place, border or route points to a type by its `code`.
 
 ```json
 {
@@ -45,11 +45,13 @@ A date is either **`null` (unknown)** or an object:
 ```
 
 - `code`: 1–32 characters `a-z 0-9 _ -`, unique, made by the server from the English name of a new type (`Iron mine` → `iron-mine`, `iron-mine-2` when taken) and never changed. (`_` is allowed only because `inscription_site` existed before.)
-- `geometry`: only `point` (a marker) can be added for now; lines and areas follow.
+- `geometry`: `point` (a marker of a place), `line` (a route) or `area` (a border); fixed at creation. Only point types can be given to places; only line and area types to shapes.
+- Line style: `{ width 1..12, pattern, opacity 0.1..1, arrow }` (`arrow: true` = a one-way route, drawn with arrows). Area style: `{ fill_opacity 0..0.8, outline: { width, pattern, opacity } }` (the fill uses `color`). `pattern`: `solid`, `dashed`, `dotted`, `dashdot`, `double` or `triple` (the map draws the first four; the others are drawn solid for now, T-033; the Types form offers the four).
+- The 11 shape types that existed before are `country`, `kingdom`, `region`, `district`, `territory`, `disputed` (areas) and `trade`, `military`, `migration`, `journey`, `road` (lines). A `types.json` without any line or area type offers them (seed in `store.php` and `save-handler.js`) and writes them with its next change.
 - `names`: one or more `{ lang, name }`, languages from the languages dictionary; a new type needs an English name.
 - `color`: `#rrggbb`. `style.symbol`: a slug (`circle`, `ring`, `square`, `diamond`, `triangle`, `hexagon`, `pentagon`, `star`, `plus`, `drop`, `bar`, `tree`, `sword`, `pickaxe`, `flag`; an unknown slug is drawn as a circle). `style.size`: 4–14 (marker radius, default 8).
 - **Custom symbol:** `style.symbol` = `custom` with `style.path` (SVG path data: drawing commands and numbers only, starts with `M`, 2–20000 characters) and `style.box` (side of the square the path is drawn in, 8–2048, default 24; 512 for game-icons.net). The map draws the path in the type's colour; a browser without `Path2D` draws a circle. No markup, no scripts and no images are ever stored. The `path` and `box` of a type whose symbol is not `custom` are dropped.
-- The server refuses a place whose type is not a point type of the dictionary. A type that some place uses cannot be removed (the answer says how many places use it), and `mountain` is never removed (a mountain has a height, not dates).
+- The server refuses a place whose type is not a point type of the dictionary. A type that some place or shape uses cannot be removed (the answer says how many places and shapes use it), and `mountain` is never removed (a mountain has a height, not dates).
 - If the file does not exist yet (an update), it is created with the 13 types that existed before: `settlement`, `city`, `town`, `village`, `fortress`, `temple`, `tomb`, `inscription_site`, `monument`, `mountain`, `lake`, `river`, `region` (seed `TYPES` in `store.php` and `save-handler.js`).
 - The browser draws every marker from the dictionary (`AHM.map.setTypes`); no list of types is kept in the code any more.
 
@@ -130,7 +132,7 @@ A **place note** may carry an extra header line `layers: <id>,<id>` and its `not
 
 ### `shapes.geojson` (borders and routes)
 
-A GeoJSON `FeatureCollection`; every feature is one **border** (an area, `Polygon` or `MultiPolygon`) or one **route** (a line, `LineString` or `MultiLineString`). Properties: `id` (UUID), `names` (`[ { lang, name } ]`), `type`, `color` (`#rrggbb`), `opacity`, `label` (boolean), `date_from`, `date_to` (the [date model](#dates)), `source`, `created`, `updated`. Border types: `country`, `kingdom`, `region`, `district`, `territory`, `disputed`. **Route types:** `trade`, `military`, `migration`, `journey`, `road`. A route type is refused for an area (`a route must be a line`). Only routes have two more fields: `stops` (the ids of the places the line passes, in order, at most 60, every id an existing place: `unknown place among the route stops`) and `twoway` (boolean: usable both ways; a one-way route is drawn with arrows). Both are optional; absent means unchanged when saving. Routes that share a stop chain into journeys (`core/routes.js`). Layers list a shape in `members` (`shape` instead of `place`). The rules are in `service/store.php` and `dev/save-handler.js`.
+A GeoJSON `FeatureCollection`; every feature is one **border** (an area, `Polygon` or `MultiPolygon`) or one **route** (a line, `LineString` or `MultiLineString`). Properties: `id` (UUID), `names` (`[ { lang, name } ]`), `type`, `color` (`#rrggbb`), `opacity`, `label` (boolean), `date_from`, `date_to` (the [date model](#dates)), `source`, `created`, `updated`. `type` is the code of a **line or area type** of the types dictionary: a shape of a line type is a route and must be a line (`a route must be a line`), a shape of an area type is a border; a place (point) type is refused (`unknown border type`). Only routes have two more fields: `stops` (the ids of the places the line passes, in order, at most 60, every id an existing place: `unknown place among the route stops`) and `twoway` (boolean: usable both ways; a one-way route is drawn with arrows). Both are optional; absent means unchanged when saving. Routes that share a stop chain into journeys (`core/routes.js`). Layers list a shape in `members` (`shape` instead of `place`). The rules are in `service/store.php` and `dev/save-handler.js`.
 
 ### Languages
 

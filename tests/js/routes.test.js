@@ -74,7 +74,7 @@ test('lineKm: one degree of latitude is about 111 km', () => {
   assert.ok(Math.abs(run('lineKm([[0, 0], [0, 1]])') - 111.2) < 0.5);
 });
 
-// ---- T-035: line and area types come from the types dictionary (the shape type registry in core/shapes.js) ----
+// ---- T-036: line and area types come from the types dictionary (the shape type registry in core/shapes.js) ----
 const fresh = () => {
   const ctx = vm.createContext({ console });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../../app/js/core/shapes.js'), 'utf8'), ctx, { filename: 'shapes.js' });

@@ -165,6 +165,29 @@ const SEED_STYLE = {
   river: ['bar', '#0288D1', 9],
   region: ['ring', '#6A1B9A', 10],
 };
+// The line and area types that existed before the dictionary held them: [code, English name, geometry, colour, pattern, width, fill opacity (area) | one way (line)].
+// Used while a types.json has no line or area type, and written with the next change of the dictionary.
+const SHAPE_PATTERNS = ['solid', 'dashed', 'dotted', 'dashdot', 'double', 'triple'];
+const BUILTIN_SHAPE_TYPES = [
+  ['country', 'Country', 'area', '#b3261e', 'solid', 2.6, 0.1],
+  ['kingdom', 'Kingdom or empire', 'area', '#7b1fa2', 'solid', 2.2, 0.18],
+  ['region', 'Region or province', 'area', '#0b6e8a', 'dashed', 2, 0.12],
+  ['district', 'District', 'area', '#8d6e63', 'dotted', 2, 0.1],
+  ['territory', 'Territory or area', 'area', '#2e7d32', 'solid', 1.4, 0.2],
+  ['disputed', 'Disputed area', 'area', '#e07b39', 'dashdot', 2.2, 0.12],
+  ['trade', 'Trade route', 'line', '#b7791f', 'dashed', 2.4, false],
+  ['military', 'Military march', 'line', '#c62828', 'solid', 3, true],
+  ['migration', 'Migration', 'line', '#6a1b9a', 'dotted', 2.8, true],
+  ['journey', 'Journey or embassy', 'line', '#00796b', 'dashdot', 2.4, true],
+  ['road', 'Road', 'line', '#5d4037', 'solid', 2, false],
+].map(([code, name, geometry, color, pattern, width, x]) => ({
+  code,
+  geometry,
+  names: [{ lang: 'en', name }],
+  color,
+  style: geometry === 'area' ? { fill_opacity: x, outline: { width, pattern, opacity: 1 } } : { width, pattern, opacity: 1, arrow: x },
+}));
+const withShapeTypes = (list) => (list.some((t) => t.geometry === 'line' || t.geometry === 'area') ? list : list.concat(BUILTIN_SHAPE_TYPES));
 // Reads types.json; when it does not exist yet, creates it from the seed (the types that existed before).
 function typeLoad() {
   if (fs.existsSync(TYPE_FILE)) {
@@ -176,7 +199,7 @@ function typeLoad() {
       d = null;
     }
     if (!d || !Array.isArray(d.types)) throw bad('types.json cannot be read; restore it from the archive folder or fix it, nothing was changed');
-    return d.types;
+    return withShapeTypes(d.types);
   }
   const list = Object.entries(SEED_STYLE).map(([code, s]) => ({
     code,
@@ -185,6 +208,7 @@ function typeLoad() {
     color: s[1],
     style: { symbol: s[0], size: s[2] },
   }));
+  list.push(...BUILTIN_SHAPE_TYPES);
   writeAtomic(TYPE_FILE, JSON.stringify({ version: 1, types: list }, null, 1));
   return list;
 }
@@ -211,29 +235,50 @@ function typeCodeFrom(name, taken) {
   return code;
 }
 // Administrators only: adds a type, or with edit:true changes one (code and geometry never change). Returns its code.
+// The style of a line type { width 1..12, pattern, opacity 0.1..1, arrow } or of an area type { fill_opacity 0..0.8, outline: { width, pattern, opacity } }.
+function cleanShapeStyle(geometry, st) {
+  const num = (v, lo, hi, what) => {
+    if (typeof v !== 'number' || !(v >= lo && v <= hi)) throw bad(`the ${what} must be a number from ${lo} to ${hi}`);
+    return v;
+  };
+  const stroke = (o) => {
+    if (!SHAPE_PATTERNS.includes(o.pattern == null ? 'solid' : o.pattern)) throw bad('the pattern must be one of ' + SHAPE_PATTERNS.join(', '));
+    return { width: num(o.width == null ? 2 : o.width, 1, 12, 'width'), pattern: o.pattern == null ? 'solid' : o.pattern, opacity: num(o.opacity == null ? 1 : o.opacity, 0.1, 1, 'opacity') };
+  };
+  if (geometry === 'area') {
+    const o = st.outline && typeof st.outline === 'object' ? st.outline : {};
+    return { fill_opacity: num(st.fill_opacity == null ? 0.15 : st.fill_opacity, 0, 0.8, 'fill opacity'), outline: stroke(o) };
+  }
+  if (st.arrow != null && typeof st.arrow !== 'boolean') throw bad('arrow must be true or false');
+  return { ...stroke(st), arrow: st.arrow === true };
+}
 function saveType(inp) {
-  if (inp.geometry !== 'point')
-    throw bad('only point types (markers of places) can be added for now: geometry must be "point"');
+  const geometry = inp.geometry;
+  if (!['point', 'line', 'area'].includes(geometry)) throw bad('the geometry must be "point", "line" or "area"');
   const names = cleanNames(inp.names, langLoad().map((l) => l.code), 'a type needs at least one name');
   const color = String(inp.color === undefined ? '' : inp.color);
   if (!TYPE_COLOR.test(color)) throw bad('the colour must look like #1a2b3c');
-  const st = inp.style && typeof inp.style === 'object' ? inp.style : {},
-    symbol = String(st.symbol == null ? 'circle' : st.symbol),
-    size = st.size == null ? 8 : st.size;
-  if (!SYMBOL.test(symbol)) throw bad('the symbol must be a slug of letters, digits and "-" (for example circle, tree)');
-  if (typeof size !== 'number' || !(size >= 4 && size <= 14)) throw bad('the size must be a number from 4 to 14');
+  const st = inp.style && typeof inp.style === 'object' ? inp.style : {};
+  let symbol = null;
+  if (geometry === 'point') {
+    symbol = String(st.symbol == null ? 'circle' : st.symbol);
+    const size = st.size == null ? 8 : st.size;
+    if (!SYMBOL.test(symbol)) throw bad('the symbol must be a slug of letters, digits and "-" (for example circle, tree)');
+    if (typeof size !== 'number' || !(size >= 4 && size <= 14)) throw bad('the size must be a number from 4 to 14');
+  }
   const list = typeLoad(),
     at = list.findIndex((t) => t.code === inp.code);
   let code;
   if (inp.edit) {
     if (at < 0) throw bad('unknown type');
+    if (list[at].geometry !== geometry) throw bad('the geometry of a type never changes');
     code = list[at].code;
   } else {
     const en = (names.find((n) => n.lang === 'en') || {}).name;
     if (!en) throw bad('give the type a name in English (its code is made from it)');
     code = typeCodeFrom(en, list.map((t) => t.code));
   }
-  const style = { symbol, size };
+  const style = geometry === 'point' ? { symbol, size: st.size == null ? 8 : st.size } : cleanShapeStyle(geometry, st);
   if (symbol === 'custom') {
     // A custom symbol: an SVG path drawn in a square box (default 24) whose corner is 0,0.
     const path = typeof st.path === 'string' ? st.path.trim() : '',
@@ -244,7 +289,7 @@ function saveType(inp) {
     style.path = path;
     style.box = box;
   }
-  const entry = { code, geometry: 'point', names, color: color.toLowerCase(), style };
+  const entry = { code, geometry, names, color: color.toLowerCase(), style };
   if (inp.edit) list[at] = entry;
   else list.push(entry);
   putTypes(list);
@@ -256,8 +301,13 @@ function deleteType(code) {
     at = list.findIndex((t) => t.code === code);
   if (at < 0) throw bad('unknown type');
   if (code === 'mountain') throw bad('the type "mountain" cannot be removed (a mountain has a height instead of dates)');
-  const used = (readJSON(GEO, { features: [] }).features || []).filter((f) => (f.properties || {}).type === code).length;
-  if (used > 0) throw bad(`${used} place${used === 1 ? '' : 's'} use the type "${code}"; change their type first`);
+  const count = (fc) => ((fc || {}).features || []).filter((f) => (f.properties || {}).type === code).length,
+    places = count(readJSON(GEO, { features: [] })),
+    shapes = count(readShapes());
+  if (places > 0 || shapes > 0) {
+    const what = [places && `${places} place${places === 1 ? '' : 's'}`, shapes && `${shapes} shape${shapes === 1 ? '' : 's'}`].filter(Boolean).join(' and ');
+    throw bad(`${what} use the type "${code}"; change their type first`);
+  }
   list.splice(at, 1);
   putTypes(list);
   return true;
@@ -314,7 +364,7 @@ function cleanPlace(p, codes, types) {
 function save(inp) {
   migrate();
   const codes = langLoad().map((l) => l.code), // the only languages a name or note may use
-    types = typeLoad().map((t) => t.code); // the only place types a place may use
+    types = typeLoad().filter((t) => t.geometry === 'point').map((t) => t.code); // the only place types a place may use
   // a new place may join layers at once: "layer_ids" (a list) and/or "layer_id" (one); checked before anything is written
   const joins = [];
   if (inp.place) {
@@ -782,8 +832,8 @@ function layerSave(inp) {
 // ---------------- shapes: borders and routes (same rules as service/store.php) ----------------
 // data/shapes.geojson: one feature per shape. Geometry: Polygon, MultiPolygon, LineString or MultiLineString. Properties: id, names, type,
 // color, opacity (the fill of an area, the line of a line), label (draw the name on the map), date_from, date_to, source, created, updated.
-const ROUTE_TYPES = ['trade', 'military', 'migration', 'journey', 'road'];
-const SHAPE_TYPES = ['country', 'kingdom', 'region', 'district', 'territory', 'disputed', ...ROUTE_TYPES];
+// Shape types are the line and area types of the types dictionary (data/types.json): kinds = { code: 'line' | 'area' }.
+const shapeKinds = () => Object.fromEntries(typeLoad().filter((t) => t.geometry !== 'point').map((t) => [t.code, t.geometry]));
 const SHAPE_GEOMS = ['Polygon', 'MultiPolygon', 'LineString', 'MultiLineString'];
 const MAX_SHAPE_POINTS = 20000,
   SOURCE = /^[A-Za-z0-9:_./ -]{0,100}$/;
@@ -829,9 +879,9 @@ function cleanGeometry(g) {
   if (n > MAX_SHAPE_POINTS) throw bad(`a border can have at most ${MAX_SHAPE_POINTS} points (it has ${n}); simplify it`);
   return { type: g.type, coordinates };
 }
-function cleanShape(inp, codes, places) {
+function cleanShape(inp, codes, places, kinds) {
   const names = cleanNames(inp.names, codes, 'a border needs at least one name');
-  if (!SHAPE_TYPES.includes(inp.type)) throw bad('unknown border type');
+  if (!kinds[inp.type]) throw bad('unknown border type');
   if (typeof inp.color !== 'string' || !COLOR.test(inp.color)) throw bad('the colour must look like #aa3344');
   const opacity = Number(inp.opacity);
   if (!(opacity >= 0 && opacity <= 1)) throw bad('the opacity must be between 0 and 1');
@@ -842,7 +892,7 @@ function cleanShape(inp, codes, places) {
     to = D.dateClean(inp.date_to === undefined ? null : inp.date_to, 'end date');
   D.dateOrderCheck(from, to);
   const out = { names, type: inp.type, color: inp.color.toLowerCase(), opacity: Math.round(opacity * 100) / 100, label: inp.label, date_from: from, date_to: to, source };
-  if (ROUTE_TYPES.includes(inp.type)) {
+  if (kinds[inp.type] === 'line') {
     // stops: the places the route passes, in order (ids of existing places; at most 60). twoway: usable both ways. Absent = unchanged.
     if (inp.stops !== undefined) {
       if (!Array.isArray(inp.stops) || inp.stops.length > 60 || inp.stops.some((id) => typeof id !== 'string' || !places.has(id))) throw bad('unknown place among the route stops');
@@ -856,12 +906,13 @@ function cleanShape(inp, codes, places) {
   return out;
 }
 // A route is a line: refuses an area for a route type.
-const routeGeomCheck = (type, g) => {
-  if (ROUTE_TYPES.includes(type) && !/^(Multi)?LineString$/.test(g.type)) throw bad('a route must be a line');
+const routeGeomCheck = (type, g, kinds) => {
+  if (kinds[type] === 'line' && !/^(Multi)?LineString$/.test(g.type)) throw bad('a route must be a line');
 };
 // Creates a shape (no id; geometry required) or changes one (geometry only when given). Returns the id.
 function saveShape(inp) {
-  const c = cleanShape(inp, langLoad().map((l) => l.code), placeIds()),
+  const kinds = shapeKinds(),
+    c = cleanShape(inp, langLoad().map((l) => l.code), placeIds(), kinds),
     d = readShapes(),
     now = nowUtc();
   let id = String(inp.id || '');
@@ -869,12 +920,12 @@ function saveShape(inp) {
     const f = UUID.test(id) ? d.features.find((x) => x.properties.id === id) : null;
     if (!f) throw bad('unknown border');
     if (inp.geometry !== undefined) f.geometry = cleanGeometry(inp.geometry);
-    routeGeomCheck(c.type, f.geometry);
+    routeGeomCheck(c.type, f.geometry, kinds);
     f.properties = Object.assign({}, f.properties, c, { updated: now });
   } else {
     id = crypto.randomUUID();
     const geometry = cleanGeometry(inp.geometry);
-    routeGeomCheck(c.type, geometry);
+    routeGeomCheck(c.type, geometry, kinds);
     d.features.push({ type: 'Feature', geometry, properties: Object.assign({ id }, c, { created: now, updated: now }) });
   }
   putShapes(d);

@@ -22,8 +22,8 @@ In the forum every address is below `…/app.php` (for example `https://forum.ex
 | `/map/shape-save`          | POST   | editors  | Add or change a border or a route (JSON; a route may have `stops` and `twoway`). |
 | `/map/shape-delete`        | POST   | editors  | Delete a border or a route (JSON `{ "id": … }`; archived first; its notes are archived with it). |
 | `/map/category-save`       | POST   | admins   | Add or rename a category (JSON `{ id?, names }`).     |
-| `/map/type-save`           | POST   | admins   | Add a place type, or with `edit: true` change one (JSON `{ code?, edit?, geometry: "point", names, color, style: { symbol, size } }`; answers `{ ok, code }`). |
-| `/map/type-delete`         | POST   | admins   | Remove a place type nobody uses (JSON `{ code }`; 400 with the number of places otherwise). |
+| `/map/type-save`           | POST   | admins   | Add a type, or with `edit: true` change one (JSON `{ code?, edit?, geometry: "point" \| "line" \| "area", names, color, style }`; the style depends on the geometry, see `docs/05`; answers `{ ok, code }`). |
+| `/map/type-delete`         | POST   | admins   | Remove a type nobody uses (JSON `{ code }`; 400 with the number of places and shapes otherwise). |
 | `/map/overlay-save`        | POST   | admins   | Create or update an overlay's settings (JSON).        |
 | `/map/overlay-upload/{id}` | POST   | admins   | Send the image bytes (`Content-Type: image/*`).       |
 | `/map/overlay-delete`      | POST   | admins   | Delete an overlay (JSON `{ "id": … }`).               |

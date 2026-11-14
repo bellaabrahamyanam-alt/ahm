@@ -52,7 +52,11 @@ test('types: a missing file is created from the seed (every type that existed be
     $dir = sandbox();
     unlink("$dir/types.json");
     $s = new store($dir);
-    same(store::TYPES, array_column($s->types()['types'], 'code'), 'same list, same order as the seed constant');
+    $all = $s->types()['types'];
+    same(store::TYPES, array_column(array_filter($all, function ($t) {
+        return $t['geometry'] === 'point';
+    }), 'code'), 'the point types: same list, same order as the seed constant');
+    same(11, count($all) - count(store::TYPES), 'and the 11 built-in line and area types after them');
     ok(is_file("$dir/types.json"));
     same('Inscription site', find_by($s->types()['types'], 'code', 'inscription_site')['names'][0]['name']);
 });
