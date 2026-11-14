@@ -351,16 +351,34 @@ class store
      *  1. old notes <place>/<lang>.md  ->  <place>/<note-id>.md
      *  2. old dates (a year number + wording + "approximate" flag, or time stamps in seconds)  ->  the date model of service/dates.php
      *  3. the language dictionary (languages.json) is created from the languages already in use
+     *  4. borders of the old type "region" become "province" (the code "region" is a place type now)
      * Every file that is replaced is copied to archive/ first.
      */
     public function migrate()
     {
-        $count = $this->migrate_note_files() + $this->migrate_place_dates() + $this->migrate_note_dates();
+        $count = $this->migrate_note_files() + $this->migrate_place_dates() + $this->migrate_note_dates() + $this->migrate_shape_types();
         $this->lang_load();
         if ($count) {
             $this->rebuild_index();
         }
         return $count;
+    }
+
+    /** Before the dictionary held line and area types a border could have the type "region"; that code belongs to a place type now (codes are unique), so such borders become "province", the built-in area type "Region or province". Archived first. */
+    private function migrate_shape_types()
+    {
+        $d = $this->read_shapes();
+        $n = 0;
+        foreach ($d['features'] as $k => $ft) {
+            if (($ft['properties']['type'] ?? '') === 'region') {
+                $d['features'][$k]['properties']['type'] = 'province';
+                $n++;
+            }
+        }
+        if ($n) {
+            $this->put_shapes($d);
+        }
+        return $n;
     }
 
     /** Places: date_from/date_to numbers + *_text + approx  ->  date objects (or null); a mountain gets a height, no dates. */
@@ -1336,7 +1354,7 @@ class store
     const BUILTIN_SHAPE_TYPES = [
         ['country', 'Country', 'area', '#b3261e', 'solid', 2.6, 0.1],
         ['kingdom', 'Kingdom or empire', 'area', '#7b1fa2', 'solid', 2.2, 0.18],
-        ['region', 'Region or province', 'area', '#0b6e8a', 'dashed', 2, 0.12],
+        ['province', 'Region or province', 'area', '#0b6e8a', 'dashed', 2, 0.12],
         ['district', 'District', 'area', '#8d6e63', 'dotted', 2, 0.1],
         ['territory', 'Territory or area', 'area', '#2e7d32', 'solid', 1.4, 0.2],
         ['disputed', 'Disputed area', 'area', '#e07b39', 'dashdot', 2.2, 0.12],

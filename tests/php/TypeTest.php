@@ -40,7 +40,7 @@ test('types: a dictionary file without line and area types still offers the 11 b
     }));
     file_put_contents("$dir/types.json", json_encode($f));
     $codes = array_column($s->types()['types'], 'code');
-    foreach (['country', 'kingdom', 'region', 'district', 'territory', 'disputed', 'trade', 'military', 'migration', 'journey', 'road'] as $c) {
+    foreach (['country', 'kingdom', 'province', 'district', 'territory', 'disputed', 'trade', 'military', 'migration', 'journey', 'road'] as $c) {
         ok(in_array($c, $codes, true), "built-in $c");
     }
     $s->save_type(iron());
@@ -88,7 +88,7 @@ test('save_type: bad geometry, names, colour, symbol and size are refused and no
     $s = fresh_store($dir);
     $before = file_get_contents("$dir/types.json");
     throws('/geometry must be "point"/', function () use ($s) {
-        $s->save_type(iron(['geometry' => 'area']));
+        $s->save_type(iron(['geometry' => 'volume']));
     });
     throws('/at least one name/', function () use ($s) {
         $s->save_type(iron(['names' => [['lang' => 'en', 'name' => ' ']]]));
@@ -256,10 +256,12 @@ test('delete_type: after the last place changed its type, the type can be remove
     });
 });
 
-test('save_type: a place can use every type of the dictionary, the seed and the added ones', function () {
+test('save_type: a place can use every point type of the dictionary, the seed and the added ones', function () {
     $s = fresh_store($dir);
     $s->save_type(iron(['style' => ['symbol' => 'custom', 'size' => 9, 'path' => 'M0 0 L5 5 Z']]));
-    foreach (array_column($s->types()['types'], 'code') as $code) {
+    foreach (array_column(array_filter($s->types()['types'], function ($t) {
+        return $t['geometry'] === 'point';
+    }), 'code') as $code) {
         if ($code === 'mountain') {
             continue; // a mountain has a height instead of dates; covered in PlaceTest
         }
@@ -335,4 +337,18 @@ test('delete_type: a line or area type that shapes use is refused with the count
         $s->save(['place' => array_merge(BASE, ['type' => 'trade'])]);
     });
     ok($s->delete_type('road'), 'a built-in line type nobody uses can be removed');
+});
+
+test('migrate: a border of the old type "region" (that code is now a place type) becomes "province"; safe to repeat; archived first', function () {
+    $s = fresh_store($dir);
+    $f = json_file("$dir/shapes.geojson");
+    $f['features'][0]['properties']['type'] = 'region';
+    file_put_contents("$dir/shapes.geojson", json_encode($f));
+    $s->migrate();
+    $types = array_column(array_column(json_file("$dir/shapes.geojson")['features'], 'properties'), 'type');
+    ok(in_array('province', $types, true) && !in_array('region', $types, true), implode(',', $types));
+    ok(count(glob("$dir/archive/shapes-*.geojson")) >= 1, 'the old file is archived');
+    $before = file_get_contents("$dir/shapes.geojson");
+    $s->migrate();
+    same($before, file_get_contents("$dir/shapes.geojson"), 'a second run changes nothing');
 });

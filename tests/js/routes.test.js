@@ -89,7 +89,7 @@ const dict = [
 
 test('shape types: before a dictionary arrives the 11 built-in types work (6 areas, 5 routes)', () => {
   const run = fresh();
-  assert.deepEqual(run('BORDER_TYPES'), ['country', 'kingdom', 'region', 'district', 'territory', 'disputed']);
+  assert.deepEqual(run('BORDER_TYPES'), ['country', 'kingdom', 'province', 'district', 'territory', 'disputed']);
   assert.deepEqual(run('ROUTE_TYPE_LIST'), ['trade', 'military', 'migration', 'journey', 'road']);
 });
 

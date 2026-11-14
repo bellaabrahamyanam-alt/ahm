@@ -171,7 +171,7 @@ const SHAPE_PATTERNS = ['solid', 'dashed', 'dotted', 'dashdot', 'double', 'tripl
 const BUILTIN_SHAPE_TYPES = [
   ['country', 'Country', 'area', '#b3261e', 'solid', 2.6, 0.1],
   ['kingdom', 'Kingdom or empire', 'area', '#7b1fa2', 'solid', 2.2, 0.18],
-  ['region', 'Region or province', 'area', '#0b6e8a', 'dashed', 2, 0.12],
+  ['province', 'Region or province', 'area', '#0b6e8a', 'dashed', 2, 0.12],
   ['district', 'District', 'area', '#8d6e63', 'dotted', 2, 0.1],
   ['territory', 'Territory or area', 'area', '#2e7d32', 'solid', 1.4, 0.2],
   ['disputed', 'Disputed area', 'area', '#e07b39', 'dashdot', 2.2, 0.12],
@@ -454,11 +454,21 @@ function rebuildIndex() {
 //  1. old notes <place>/<lang>.md  ->  <place>/<note-id>.md
 //  2. old dates (year number + wording + "approximate" flag)  ->  the date model of app/js/core/dates.js
 //  3. the language dictionary (languages.json) is created from the languages already in use
+//  4. borders of the old type "region" become "province" (the code "region" is a place type now)
 function migrate() {
-  const count = migrateNoteFiles() + migratePlaceDates() + migrateNoteDates();
+  const count = migrateNoteFiles() + migratePlaceDates() + migrateNoteDates() + migrateShapeTypes();
   langLoad();
   if (count) rebuildIndex();
   return count;
+}
+// Before the dictionary held line and area types a border could have the type "region"; that code belongs to a place type now (codes are unique),
+// so such borders become "province", the built-in area type "Region or province". Archived first.
+function migrateShapeTypes() {
+  const d = readShapes(),
+    old = d.features.filter((f) => f.properties.type === 'region');
+  old.forEach((f) => (f.properties.type = 'province'));
+  if (old.length) putShapes(d);
+  return old.length;
 }
 // Places: date_from/date_to numbers + *_text + approx  ->  date objects (or null); a mountain gets a height, no dates.
 function migratePlaceDates() {
@@ -564,7 +574,6 @@ function migrateNoteFiles() {
   }
   return count;
 }
-migrate();
 // ---------------- categories and layers: same rules as service/store.php (read the comment there for the model) ----------------
 const SHAPES_FILE = path.join(DATA, 'shapes.geojson'),
   CAT_FILE = path.join(DATA, 'categories.json'),
@@ -846,6 +855,7 @@ const putShapes = (d) => {
   if (fs.existsSync(SHAPES_FILE)) fs.copyFileSync(SHAPES_FILE, archivePath('shapes', 'geojson'));
   writeAtomic(SHAPES_FILE, '{"type":"FeatureCollection","features":[\n' + d.features.map((f) => JSON.stringify(f)).join(',\n') + '\n]}\n');
 };
+migrate(); // at start: after every helper it uses (shapes included) exists
 function cleanGeometry(g) {
   if (!g || typeof g !== 'object' || !SHAPE_GEOMS.includes(g.type) || !Array.isArray(g.coordinates))
     throw bad('a border needs a Polygon, MultiPolygon, LineString or MultiLineString geometry');

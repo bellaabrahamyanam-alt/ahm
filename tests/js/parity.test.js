@@ -69,6 +69,22 @@ test('dev server: a line or area type that shapes use cannot be deleted; an unus
   }
 });
 
+test('dev server: a border of the old type "region" becomes "province" when the data is brought up to date', async () => {
+  const s = await start((root) => {
+    const f = path.join(root, 'data', 'shapes.geojson'),
+      d = JSON.parse(fs.readFileSync(f, 'utf8'));
+    d.features[0].properties.type = 'region';
+    fs.writeFileSync(f, JSON.stringify(d));
+  });
+  try {
+    await fetch(s.base + '/data/places.geojson');
+    const types = s.data('shapes.geojson').features.map((x) => x.properties.type);
+    ok(types.includes('province') && !types.includes('region'), types.join(','));
+  } finally {
+    await s.stop();
+  }
+});
+
 test('dev server: a write answers 400 for broken JSON and 405 or 400 for a GET, never crashes', async () => {
   const s = await start();
   try {

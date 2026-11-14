@@ -6,7 +6,7 @@
 const SHAPE_TYPES = {
   country: { label: 'Country', dash: 'solid', width: 2.6, color: '#b3261e', fill: 0.1 },
   kingdom: { label: 'Kingdom or empire', dash: 'solid', width: 2.2, color: '#7b1fa2', fill: 0.18 },
-  region: { label: 'Region or province', dash: 'dashed', width: 2, color: '#0b6e8a', fill: 0.12 },
+  province: { label: 'Region or province', dash: 'dashed', width: 2, color: '#0b6e8a', fill: 0.12 },
   district: { label: 'District', dash: 'dotted', width: 2, color: '#8d6e63', fill: 0.1 },
   territory: { label: 'Territory or area', dash: 'solid', width: 1.4, color: '#2e7d32', fill: 0.2 },
   disputed: { label: 'Disputed area', dash: 'dashdot', width: 2.2, color: '#e07b39', fill: 0.12 },
@@ -201,7 +201,7 @@ function guessShapeType(x) {
   const t = x.addresstype || x.type || '';
   const pick = (c) => (SHAPE_TYPES[c] ? c : BORDER_TYPES[0] || 'territory'); // the guess names a type that exists
   if (t === 'country') return pick('country');
-  if (['state', 'region', 'province', 'state_district'].includes(t)) return pick('region');
+  if (['state', 'region', 'province', 'state_district'].includes(t)) return pick('province');
   if (['county', 'district', 'municipality', 'city', 'town', 'village', 'suburb', 'borough', 'city_district'].includes(t)) return pick('district');
   return pick('territory');
 }
