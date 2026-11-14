@@ -49,6 +49,14 @@
 - **How to verify:** `php tests/php/run.php`, `php tests/data/run.php`.
 - **Follow-ups:** the type editor of the sidebar (`ui.js`) and `dev/save-handler.js` have no new tests: the editor needs a browser run, the dev server was left out on purpose.
 
+## 2026-11-14 — River line type and a width per line (T-036)
+
+- **What:** `river` in `SHAPE_TYPES`; optional `width` (0.5 to 12, absent = unchanged) in `clean_shape` and `cleanShape`; parity runners know `via: shape`.
+- **Why:** owner, in the chat: draw rivers and set their style. A river is a line of the new border type `river` (blue, solid, 3 px); the width of any line can be changed per shape.
+- **Files:** `service/store.php`, `dev/save-handler.js`, `tests/fixtures/rules.json`, `tests/php/ParityTest.php`, `tests/js/parity.test.js`
+- **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (parity rows `shape: ...` in `tests/fixtures/rules.json`).
+- **Follow-ups:** none.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the data domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ## 2026-11-14 — #5 T-027: notes for borders and routes

@@ -3,7 +3,7 @@ const { start } = require('./lib/devserver');
 const path = require('path');
 const fs = require('fs');
 const table = require('../fixtures/rules.json').cases;
-const URLS = { save: '/api/save', layer: '/api/layer/save', category: '/api/category/save', language: '/api/language/save', type: '/api/type/save' };
+const URLS = { save: '/api/save', layer: '/api/layer/save', category: '/api/category/save', language: '/api/language/save', type: '/api/type/save', shape: '/api/shape/save' };
 
 test('parity table: the Node dev server gives the verdict the table says (PHP is checked against the same table)', async () => {
   const s = await start();

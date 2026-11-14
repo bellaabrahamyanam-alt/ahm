@@ -10,6 +10,7 @@ const SHAPE_TYPES = {
   district: { label: 'District', dash: 'dotted', width: 2, color: '#8d6e63', fill: 0.1 },
   territory: { label: 'Territory or area', dash: 'solid', width: 1.4, color: '#2e7d32', fill: 0.2 },
   disputed: { label: 'Disputed area', dash: 'dashdot', width: 2.2, color: '#e07b39', fill: 0.12 },
+  river: { label: 'River', dash: 'solid', width: 3, color: '#1e88e5', fill: 1 },
   // Routes: lines through places and free waypoints. `twoway`: usable both ways (trade, roads) or one way only (marches, migrations: drawn with
   // direction arrows). Same store, layers and period filter as borders.
   trade: { label: 'Trade route', dash: 'dashed', width: 2.4, color: '#b7791f', fill: 1, route: true, twoway: true },
@@ -181,6 +182,7 @@ function geomToDraw(g) {
 function guessShapeType(x) {
   const t = x.addresstype || x.type || '';
   if (t === 'country') return 'country';
+  if (['river', 'stream', 'canal', 'drain', 'waterway'].includes(t)) return 'river';
   if (['state', 'region', 'province', 'state_district'].includes(t)) return 'region';
   if (['county', 'district', 'municipality', 'city', 'town', 'village', 'suburb', 'borough', 'city_district'].includes(t)) return 'district';
   return 'territory';

@@ -1281,7 +1281,7 @@ class store
     // color, opacity (the fill of an area, the line of a line), label (draw the name on the map), date_from, date_to, source, created,
     // updated. Same rules as dev/save-handler.js (the browser-sync handler).
     const ROUTE_TYPES = ['trade', 'military', 'migration', 'journey', 'road'];
-    const SHAPE_TYPES = ['country', 'kingdom', 'region', 'district', 'territory', 'disputed', 'trade', 'military', 'migration', 'journey', 'road'];
+    const SHAPE_TYPES = ['country', 'kingdom', 'region', 'district', 'territory', 'disputed', 'river', 'trade', 'military', 'migration', 'journey', 'road'];
     const SHAPE_GEOMS = ['Polygon', 'MultiPolygon', 'LineString', 'MultiLineString'];
     const MAX_SHAPE_POINTS = 20000;
     const SHAPE_SOURCE = '/^[A-Za-z0-9:_.\/ -]{0,100}$/';
@@ -1408,6 +1408,10 @@ class store
         if (!is_bool($in['label'] ?? null)) {
             throw self::bad('"label" must be true or false');
         }
+        // width: the line width in pixels, 0.5 to 12. Absent = unchanged (a new shape then uses the width of its type).
+        if (array_key_exists('width', $in) && (is_bool($in['width']) || !is_numeric($in['width']) || (float) $in['width'] < 0.5 || (float) $in['width'] > 12)) {
+            throw self::bad('the width must be between 0.5 and 12');
+        }
         $source = (string) ($in['source'] ?? '');
         if (!preg_match(self::SHAPE_SOURCE, $source)) {
             throw self::bad('the source is too long or has unusual characters');
@@ -1425,6 +1429,9 @@ class store
             'date_to' => $to,
             'source' => $source
         ];
+        if (array_key_exists('width', $in)) {
+            $out['width'] = round((float) $in['width'], 1);
+        }
         if (in_array($in['type'], self::ROUTE_TYPES, true)) {
             // stops: the places the route passes, in order (ids of existing places; at most 60). twoway: usable both ways. Absent = unchanged.
             if (array_key_exists('stops', $in)) {
