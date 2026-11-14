@@ -35,6 +35,9 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 ## Next (builder)
 
+- [ ] T-036 Line and area types in the types dictionary — branch `feat/line-area-types`
+  Owner, in the chat: "build it" (decision of T-034: dictionary types, like point types). Done when: `type-save` takes `geometry` `point`, `line` or `area` with the styles of `interfaces/I-8-types-dictionary.md`; a shape's type must be a line or area type of the dictionary (no fixed lists in `store.php`, `save-handler.js`); a line type needs a line; a place takes point types only; `type-delete` counts places and shapes; the 11 built-in types are in `data/types.json`; the Types editor adds line and area types; the Borders and Routes tabs follow; PHP, Node and `rules.json` agree.
+  Contract: no (no protected file changes).
 - [ ] T-025 Place types dictionary (admins add markers such as iron mine, cedar forest, sword artefact) — this branch `feat/place-types-dictionary`
   Done when: PR merged; the 4 owner decisions below are answered.
   Contract: no (`interfaces/I-8` is not edited; the code follows it except the points below).
