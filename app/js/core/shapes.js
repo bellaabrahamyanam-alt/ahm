@@ -182,6 +182,7 @@ function geomToDraw(g) {
 function guessShapeType(x) {
   const t = x.addresstype || x.type || '';
   if (t === 'country') return 'country';
+  if (['river', 'stream', 'canal', 'drain', 'waterway'].includes(t)) return 'river';
   if (['state', 'region', 'province', 'state_district'].includes(t)) return 'region';
   if (['county', 'district', 'municipality', 'city', 'town', 'village', 'suburb', 'borough', 'city_district'].includes(t)) return 'district';
   return 'territory';

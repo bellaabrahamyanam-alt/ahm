@@ -8,7 +8,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 |---|---|---|---|
 | sidebar | 12 | 3338 | `app/js/sidebar/layers.js` (691) |
 | map | 4 | 1708 | `app/js/map/map.js` (679) |
-| core | 7 | 914 | `app/js/core/dates.js` (296) |
+| core | 7 | 915 | `app/js/core/dates.js` (296) |
 | state | 1 | 43 | `app/js/state/state.js` (43) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
 | data | 8 | 3638 | `service/store.php` (1750) |

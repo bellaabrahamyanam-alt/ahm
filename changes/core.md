@@ -10,9 +10,9 @@
 
 ## 2026-11-14 — River line type and a width per line (T-036)
 
-- **What:** type `river` in `SHAPE_TYPES` (`app/js/core/shapes.js`); not a route, so it is not used by path finding.
+- **What:** type `river` in `SHAPE_TYPES` (`app/js/core/shapes.js`); not a route, so it is not used by path finding; `guessShapeType` returns `river` for an OpenStreetMap river, stream or canal result, so adding a river from the search box ("Or search OpenStreetMap") gives the right type at once.
 - **Why:** owner, in the chat: draw rivers and set their style. A river is a line of the new border type `river` (blue, solid, 3 px); the width of any line can be changed per shape.
-- **Files:** `app/js/core/shapes.js`
+- **Files:** `app/js/core/shapes.js`, `tests/js/routes.test.js`
 - **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (parity rows `shape: ...` in `tests/fixtures/rules.json`).
 - **Follow-ups:** none.
 

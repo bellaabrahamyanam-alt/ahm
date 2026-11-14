@@ -73,3 +73,11 @@ test('routesThrough finds the routes that pass a place', () => {
 test('lineKm: one degree of latitude is about 111 km', () => {
   assert.ok(Math.abs(run('lineKm([[0, 0], [0, 1]])') - 111.2) < 0.5);
 });
+
+test('a river is a line type but not a route: an OSM river result is guessed as river and path finding never uses it', () => {
+  assert.strictEqual(run("guessShapeType({ addresstype: 'river' })"), 'river');
+  assert.strictEqual(run("guessShapeType({ type: 'stream' })"), 'river');
+  assert.strictEqual(run("guessShapeType({ addresstype: 'state' })"), 'region');
+  assert.strictEqual(run("isRouteType('river')"), false);
+  assert.ok(run("BORDER_TYPES.includes('river')"));
+});
