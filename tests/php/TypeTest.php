@@ -8,24 +8,55 @@ function iron($extra = [])
     return array_merge(['geometry' => 'point', 'names' => [['lang' => 'en', 'name' => 'Iron mine']], 'color' => '#A0522D', 'style' => ['symbol' => 'pickaxe', 'size' => 9]], $extra);
 }
 
-test('types: the sample dictionary has every type the sample places use, all of them point types', function () {
+test('types: the sample dictionary has every type the sample places use (point types), and the 6 area and 5 line types of the shapes', function () {
     $s = fresh_store($dir);
     $list = $s->types()['types'];
-    $codes = array_column($list, 'code');
+    $points = array_column(array_filter($list, function ($t) {
+        return $t['geometry'] === 'point';
+    }), 'code');
     foreach (json_file("$dir/places.geojson")['features'] as $f) {
-        ok(in_array($f['properties']['type'], $codes, true), 'type ' . $f['properties']['type']);
+        ok(in_array($f['properties']['type'], $points, true), 'type ' . $f['properties']['type']);
     }
     foreach ($list as $t) {
-        same('point', $t['geometry'], $t['code']);
+        ok(in_array($t['geometry'], ['point', 'line', 'area'], true), $t['code'] . ' geometry');
         ok(preg_match(store::COLOR, $t['color']), $t['code'] . ' colour');
     }
+    same(6, count(array_filter($list, function ($t) {
+        return $t['geometry'] === 'area';
+    })));
+    same(5, count(array_filter($list, function ($t) {
+        return $t['geometry'] === 'line';
+    })));
+    foreach (json_file("$dir/shapes.geojson")['features'] as $f) {
+        ok(in_array($f['properties']['type'], array_column($list, 'code'), true), 'shape type ' . $f['properties']['type']);
+    }
+});
+
+test('types: a dictionary file without line and area types still offers the 11 built-in ones, and keeps them when an administrator saves a type', function () {
+    $s = fresh_store($dir);
+    $f = json_file("$dir/types.json");
+    $f['types'] = array_values(array_filter($f['types'], function ($t) {
+        return $t['geometry'] === 'point';
+    }));
+    file_put_contents("$dir/types.json", json_encode($f));
+    $codes = array_column($s->types()['types'], 'code');
+    foreach (['country', 'kingdom', 'province', 'district', 'territory', 'disputed', 'trade', 'military', 'migration', 'journey', 'road'] as $c) {
+        ok(in_array($c, $codes, true), "built-in $c");
+    }
+    $s->save_type(iron());
+    $onDisk = array_column(json_file("$dir/types.json")['types'], 'code');
+    ok(in_array('trade', $onDisk, true) && in_array('iron-mine', $onDisk, true), 'written together with the new type');
 });
 
 test('types: a missing file is created from the seed (every type that existed before)', function () {
     $dir = sandbox();
     unlink("$dir/types.json");
     $s = new store($dir);
-    same(store::TYPES, array_column($s->types()['types'], 'code'), 'same list, same order as the seed constant');
+    $all = $s->types()['types'];
+    same(store::TYPES, array_column(array_filter($all, function ($t) {
+        return $t['geometry'] === 'point';
+    }), 'code'), 'the point types: same list, same order as the seed constant');
+    same(11, count($all) - count(store::TYPES), 'and the 11 built-in line and area types after them');
     ok(is_file("$dir/types.json"));
     same('Inscription site', find_by($s->types()['types'], 'code', 'inscription_site')['names'][0]['name']);
 });
@@ -57,7 +88,7 @@ test('save_type: bad geometry, names, colour, symbol and size are refused and no
     $s = fresh_store($dir);
     $before = file_get_contents("$dir/types.json");
     throws('/geometry must be "point"/', function () use ($s) {
-        $s->save_type(iron(['geometry' => 'area']));
+        $s->save_type(iron(['geometry' => 'volume']));
     });
     throws('/at least one name/', function () use ($s) {
         $s->save_type(iron(['names' => [['lang' => 'en', 'name' => ' ']]]));
@@ -225,10 +256,12 @@ test('delete_type: after the last place changed its type, the type can be remove
     });
 });
 
-test('save_type: a place can use every type of the dictionary, the seed and the added ones', function () {
+test('save_type: a place can use every point type of the dictionary, the seed and the added ones', function () {
     $s = fresh_store($dir);
     $s->save_type(iron(['style' => ['symbol' => 'custom', 'size' => 9, 'path' => 'M0 0 L5 5 Z']]));
-    foreach (array_column($s->types()['types'], 'code') as $code) {
+    foreach (array_column(array_filter($s->types()['types'], function ($t) {
+        return $t['geometry'] === 'point';
+    }), 'code') as $code) {
         if ($code === 'mountain') {
             continue; // a mountain has a height instead of dates; covered in PlaceTest
         }
@@ -252,4 +285,70 @@ test('save_type: the names of a type may be in several languages (non-Latin text
     same(3, count(find_by($s->types()['types'], 'code', 'iron-mine')['names']));
     $t = find_by($s->types()['types'], 'code', 'iron-mine');
     same('Երկաթի հանք', $t['names'][2]['name'], 'non-Latin text is kept as it is');
+});
+
+test('save_type: a line type and an area type keep their style; geometry and code never change', function () {
+    $s = fresh_store($dir);
+    $line = ['geometry' => 'line', 'names' => [['lang' => 'en', 'name' => 'Pilgrim path']], 'color' => '#336699', 'style' => ['width' => 2.5, 'pattern' => 'dashed', 'opacity' => 1, 'arrow' => true]];
+    same('pilgrim-path', $s->save_type($line));
+    same(['width' => 2.5, 'pattern' => 'dashed', 'opacity' => 1, 'arrow' => true], find_by($s->types()['types'], 'code', 'pilgrim-path')['style']);
+    $area = ['geometry' => 'area', 'names' => [['lang' => 'en', 'name' => 'Fiefdom']], 'color' => '#339966', 'style' => ['fill_opacity' => 0.2, 'outline' => ['width' => 1.5, 'pattern' => 'solid', 'opacity' => 1]]];
+    same('fiefdom', $s->save_type($area));
+    same('area', find_by($s->types()['types'], 'code', 'fiefdom')['geometry']);
+    throws('/geometry of a type never changes/', function () use ($s, $area) {
+        $s->save_type(array_merge($area, ['code' => 'pilgrim-path', 'edit' => true]));
+    });
+    throws('/width must be/', function () use ($s, $line) {
+        $s->save_type(array_merge($line, ['names' => [['lang' => 'en', 'name' => 'Wide']], 'style' => ['width' => 13, 'pattern' => 'solid', 'opacity' => 1, 'arrow' => false]]));
+    });
+    throws('/fill opacity must be/', function () use ($s, $area) {
+        $s->save_type(array_merge($area, ['names' => [['lang' => 'en', 'name' => 'Dense']], 'style' => ['fill_opacity' => 0.9, 'outline' => ['width' => 1, 'pattern' => 'solid', 'opacity' => 1]]]));
+    });
+});
+
+test('save_shape: the type must be a line or area type of the dictionary; a line type needs a line; a place type is refused', function () {
+    $s = fresh_store($dir);
+    $s->save_type(['geometry' => 'line', 'names' => [['lang' => 'en', 'name' => 'Pilgrim path']], 'color' => '#336699', 'style' => ['width' => 2.5, 'pattern' => 'dashed', 'opacity' => 1, 'arrow' => false]]);
+    $shape = function ($type, $geom) {
+        return ['names' => [['lang' => 'en', 'name' => 'S']], 'type' => $type, 'color' => '#336699', 'opacity' => 0.5, 'label' => false, 'source' => '', 'date_from' => null, 'date_to' => null, 'geometry' => $geom];
+    };
+    $line = ['type' => 'LineString', 'coordinates' => [[44.5, 40.2], [45.0, 40.5]]];
+    $poly = ['type' => 'Polygon', 'coordinates' => [[[44.0, 40.0], [44.5, 40.0], [44.5, 40.5], [44.0, 40.0]]]];
+    ok(is_string($s->save_shape($shape('pilgrim-path', $line))));
+    throws('/a route must be a line/', function () use ($s, $shape, $poly) {
+        $s->save_shape($shape('pilgrim-path', $poly));
+    });
+    throws('/unknown border type/', function () use ($s, $shape, $poly) {
+        $s->save_shape($shape('settlement', $poly));
+    });
+});
+
+test('delete_type: a line or area type that shapes use is refused with the count; a place cannot take a line type', function () {
+    $s = fresh_store($dir);
+    $s->save_type(['geometry' => 'area', 'names' => [['lang' => 'en', 'name' => 'Fiefdom']], 'color' => '#339966', 'style' => ['fill_opacity' => 0.2, 'outline' => ['width' => 1.5, 'pattern' => 'solid', 'opacity' => 1]]]);
+    $poly = ['type' => 'Polygon', 'coordinates' => [[[44.0, 40.0], [44.5, 40.0], [44.5, 40.5], [44.0, 40.0]]]];
+    $in = ['names' => [['lang' => 'en', 'name' => 'S']], 'type' => 'fiefdom', 'color' => '#339966', 'opacity' => 0.5, 'label' => false, 'source' => '', 'date_from' => null, 'date_to' => null, 'geometry' => $poly];
+    $s->save_shape($in);
+    $s->save_shape($in);
+    throws('/2 shapes use the type "fiefdom"/', function () use ($s) {
+        $s->delete_type('fiefdom');
+    });
+    throws('/bad type/', function () use ($s) {
+        $s->save(['place' => array_merge(BASE, ['type' => 'trade'])]);
+    });
+    ok($s->delete_type('road'), 'a built-in line type nobody uses can be removed');
+});
+
+test('migrate: a border of the old type "region" (that code is now a place type) becomes "province"; safe to repeat; archived first', function () {
+    $s = fresh_store($dir);
+    $f = json_file("$dir/shapes.geojson");
+    $f['features'][0]['properties']['type'] = 'region';
+    file_put_contents("$dir/shapes.geojson", json_encode($f));
+    $s->migrate();
+    $types = array_column(array_column(json_file("$dir/shapes.geojson")['features'], 'properties'), 'type');
+    ok(in_array('province', $types, true) && !in_array('region', $types, true), implode(',', $types));
+    ok(count(glob("$dir/archive/shapes-*.geojson")) >= 1, 'the old file is archived');
+    $before = file_get_contents("$dir/shapes.geojson");
+    $s->migrate();
+    same($before, file_get_contents("$dir/shapes.geojson"), 'a second run changes nothing');
 });

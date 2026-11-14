@@ -81,7 +81,9 @@ class store
         try {
             $this->migrate();
             $codes = array_column($this->lang_load(), 'code'); // the only languages a name or note may use
-            $types = array_column($this->type_load(), 'code'); // the only place types a place may use
+            $types = array_column(array_filter($this->type_load(), function ($t) {
+                return ($t['geometry'] ?? 'point') === 'point';
+            }), 'code'); // the only place types a place may use
             // a new place may join layers at once: "layer_ids" (a list) and/or "layer_id" (one); checked before anything is written
             $joins = [];
             if (isset($in['place'])) {
@@ -349,16 +351,34 @@ class store
      *  1. old notes <place>/<lang>.md  ->  <place>/<note-id>.md
      *  2. old dates (a year number + wording + "approximate" flag, or time stamps in seconds)  ->  the date model of service/dates.php
      *  3. the language dictionary (languages.json) is created from the languages already in use
+     *  4. borders of the old type "region" become "province" (the code "region" is a place type now)
      * Every file that is replaced is copied to archive/ first.
      */
     public function migrate()
     {
-        $count = $this->migrate_note_files() + $this->migrate_place_dates() + $this->migrate_note_dates();
+        $count = $this->migrate_note_files() + $this->migrate_place_dates() + $this->migrate_note_dates() + $this->migrate_shape_types();
         $this->lang_load();
         if ($count) {
             $this->rebuild_index();
         }
         return $count;
+    }
+
+    /** Before the dictionary held line and area types a border could have the type "region"; that code belongs to a place type now (codes are unique), so such borders become "province", the built-in area type "Region or province". Archived first. */
+    private function migrate_shape_types()
+    {
+        $d = $this->read_shapes();
+        $n = 0;
+        foreach ($d['features'] as $k => $ft) {
+            if (($ft['properties']['type'] ?? '') === 'region') {
+                $d['features'][$k]['properties']['type'] = 'province';
+                $n++;
+            }
+        }
+        if ($n) {
+            $this->put_shapes($d);
+        }
+        return $n;
     }
 
     /** Places: date_from/date_to numbers + *_text + approx  ->  date objects (or null); a mountain gets a height, no dates. */
@@ -604,7 +624,7 @@ class store
             if (!is_array($d) || !isset($d['types']) || !is_array($d['types'])) {
                 throw self::bad('types.json cannot be read; restore it from the archive folder or fix it, nothing was changed');
             }
-            return $d['types'];
+            return self::with_shape_types($d['types']);
         }
         $list = [];
         foreach (self::SEED_STYLE as $code => $s) {
@@ -616,6 +636,7 @@ class store
                 'style' => ['symbol' => $s[0], 'size' => $s[2]]
             ];
         }
+        $list = array_merge($list, self::builtin_shape_types());
         @mkdir($this->base, 0775, true);
         self::write_atomic($f, json_encode(['version' => 1, 'types' => $list], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         return $list;
@@ -648,12 +669,47 @@ class store
         return $code;
     }
 
+    private static function style_number($v, $lo, $hi, $what)
+    {
+        if (is_bool($v) || !(is_int($v) || is_float($v)) || $v < $lo || $v > $hi) {
+            throw self::bad("the $what must be a number from $lo to $hi");
+        }
+        return $v + 0;
+    }
+
+    private static function clean_stroke($o)
+    {
+        $pattern = $o['pattern'] ?? 'solid';
+        if (!in_array($pattern, self::SHAPE_PATTERNS, true)) {
+            throw self::bad('the pattern must be one of ' . implode(', ', self::SHAPE_PATTERNS));
+        }
+        return [
+            'width' => self::style_number($o['width'] ?? 2, 1, 12, 'width'),
+            'pattern' => $pattern,
+            'opacity' => self::style_number($o['opacity'] ?? 1, 0.1, 1, 'opacity')
+        ];
+    }
+
+    /** The style of a line type { width 1..12, pattern, opacity 0.1..1, arrow } or of an area type { fill_opacity 0..0.8, outline: { width, pattern, opacity } }. */
+    private static function clean_shape_style($geometry, array $st)
+    {
+        if ($geometry === 'area') {
+            $o = is_array($st['outline'] ?? null) ? $st['outline'] : [];
+            return ['fill_opacity' => self::style_number($st['fill_opacity'] ?? 0.15, 0, 0.8, 'fill opacity'), 'outline' => self::clean_stroke($o)];
+        }
+        if (isset($st['arrow']) && !is_bool($st['arrow'])) {
+            throw self::bad('arrow must be true or false');
+        }
+        return self::clean_stroke($st) + ['arrow' => ($st['arrow'] ?? false) === true];
+    }
+
     /** Administrators only (checked by the controller): adds a type, or with edit:true changes one (code and geometry never change). Returns its code. */
     public function save_type(array $in)
     {
         return $this->locked(function () use ($in) {
-            if (($in['geometry'] ?? '') !== 'point') {
-                throw self::bad('only point types (markers of places) can be added for now: geometry must be "point"');
+            $geometry = $in['geometry'] ?? '';
+            if (!in_array($geometry, ['point', 'line', 'area'], true)) {
+                throw self::bad('the geometry must be "point", "line" or "area"');
             }
             $names = self::clean_names($in['names'] ?? [], array_column($this->lang_load(), 'code'), 'a type needs at least one name');
             $color = (string) ($in['color'] ?? '');
@@ -661,13 +717,15 @@ class store
                 throw self::bad('the colour must look like #1a2b3c');
             }
             $st = is_array($in['style'] ?? null) ? $in['style'] : [];
-            $symbol = (string) ($st['symbol'] ?? 'circle');
-            if (!preg_match(self::SYMBOL, $symbol)) {
-                throw self::bad('the symbol must be a slug of letters, digits and "-" (for example circle, tree)');
-            }
-            $size = $st['size'] ?? 8;
-            if (!(is_int($size) || is_float($size)) || $size < 4 || $size > 14) {
-                throw self::bad('the size must be a number from 4 to 14');
+            if ($geometry === 'point') {
+                $symbol = (string) ($st['symbol'] ?? 'circle');
+                if (!preg_match(self::SYMBOL, $symbol)) {
+                    throw self::bad('the symbol must be a slug of letters, digits and "-" (for example circle, tree)');
+                }
+                $size = $st['size'] ?? 8;
+                if (!(is_int($size) || is_float($size)) || $size < 4 || $size > 14) {
+                    throw self::bad('the size must be a number from 4 to 14');
+                }
             }
             $list = $this->type_load();
             $edit = !empty($in['edit']);
@@ -681,7 +739,7 @@ class store
                 if ($at === null) {
                     throw self::bad('unknown type');
                 }
-                if (($list[$at]['geometry'] ?? 'point') !== 'point') {
+                if (($list[$at]['geometry'] ?? 'point') !== $geometry) {
                     throw self::bad('the geometry of a type never changes');
                 }
                 $code = $list[$at]['code'];
@@ -697,8 +755,8 @@ class store
                 }
                 $code = self::type_code_from($en, array_column($list, 'code'));
             }
-            $style = ['symbol' => $symbol, 'size' => $size + 0];
-            if ($symbol === 'custom') {
+            $style = $geometry === 'point' ? ['symbol' => $symbol, 'size' => $size + 0] : self::clean_shape_style($geometry, $st);
+            if ($geometry === 'point' && $symbol === 'custom') {
                 // A custom symbol: an SVG path drawn in a square box (default 24) whose corner is 0,0.
                 $path = is_string($st['path'] ?? null) ? trim($st['path']) : '';
                 if (!preg_match(self::PATH, $path) || !preg_match('/^[Mm]/', $path)) {
@@ -713,7 +771,7 @@ class store
             }
             $entry = [
                 'code' => $code,
-                'geometry' => 'point',
+                'geometry' => $geometry,
                 'names' => $names,
                 'color' => strtolower($color),
                 'style' => $style
@@ -753,8 +811,17 @@ class store
                     $used++;
                 }
             }
-            if ($used > 0) {
-                throw self::bad("$used place" . ($used === 1 ? '' : 's') . " use the type \"$code\"; change their type first");
+            $sh = $this->base . 'shapes.geojson';
+            $sfc = is_file($sh) ? json_decode(file_get_contents($sh), true) : null;
+            $shapes = 0;
+            foreach ($sfc['features'] ?? [] as $f) {
+                if (($f['properties']['type'] ?? '') === $code) {
+                    $shapes++;
+                }
+            }
+            if ($used > 0 || $shapes > 0) {
+                $what = array_filter([$used ? "$used place" . ($used === 1 ? '' : 's') : '', $shapes ? "$shapes shape" . ($shapes === 1 ? '' : 's') : '']);
+                throw self::bad(implode(' and ', $what) . " use the type \"$code\"; change their type first");
             }
             unset($list[$at]);
             $this->put_types($list);
@@ -1280,8 +1347,60 @@ class store
     // shapes.geojson: one feature per shape. Geometry: Polygon, MultiPolygon, LineString or MultiLineString. Properties: id, names, type,
     // color, opacity (the fill of an area, the line of a line), label (draw the name on the map), date_from, date_to, source, created,
     // updated. Same rules as dev/save-handler.js (the browser-sync handler).
-    const ROUTE_TYPES = ['trade', 'military', 'migration', 'journey', 'road'];
-    const SHAPE_TYPES = ['country', 'kingdom', 'region', 'district', 'territory', 'disputed', 'trade', 'military', 'migration', 'journey', 'road'];
+    // Shape types are the line and area types of the types dictionary (data/types.json). The built-in ones below existed before the dictionary
+    // held lines and areas: [code, English name, geometry, colour, pattern, width, fill opacity (area) | one way (line)]. They are offered while a
+    // types.json has no line or area type, and written with the next change of the dictionary.
+    const SHAPE_PATTERNS = ['solid', 'dashed', 'dotted', 'dashdot', 'double', 'triple'];
+    const BUILTIN_SHAPE_TYPES = [
+        ['country', 'Country', 'area', '#b3261e', 'solid', 2.6, 0.1],
+        ['kingdom', 'Kingdom or empire', 'area', '#7b1fa2', 'solid', 2.2, 0.18],
+        ['province', 'Region or province', 'area', '#0b6e8a', 'dashed', 2, 0.12],
+        ['district', 'District', 'area', '#8d6e63', 'dotted', 2, 0.1],
+        ['territory', 'Territory or area', 'area', '#2e7d32', 'solid', 1.4, 0.2],
+        ['disputed', 'Disputed area', 'area', '#e07b39', 'dashdot', 2.2, 0.12],
+        ['trade', 'Trade route', 'line', '#b7791f', 'dashed', 2.4, false],
+        ['military', 'Military march', 'line', '#c62828', 'solid', 3, true],
+        ['migration', 'Migration', 'line', '#6a1b9a', 'dotted', 2.8, true],
+        ['journey', 'Journey or embassy', 'line', '#00796b', 'dashdot', 2.4, true],
+        ['road', 'Road', 'line', '#5d4037', 'solid', 2, false]
+    ];
+    private static function builtin_shape_types()
+    {
+        $out = [];
+        foreach (self::BUILTIN_SHAPE_TYPES as $b) {
+            list($code, $name, $geometry, $color, $pattern, $width, $x) = $b;
+            $out[] = [
+                'code' => $code,
+                'geometry' => $geometry,
+                'names' => [['lang' => 'en', 'name' => $name]],
+                'color' => $color,
+                'style' => $geometry === 'area'
+                    ? ['fill_opacity' => $x, 'outline' => ['width' => $width, 'pattern' => $pattern, 'opacity' => 1]]
+                    : ['width' => $width, 'pattern' => $pattern, 'opacity' => 1, 'arrow' => $x]
+            ];
+        }
+        return $out;
+    }
+    private static function with_shape_types(array $list)
+    {
+        foreach ($list as $t) {
+            if (in_array($t['geometry'] ?? 'point', ['line', 'area'], true)) {
+                return $list;
+            }
+        }
+        return array_merge($list, self::builtin_shape_types());
+    }
+    /** { code => 'line' | 'area' } of the shape types. Caller holds the lock. */
+    private function shape_kinds()
+    {
+        $k = [];
+        foreach ($this->type_load() as $t) {
+            if (($t['geometry'] ?? 'point') !== 'point') {
+                $k[$t['code']] = $t['geometry'];
+            }
+        }
+        return $k;
+    }
     const SHAPE_GEOMS = ['Polygon', 'MultiPolygon', 'LineString', 'MultiLineString'];
     const MAX_SHAPE_POINTS = 20000;
     const SHAPE_SOURCE = '/^[A-Za-z0-9:_.\/ -]{0,100}$/';
@@ -1391,10 +1510,10 @@ class store
     }
 
     /** Checks the fields of a shape (not the geometry) and returns them ready to store. */
-    private static function clean_shape(array $in, array $codes, array $places)
+    private static function clean_shape(array $in, array $codes, array $places, array $kinds)
     {
         $names = self::clean_names($in['names'] ?? [], $codes, 'a border needs at least one name');
-        if (!in_array($in['type'] ?? '', self::SHAPE_TYPES, true)) {
+        if (!is_string($in['type'] ?? null) || !isset($kinds[$in['type']])) {
             throw self::bad('unknown border type');
         }
         $color = $in['color'] ?? null;
@@ -1425,7 +1544,7 @@ class store
             'date_to' => $to,
             'source' => $source
         ];
-        if (in_array($in['type'], self::ROUTE_TYPES, true)) {
+        if ($kinds[$in['type']] === 'line') {
             // stops: the places the route passes, in order (ids of existing places; at most 60). twoway: usable both ways. Absent = unchanged.
             if (array_key_exists('stops', $in)) {
                 $st = $in['stops'];
@@ -1450,9 +1569,9 @@ class store
     }
 
     /** A route is a line: refuses an area for a route type. */
-    private static function route_geometry_check($type, array $g)
+    private static function route_geometry_check($type, array $g, array $kinds)
     {
-        if (in_array($type, self::ROUTE_TYPES, true) && !in_array($g['type'], ['LineString', 'MultiLineString'], true)) {
+        if (($kinds[$type] ?? '') === 'line' && !in_array($g['type'], ['LineString', 'MultiLineString'], true)) {
             throw self::bad('a route must be a line');
         }
     }
@@ -1462,7 +1581,8 @@ class store
     {
         return $this->locked(function () use ($in) {
             $codes = array_column($this->lang_load(), 'code');
-            $c = self::clean_shape($in, $codes, $this->place_ids());
+            $kinds = $this->shape_kinds();
+            $c = self::clean_shape($in, $codes, $this->place_ids(), $kinds);
             $d = $this->read_shapes();
             $now = self::now_utc();
             $id = (string) ($in['id'] ?? '');
@@ -1481,12 +1601,12 @@ class store
                 if (array_key_exists('geometry', $in)) {
                     $d['features'][$at]['geometry'] = self::clean_geometry($in['geometry']);
                 }
-                self::route_geometry_check($c['type'], $d['features'][$at]['geometry']);
+                self::route_geometry_check($c['type'], $d['features'][$at]['geometry'], $kinds);
                 $d['features'][$at]['properties'] = array_merge($d['features'][$at]['properties'], $c, ['updated' => $now]);
             } else {
                 $id = self::uuid4();
                 $geom = self::clean_geometry($in['geometry'] ?? null);
-                self::route_geometry_check($c['type'], $geom);
+                self::route_geometry_check($c['type'], $geom, $kinds);
                 $d['features'][] = [
                     'type' => 'Feature',
                     'geometry' => $geom,

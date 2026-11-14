@@ -17,6 +17,7 @@ Promise.all([loadPlaces(), loadNotesIndex(), loadLanguages(), loadLayers(), load
     languages = l;
     renderLangs();
     types = ty;
+    setShapeTypes(types);
     AHM.map.setTypes(types);
     renderTypes();
     setData(p, n);

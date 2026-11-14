@@ -97,32 +97,52 @@ $("#langAdmin").addEventListener("click", async (e) => {
 // new type is made by the server from its English name and never changes; places point to a type by that code.
 let tyEditing = null; // the code being edited, or null = adding
 let tyOpen = false;
-const tyPoints = () => types.filter((t) => t.geometry === 'point');
+let tyGeo = "point"; // the geometry of the type being added or edited: point (a place marker), line (a route) or area (a border)
+const TY_GEO = { point: "place", line: "line", area: "area" };
+const TY_PATTERNS = ["solid", "dashed", "dotted", "dashdot"]; // the patterns the map draws
 function renderTypes() {
   const l = $("#lang").value,
     n = {};
   places.forEach((p) => (n[p.type] = (n[p.type] || 0) + 1));
+  shapes.forEach((s) => (n[s.type] = (n[s.type] || 0) + 1));
   $("#typeList").innerHTML =
-    tyPoints()
-      .sort((a, b) => typeLabel(a.code, l).localeCompare(typeLabel(b.code, l)))
+    [...types]
+      .sort((a, b) => Object.keys(TY_GEO).indexOf(a.geometry) - Object.keys(TY_GEO).indexOf(b.geometry) || typeLabel(a.code, l).localeCompare(typeLabel(b.code, l)))
       .map(
         (t) =>
           `<li class="tr${t.code === tyEditing ? " on" : ""}"><span class="tc-btn">${
             AHM_CONFIG.canTypeAdmin
               ? `<button type="button" class="icon-btn" data-tyedit="${esc(t.code)}" title="Edit ${esc(typeLabel(t.code, l))}" aria-label="Edit ${esc(typeLabel(t.code, l))}">${ICON_PENCIL}</button>`
               : ""
-          }</span><b class="tc-code">${typeIcon(t.code)}</b><span>${esc(typeLabel(t.code, l))}</span><span class="sn">${n[t.code] || 0}</span></li>`,
+          }</span><b class="tc-code">${t.geometry === "point" ? typeIcon(t.code) : shIcon(t.code)}</b><span>${esc(typeLabel(t.code, l))} <span class="sn">${TY_GEO[t.geometry] || ""}</span></span><span class="sn">${n[t.code] || 0}</span></li>`,
       )
       .join("") || '<li class="sn">No types yet.</li>';
 }
 const tyDraft = () => {
-  const d = { symbol: $("#tySym").value, color: $("#tyColor").value, size: Number($("#tySize").value) };
-  if (d.symbol === "custom") {
-    d.path = $("#tyPath").value.trim();
-    d.box = Number($("#tyBox").value);
+  const d = { color: $("#tyColor").value };
+  if (tyGeo === "point") {
+    d.symbol = $("#tySym").value;
+    d.size = Number($("#tySize").value);
+    if (d.symbol === "custom") {
+      d.path = $("#tyPath").value.trim();
+      d.box = Number($("#tyBox").value);
+    }
+    return d;
   }
+  d.pattern = $("#tyPat").value;
+  d.width = Number($("#tyWid").value);
+  d.opacity = Number($("#tyOpa").value);
+  if (tyGeo === "line") d.arrow = $("#tyArrow").checked;
+  else d.fill = Number($("#tyFill").value);
   return d;
 };
+// The style the server stores: a place marker { symbol, size }, a line { width, pattern, opacity, arrow }, an area { fill_opacity, outline }.
+const tyStyle = (d) =>
+  tyGeo === "point"
+    ? { symbol: d.symbol, size: d.size, ...(d.symbol === "custom" ? { path: d.path, box: d.box } : {}) }
+    : tyGeo === "line"
+      ? { width: d.width, pattern: d.pattern, opacity: d.opacity, arrow: d.arrow }
+      : { fill_opacity: d.fill, outline: { width: d.width, pattern: d.pattern, opacity: d.opacity } };
 // An SVG (a file the admin chose, or a whole <svg> pasted into the path box) becomes the path and the box of the symbol.
 function tyUseSvg(text, from) {
   const r = svgToPath(text),
@@ -147,18 +167,19 @@ const tyNames = () =>
     .filter((x) => x.name);
 // Save stays off until there is an English name (the code is made from it) when adding, or any name when editing.
 const tyValidate = () => {
-  if (!$("#tySym")) return; // the form is closed
+  if (!$("#tyColor")) return; // the form is closed
   const b = $("#tyAdd");
-  const custom = $("#tySym").value === "custom";
-  $("#tyCustom").hidden = !custom;
+  const custom = tyGeo === "point" && $("#tySym").value === "custom";
+  if ($("#tyCustom")) $("#tyCustom").hidden = !custom;
   if (b) {
     const d = tyDraft();
     b.disabled =
       !(tyEditing ? tyNames().length : tyNames().some((x) => x.lang === "en")) ||
+      (tyGeo !== "point" && !(d.width >= 1 && d.width <= 12 && d.opacity >= 0.1 && d.opacity <= 1)) ||
       (custom && !(/^\s*[Mm]/.test(d.path) && /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,+\-\s]{2,20000}$/.test(d.path) && d.box >= 8 && d.box <= 2048));
   }
   const pv = $("#tyPrev");
-  if (pv) pv.innerHTML = typeIcon(tyDraft()) + " " + esc($("#tySize").value);
+  if (pv && tyGeo === "point") pv.innerHTML = typeIcon(tyDraft()) + " " + esc($("#tySize").value);
 };
 function tyRenderAdmin(t) {
   const el = $("#typeAdmin");
@@ -167,33 +188,45 @@ function tyRenderAdmin(t) {
     return;
   }
   if (!tyOpen) {
-    el.innerHTML = '<button id="tyNew" class="wide">+ Add place type</button>';
+    el.innerHTML = Object.keys(TY_GEO)
+      .map((g) => `<button data-tynew="${g}" class="wide">+ Add ${TY_GEO[g]} type</button>`)
+      .join("");
     return;
   }
   const names = t && t.names.length ? t.names : [{ lang: "en", name: "" }],
-    st = (t && t.style) || { symbol: "circle", size: 8 };
+    st = (t && t.style) || (tyGeo === "point" ? { symbol: "circle", size: 8 } : tyGeo === "line" ? { width: 2.5, pattern: "solid", opacity: 1, arrow: false } : { fill_opacity: 0.15, outline: { width: 2, pattern: "solid", opacity: 1 } }),
+    ol = tyGeo === "area" ? st.outline || {} : st,
+    pats = `<select id="tyPat" aria-label="Pattern">${TY_PATTERNS.map((p) => `<option${p === (ol.pattern || "solid") ? " selected" : ""}>${p}</option>`).join("")}</select>`,
+    shapeFields =
+      `<div class="label">Pattern</div>${pats}` +
+      `<div class="label">Width</div><input id="tyWid" type="number" min="1" max="12" step="0.5" value="${Number(ol.width) || 2}" aria-label="Width">` +
+      `<div class="label">Opacity</div><input id="tyOpa" type="range" min="0.1" max="1" step="0.05" value="${ol.opacity == null ? 1 : ol.opacity}" aria-label="Opacity">` +
+      (tyGeo === "line"
+        ? `<label class="sh-check"><input type="checkbox" id="tyArrow"${st.arrow ? " checked" : ""}> One way (drawn with arrows)</label>`
+        : `<div class="label">Fill</div><input id="tyFill" type="range" min="0" max="0.8" step="0.05" value="${st.fill_opacity == null ? 0.15 : st.fill_opacity}" aria-label="Fill opacity">`);
   el.innerHTML =
     `<div class="label">Names</div><div class="pf-names">${names.map((n) => pfRow(n)).join("")}</div>` +
     `<button type="button" class="pf-add">+ Add another name</button>` +
     `<div class="sn">${t ? "The code <b>" + esc(t.code) + "</b> never changes." : "The code is made from the English name."}</div>` +
-    `<div class="label">Symbol</div><select id="tySym">${AHM.map
+    (tyGeo !== "point" ? "" : `<div class="label">Symbol</div><select id="tySym">${AHM.map
       .getSymbols()
       .map((y) => `<option value="${esc(y.name)}"${y.name === st.symbol ? " selected" : ""}>${esc(y.label)}</option>`)
       .join("")}<option value="custom"${st.symbol === "custom" ? " selected" : ""}>Custom (SVG path)…</option></select>` +
     `<div id="tyCustom" hidden><div class="sn">Choose an SVG icon file. It is drawn in the colour above. Simple one-colour icons work best (free ones: game-icons.net, lucide.dev).</div>` +
     `<input id="tyFile" type="file" accept=".svg,image/svg+xml" aria-label="SVG file"><div id="tySvgMsg" class="sn">${st.path ? "Current symbol kept; choose a file to replace it." : ""}</div>` +
     `<details><summary>Advanced: path and box</summary><textarea id="tyPath" rows="3" maxlength="60000" spellcheck="false" aria-label="SVG path">${esc(st.path || "")}</textarea>` +
-    `<div class="label">Box</div><input id="tyBox" type="number" min="8" max="2048" step="1" value="${Number(st.box) || 24}" aria-label="Box size"></details></div>` +
+    `<div class="label">Box</div><input id="tyBox" type="number" min="8" max="2048" step="1" value="${Number(st.box) || 24}" aria-label="Box size"></details></div>`) +
     `<div class="label">Colour</div><input id="tyColor" type="color" value="${esc((t && t.color) || "#8d6e63").toLowerCase()}" aria-label="Colour">` +
-    `<div class="label">Size</div><input id="tySize" type="range" min="4" max="14" step="0.5" value="${Number(st.size) || 8}" aria-label="Size"> <span id="tyPrev"></span>` +
+    (tyGeo === "point" ? `<div class="label">Size</div><input id="tySize" type="range" min="4" max="14" step="0.5" value="${Number(st.size) || 8}" aria-label="Size"> <span id="tyPrev"></span>` : shapeFields) +
     '<div class="btn-pair"><button id="tyAdd" class="primary" disabled>Save</button><button id="tyCancel">Cancel</button>' +
-    (t ? '<button id="tyDel" title="Remove this type (only when no place uses it)">Remove</button>' : "") +
+    (t ? '<button id="tyDel" title="Remove this type (only when no place or shape uses it)">Remove</button>' : "") +
     '</div><div id="tyErr" class="sn err-line"></div>';
   tyValidate();
 }
 function tyFill(t) {
   tyOpen = true;
   tyEditing = t ? t.code : null;
+  if (t) tyGeo = t.geometry;
   tyRenderAdmin(t);
   renderTypes();
 }
@@ -206,6 +239,8 @@ function tyClose() {
 // The dictionary changed (or was loaded): the map draws from it, the filters, lists and the place form follow.
 function tySet(list) {
   types = list;
+  setShapeTypes(types); // lines and areas: the lists, the forms and the map follow
+  Object.keys(shIcons).forEach((k) => delete shIcons[k]);
   AHM.map.setTypes(types);
   renderTypes();
   fillTypes();
@@ -234,7 +269,11 @@ $("#typeList").addEventListener("click", (e) => {
   if (b) tyFill(types.find((t) => t.code === b.dataset.tyedit));
 });
 $("#typeAdmin").addEventListener("click", async (e) => {
-  if (e.target.id === "tyNew") return tyFill(null);
+  const nb = e.target.closest("[data-tynew]");
+  if (nb) {
+    tyGeo = nb.dataset.tynew;
+    return tyFill(null);
+  }
   if (e.target.id === "tyCancel") return tyClose();
   const err = $("#tyErr");
   try {
@@ -247,10 +286,10 @@ $("#typeAdmin").addEventListener("click", async (e) => {
       const d = tyDraft();
       await tyPost(AHM_CONFIG.url.typeSave, {
         ...(tyEditing ? { code: tyEditing, edit: true } : {}),
-        geometry: "point",
+        geometry: tyGeo,
         names: tyNames(),
         color: d.color,
-        style: { symbol: d.symbol, size: d.size, ...(d.symbol === "custom" ? { path: d.path, box: d.box } : {}) },
+        style: tyStyle(d),
       });
     } else return;
     tySet(await loadTypes());
