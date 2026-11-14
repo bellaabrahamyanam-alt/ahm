@@ -65,3 +65,10 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Files:** `app/js/sidebar/routes.js`, `app/js/sidebar/{ui,shapes,layers}.js`, `app/index.html`, `app/css/{shapes,sidebar}.css`.
 - **How to verify:** `node tests/js/run.js`; in the app open the Routes tab, draw a route on the map, save it, then use Find a path.
 - **Follow-ups:** no test covers the sidebar part (the `rt*` functions need the page DOM and the map); only the pure rules behind it are tested (`tests/js/routes.test.js`). Not verified now: the map canvas.
+
+## 2026-11-14 — #4 T-029: `sidebar/ui.js` split into five files
+**What:** `app/js/sidebar/ui.js` (1152 lines) is now `layout.js` (shared sidebar state, tabs, collapse, the details dock, resizing), `places.js` (filters, result list, selected point, place details, long notes), `actions.js` (directions, point-card actions, geocoder search, add / edit a place or a note), `admin.js` (dictionaries of languages and of place types) and `ui.js` (events from the map, start-up). The lines are moved as they were: no function, name or behaviour changed (the multiset of lines is the same, apart from five header comments). `app/index.html`: the five files load in this order, where `ui.js` was; `ui.js` stays last because it starts the app. `tests/js/layers.test.js` loads the five files where it loaded `ui.js`. `tools/context.json` and `docs/04-project-structure.md` list the files.
+**Why:** the owner asked for a refactoring of `ui.js` in its own PR and chose 4–5 files. All files are classic scripts in one global scope, so a name keeps working across files as long as the file that runs code at load time loads after what that code uses.
+**Verify:** `node tests/js/run.js 2>&1 | tail -15`; `node tools/build.js --check`; the page loaded in Chromium from `app/js` and from `app/dist` shows no new console errors.
+**Follow-ups:** `places.js` (430 lines) and `actions.js` (255 lines) can still be cut by topic (long notes; add / edit dialogs); `layers.js` (691 lines), `shapes.js` and `routes.js` are the next largest. Not changed on purpose: names, duplicated code between `shapes.js` and `routes.js`.
+

@@ -22,6 +22,8 @@ The left panel: place list and details, search and period, layers, categories, l
 
 ## Code and documents of the domain (open the part the task needs, with offset and limit)
 
+- `app/js/sidebar/places.js`
+- `app/js/sidebar/actions.js`
 - `app/js/sidebar/ui.js`
 - `app/js/sidebar/layers.js`
 - `app/index.html`

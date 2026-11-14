@@ -170,7 +170,9 @@ const fs = require('fs');
 const path = require('path');
 const { JS, SAMPLE } = require('./lib/ctx');
 const srcOf = (f) => fs.readFileSync(path.join(JS, 'sidebar', f), 'utf8');
-const publishesSelected = () => /AHM\.state\.set\(\s*['"]selected['"]/.test(srcOf('ui.js'));
+// ui.js was split (T-029): the sidebar files in load order; together they are the old ui.js
+const UI_FILES = ['layout.js', 'places.js', 'actions.js', 'admin.js', 'ui.js'];
+const publishesSelected = () => /AHM\.state\.set\(\s*['"]selected['"]/.test(UI_FILES.map(srcOf).join('\n'));
 const publishesLayers = () => /AHM\.state\.patch\(\s*['"]layers['"]/.test(srcOf('layers.js'));
 const gated = (isBuilt, name, fn) =>
   test(name, async () => {
@@ -180,7 +182,7 @@ const gated = (isBuilt, name, fn) =>
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
 const UI_SCRIPTS = ['state.js', 'config.js', 'dates.js', 'data.js', 'datefield.js', 'layer-rules.js', 'shapes.js', 'routes.js', 'search.js', 'searchfield.js', 'period.js', 'placeform.js', 'layers.js', 'sidebar/shapes.js', 'sidebar/routes.js'];
-/** The page with ui.js itself running (it declares cur, tab, show, update ...), a map stand-in, and recorded event handlers. */
+/** The page with the sidebar files (the old ui.js) themselves running (it declares cur, tab, show, update ...), a map stand-in, and recorded event handlers. */
 function uiPage() {
   const p = load(UI_SCRIPTS);
   const doc = p.ctx.document;
@@ -200,7 +202,7 @@ function uiPage() {
   doc.activeElement = { tagName: 'BODY' };
   p.X(`var typeIcon = () => '';
     AHM.map = { setFeatures() {}, hidePlace() {}, focusPlace() {}, focusPoint() {}, fitTo() {}, fitRoute() {}, setRoute() {}, setRouteMarkers() {}, setPick() {}, resize() {}, getZoom: () => 6, showMenu() {}, hideMenu() {}, setShapes() {}, highlightShape() {}, previewShape() {}, showPreview() {}, editPin: () => ({ getPosition() {}, setPosition() {}, remove() {} }) };`);
-  p.X(fs.readFileSync(path.join(JS, 'sidebar', 'ui.js'), 'utf8'));
+  for (const f of UI_FILES) p.X(srcOf(f));
   p.X('setData(__0, [])', SAMPLE.places);
   p.X(`globalThis.__sel = []; globalThis.__reads = []; globalThis.__peek = AHM.state.get;
     AHM.on('state:selected', (e) => __sel.push(e.value));
