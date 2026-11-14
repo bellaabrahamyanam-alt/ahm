@@ -170,7 +170,7 @@ const fs = require('fs');
 const path = require('path');
 const { JS, SAMPLE } = require('./lib/ctx');
 const srcOf = (f) => fs.readFileSync(path.join(JS, 'sidebar', f), 'utf8');
-// ui.js was split (T-029): the sidebar files in load order; together they are the old ui.js
+// ui.js was split (T-035): the sidebar files in load order; together they are the old ui.js
 const UI_FILES = ['layout.js', 'places.js', 'actions.js', 'admin.js', 'ui.js'];
 const publishesSelected = () => /AHM\.state\.set\(\s*['"]selected['"]/.test(UI_FILES.map(srcOf).join('\n'));
 const publishesLayers = () => /AHM\.state\.patch\(\s*['"]layers['"]/.test(srcOf('layers.js'));
