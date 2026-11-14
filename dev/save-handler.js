@@ -783,7 +783,7 @@ function layerSave(inp) {
 // data/shapes.geojson: one feature per shape. Geometry: Polygon, MultiPolygon, LineString or MultiLineString. Properties: id, names, type,
 // color, opacity (the fill of an area, the line of a line), label (draw the name on the map), date_from, date_to, source, created, updated.
 const ROUTE_TYPES = ['trade', 'military', 'migration', 'journey', 'road'];
-const SHAPE_TYPES = ['country', 'kingdom', 'region', 'district', 'territory', 'disputed', ...ROUTE_TYPES];
+const SHAPE_TYPES = ['country', 'kingdom', 'region', 'district', 'territory', 'disputed', 'river', ...ROUTE_TYPES];
 const SHAPE_GEOMS = ['Polygon', 'MultiPolygon', 'LineString', 'MultiLineString'];
 const MAX_SHAPE_POINTS = 20000,
   SOURCE = /^[A-Za-z0-9:_./ -]{0,100}$/;
@@ -836,12 +836,15 @@ function cleanShape(inp, codes, places) {
   const opacity = Number(inp.opacity);
   if (!(opacity >= 0 && opacity <= 1)) throw bad('the opacity must be between 0 and 1');
   if (typeof inp.label !== 'boolean') throw bad('"label" must be true or false');
+  // width: the line width in pixels, 0.5 to 12. Absent = unchanged (a new shape then uses the width of its type).
+  if ('width' in inp && (typeof inp.width === 'boolean' || inp.width === null || inp.width === '' || !(Number(inp.width) >= 0.5 && Number(inp.width) <= 12))) throw bad('the width must be between 0.5 and 12');
   const source = inp.source === undefined || inp.source === null ? '' : String(inp.source);
   if (!SOURCE.test(source)) throw bad('the source is too long or has unusual characters');
   const from = D.dateClean(inp.date_from === undefined ? null : inp.date_from, 'begin date'),
     to = D.dateClean(inp.date_to === undefined ? null : inp.date_to, 'end date');
   D.dateOrderCheck(from, to);
   const out = { names, type: inp.type, color: inp.color.toLowerCase(), opacity: Math.round(opacity * 100) / 100, label: inp.label, date_from: from, date_to: to, source };
+  if ('width' in inp) out.width = Math.round(Number(inp.width) * 10) / 10;
   if (ROUTE_TYPES.includes(inp.type)) {
     // stops: the places the route passes, in order (ids of existing places; at most 60). twoway: usable both ways. Absent = unchanged.
     if (inp.stops !== undefined) {

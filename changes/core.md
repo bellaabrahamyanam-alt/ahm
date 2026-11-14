@@ -8,6 +8,14 @@
 - **How to verify:** `node tests/js/run.js`.
 - **Follow-ups:** none.
 
+## 2026-11-14 — River line type and a width per line (T-036)
+
+- **What:** type `river` in `SHAPE_TYPES` (`app/js/core/shapes.js`); not a route, so it is not used by path finding.
+- **Why:** owner, in the chat: draw rivers and set their style. A river is a line of the new border type `river` (blue, solid, 3 px); the width of any line can be changed per shape.
+- **Files:** `app/js/core/shapes.js`
+- **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (parity rows `shape: ...` in `tests/fixtures/rules.json`).
+- **Follow-ups:** none.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the core domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ---

@@ -84,7 +84,7 @@ function shPush() {
           color: s.color,
           ink: shapeInk(s.color),
           opacity: s.opacity,
-          width: t.width,
+          width: s.width || t.width,
           dash: t.dash,
           label: s.label,
           arrows: isRoute(s) && !s.twoway,
@@ -207,6 +207,7 @@ function shRenderView() {
     `<div class="label">Look</div><div class="sh-look">` +
     `<label>Colour <input type="color" id="shColor" value="${esc(s.color)}"${dis}></label>` +
     `<label>${kind === 'area' ? 'Fill opacity' : 'Line opacity'} <input type="range" id="shOp" min="0" max="1" step="0.05" value="${s.opacity}"${dis}> <span id="shOpVal">${Math.round(s.opacity * 100)}%</span></label>` +
+    (kind === 'line' ? `<label>Width <input type="range" id="shWidth" min="0.5" max="12" step="0.5" value="${s.width || t.width}"${dis}> <span id="shWidthVal">${s.width || t.width} px</span></label>` : '') +
     `<label class="sh-check"><input type="checkbox" id="shLabel"${s.label ? ' checked' : ''}${dis}> Show the name on the map</label></div>` +
     `<div class="label">In layers</div><div class="chips">` +
     (inLy.length ? inLy.map((ly) => `<button class="chip ly-chip" data-shact="layer" data-lid="${ly.id}"${ly.color ? ` style="--a:${esc(ly.color)}"` : ''}>${esc(lyName(ly, l))}</button>`).join('') : '<span class="sn">None yet.</span>') +
@@ -222,7 +223,7 @@ function shRenderView() {
   if (li) revealRow(li);
 }
 const shErr = (m) => ($('#shErr') ? ($('#shErr').textContent = m || '') : m && alert(m));
-const shBody = (s, o = {}) => ({ id: s.id, names: s.names, type: s.type, color: s.color, opacity: s.opacity, label: s.label, date_from: s.date_from, date_to: s.date_to, source: s.source || '', ...o });
+const shBody = (s, o = {}) => ({ id: s.id, names: s.names, type: s.type, color: s.color, opacity: s.opacity, ...(s.width ? { width: s.width } : {}), label: s.label, date_from: s.date_from, date_to: s.date_to, source: s.source || '', ...o });
 /** Saves a look change at once (the map is already showing it). */
 async function shStyle(s, patch) {
   const old = Object.fromEntries(Object.keys(patch).map((k) => [k, s[k]]));
@@ -248,12 +249,14 @@ $('#shDetail').addEventListener('input', (e) => {
     AHM.map.previewShape(s.id, { opacity: +e.target.value });
     $('#shOpVal').textContent = Math.round(e.target.value * 100) + '%';
   }
+  if (e.target.id === 'shWidth') $('#shWidthVal').textContent = e.target.value + ' px';
 });
 $('#shDetail').addEventListener('change', async (e) => {
   const s = shCur();
   if (!s || sh.form) return;
   if (e.target.id === 'shColor') shStyle(s, { color: e.target.value });
   else if (e.target.id === 'shOp') shStyle(s, { opacity: +e.target.value });
+  else if (e.target.id === 'shWidth') shStyle(s, { width: +e.target.value });
   else if (e.target.id === 'shLabel') shStyle(s, { label: e.target.checked });
   else if (e.target.id === 'shAddLayer' && e.target.value) {
     try {

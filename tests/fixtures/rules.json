@@ -1397,6 +1397,108 @@
     }
    },
    "expect": "box"
+  },
+  {
+   "name": "shape: a river is a line type and takes a width",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "Araks"
+     }
+    ],
+    "type": "river",
+    "color": "#1e88e5",
+    "opacity": 1,
+    "label": true,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "LineString",
+     "coordinates": [
+      [
+       44.5,
+       40.2
+      ],
+      [
+       45.0,
+       40.5
+      ]
+     ]
+    },
+    "width": 4.5
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "shape: width above 12 is refused",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "Araks"
+     }
+    ],
+    "type": "river",
+    "color": "#1e88e5",
+    "opacity": 1,
+    "label": true,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "LineString",
+     "coordinates": [
+      [
+       44.5,
+       40.2
+      ],
+      [
+       45.0,
+       40.5
+      ]
+     ]
+    },
+    "width": 13
+   },
+   "expect": "width must be between"
+  },
+  {
+   "name": "shape: width must be a number",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "Araks"
+     }
+    ],
+    "type": "river",
+    "color": "#1e88e5",
+    "opacity": 1,
+    "label": true,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "LineString",
+     "coordinates": [
+      [
+       44.5,
+       40.2
+      ],
+      [
+       45.0,
+       40.5
+      ]
+     ]
+    },
+    "width": "wide"
+   },
+   "expect": "width must be between"
   }
  ]
 }
