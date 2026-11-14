@@ -47,3 +47,11 @@ None. `search.js` and the sidebar code are out of scope.
 - **Files:** `app/js/core/routes.js`, `app/js/core/shapes.js`, `tests/js/routes.test.js` (9 tests).
 - **How to verify:** `node tests/js/run.js` (routes tests).
 - **Follow-ups:** none.
+
+## 2026-11-14 — T-036: shape types from the dictionary (core)
+
+- **What:** `app/js/core/shapes.js`: `setShapeTypes(list)` fills the shape type registry (`SHAPE_TYPES`, `BORDER_TYPES`, `ROUTE_TYPE_LIST`) from the line and area types of the dictionary (line `arrow: true` = one way = `twoway: false`; patterns the map cannot draw are drawn solid); a dictionary without line or area types keeps the built-in ones; a stored shape of a removed type is drawn like the first area type; `guessShapeType` names a type that exists. `tests/js/routes.test.js` (4 tests).
+- **Why:** T-036.
+- **Files:** `app/js/core/shapes.js`, `tests/js/routes.test.js`.
+- **How to verify:** `node tests/js/run.js`.
+- **Follow-ups:** the label of a shape type in the lists is its English name (or the first one), not the language of the page.

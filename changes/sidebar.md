@@ -72,3 +72,11 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 **Verify:** `node tests/js/run.js 2>&1 | tail -15`; `node tools/build.js --check`; the page loaded in Chromium from `app/js` and from `app/dist` shows no new console errors.
 **Follow-ups:** `places.js` (430 lines) and `actions.js` (255 lines) can still be cut by topic (long notes; add / edit dialogs); `layers.js` (691 lines), `shapes.js` and `routes.js` are the next largest. Not changed on purpose: names, duplicated code between `shapes.js` and `routes.js`.
 
+
+## 2026-11-14 — T-036: the Types editor adds line and area types
+
+- **What:** `app/js/sidebar/admin.js`, `app/js/sidebar/ui.js`, `app/index.html`: More → "Types" lists all types (place, line, area, with the number of places or shapes that use each) and has three add buttons; the form of a line type has pattern, width, opacity and "One way"; of an area type pattern, width, opacity and fill; `tySet` and the start call `setShapeTypes`, so the Borders and Routes tabs follow at once.
+- **Why:** T-036; the owner decided in the chat (T-034) that line and area types are dictionary types.
+- **Files:** `app/js/sidebar/admin.js`, `app/js/sidebar/ui.js`, `app/index.html`.
+- **How to verify:** More → Types as an administrator: add a line type, then add a route of that type in the Routes tab. Not verified: the page in a browser; no test covers the editor form (T-029).
+- **Follow-ups:** none.

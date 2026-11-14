@@ -64,3 +64,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `service/store.php`, `dev/save-handler.js`, `docs/05-data-model.md`, `docs/06-http-interface.md`, `docs/02-implemented-features.md`.
 - **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (parity table).
 - **Follow-ups:** `tests/fixtures/rules.json` and `tests/php` have no test for the three errors (stops, twoway, line): T-032.
+
+## 2026-11-14 — T-036: line and area types in the types dictionary (decision of T-034: the dictionary, not fixed lists)
+
+- **What:** `service/store.php` and `dev/save-handler.js`: `type-save` takes `geometry` `point`, `line` or `area` (line style `{ width 1..12, pattern, opacity 0.1..1, arrow }`, area style `{ fill_opacity 0..0.8, outline: { width, pattern, opacity } }`, patterns `solid dashed dotted dashdot double triple`); a shape's `type` must be a line or area type of the dictionary (the fixed `SHAPE_TYPES` and `ROUTE_TYPES` lists are gone); a line type needs a line; a place may take point types only; `type-delete` also counts shapes. The 11 built-in types are in `data/types.json`; a `types.json` without any line or area type offers them and writes them with its next change. `docs/02`, `docs/05`, `docs/06`.
+- **Why:** specs 011 and 014 and `interfaces/I-8-types-dictionary.md` wanted one dictionary for points, lines and areas, so an administrator can add a kind of route or border without a code change.
+- **Files:** `service/store.php`, `dev/save-handler.js`, `data/types.json`, `tests/fixtures/rules.json` (19 rows), `tests/php/TypeTest.php`, `tests/php/ParityTest.php`, `tests/js/parity.test.js`.
+- **How to verify:** `php tests/php/run.php`, `node tests/js/run.js`.
+- **Follow-ups:** the pattern `dashdot` is outside the 5 patterns of I-8 (`double` and `triple` are accepted and drawn solid until T-033); `tests/data/DataCheck.php` does not check the type of a shape (T-037). Not verified: the PHP code was only syntax-checked here (no PHP in the sandbox); CI runs the PHP tests.

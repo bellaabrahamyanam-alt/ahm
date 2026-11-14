@@ -54,8 +54,8 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - [ ] T-033 Map: parts of spec 013 that are missing (audit): `hideShape(id | null)` and the line patterns `double` and `triple` (the code has solid, dashed, dotted, dashdot)
   Done when: each exists in `app/js/map/` with a test in `tests/js/map.test.js`, or the owner drops it.
   Contract: no.
-- [ ] T-034 Owner decision: line and area types (specs 011 and 014 wanted `border`, `route` and `territory` in the types dictionary and a Types editor for lines and areas; built: the dictionary holds only point types, border and route types are fixed lists in `service/store.php`)
-  Done when: the owner says keep the fixed lists or make them dictionary types; in the second case the builder gets an item.
+- [ ] T-037 `tests/data/DataCheck.php`: check that the `type` of every shape in `shapes.geojson` is a line or area type of `types.json` (follow-up of T-036)
+  Done when: a shape of an unknown or point type fails the data check with its own error code, and a test shows it.
   Contract: no.
 - [ ] T-011 Make `graph/` cheaper to use: line ranges per definition
   Done when: `graph/<domain>.md` lists `name:line` for the definitions of each file, so an agent opens a part with offset and limit without a search; the size limits of `tests/js/graph.test.js` still hold or are changed with the reason. Measure before and after (bytes an agent reads for one change in `map.js`).
@@ -73,6 +73,8 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 ## Done
 
+- [x] T-036 Line and area types in the types dictionary (2026-11-14, branch `feat/line-area-types`). Decision of T-034 (owner, in the chat: "build it"): dictionary types, not fixed lists. Server rules in `store.php` and `save-handler.js`, registry in `core/shapes.js`, editor in More → Types.
+- [x] T-034 Owner decision on line and area types: dictionary types (2026-11-14).
 - [x] T-035 Split `sidebar/ui.js` into five files, no change of behaviour (2026-11-14, branch `refactor/sidebar-ui`)
   Owner, in the chat: "Сделай рефакторинг sidebar/ui.js в отдельной PR"; scope chosen: 4–5 files. No protected file changed (`app/js/sidebar/` is one folder entry in `tools/domains.json`).
 - [x] T-024 Harden the `app/dist` check (2026-11-14, branch `chore/records-ci-audit`)
