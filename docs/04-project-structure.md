@@ -58,7 +58,11 @@ ahm/map/
 │       ├─ map/map.js             the map: base maps, symbols, markers, route; commands AHM.map.*, events place:click …
 │       ├─ map/overlays.js        historical map images (Maps fold)
 │       ├─ sidebar/layers.js      thematic layers UI: list, details, forms, categories (Layers tab)
-│       └─ sidebar/ui.js          sidebar, details, editing, start-up
+│       ├─ sidebar/layout.js      shared sidebar state, tabs, collapse, the details dock, resizing
+│       ├─ sidebar/places.js      filters, the result list, the selected point, place details and long notes
+│       ├─ sidebar/actions.js     directions, point-card actions, geocoder search, add / edit a place or a note
+│       ├─ sidebar/admin.js       the dictionaries of languages and of place types (administrators)
+│       └─ sidebar/ui.js          events from the map and start-up (loaded last of the sidebar files)
 │
 ├─ data/                          sample data AND the data used in development
 │   ├─ places.geojson

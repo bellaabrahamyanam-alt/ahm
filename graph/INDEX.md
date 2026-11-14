@@ -6,7 +6,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 | domain | files | lines | largest file |
 |---|---|---|---|
-| sidebar | 8 | 3331 | `app/js/sidebar/ui.js` (1152) |
+| sidebar | 12 | 3335 | `app/js/sidebar/layers.js` (691) |
 | map | 4 | 1708 | `app/js/map/map.js` (679) |
 | core | 7 | 913 | `app/js/core/dates.js` (296) |
 | state | 1 | 43 | `app/js/state/state.js` (43) |
@@ -19,7 +19,6 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - `app/js/map/map.js` has 679 lines (limit 600); owner: map
 - `app/js/sidebar/layers.js` has 691 lines (limit 600); owner: sidebar
 - `app/js/sidebar/routes.js` has 629 lines (limit 600); owner: sidebar
-- `app/js/sidebar/ui.js` has 1152 lines (limit 600); owner: sidebar
 - `dev/save-handler.js` has 1065 lines (limit 600); owner: data
 - `service/store.php` has 1743 lines (limit 600); owner: data
 
@@ -40,7 +39,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 ## Where to look (by file name)
 
-- sidebar: app/js/sidebar/datefield.js, app/js/sidebar/layers.js, app/js/sidebar/period.js +5
+- sidebar: app/js/sidebar/actions.js, app/js/sidebar/admin.js, app/js/sidebar/datefield.js +9
 - map: app/js/map/map.js, app/js/map/overlays.js, app/js/map/shapes.js +1
 - layer: app/js/core/layer-rules.js, app/js/sidebar/layers.js
 - search: app/js/core/search.js, app/js/sidebar/searchfield.js
@@ -50,7 +49,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - type: app/js/map/typeicons.js
 - shape: app/js/core/shapes.js, app/js/map/shapes.js, app/js/sidebar/shapes.js
 - route: app/js/core/routes.js, app/js/sidebar/routes.js
-- place: app/js/sidebar/placeform.js
+- place: app/js/sidebar/placeform.js, app/js/sidebar/places.js
 - overlay: app/js/map/overlays.js
 - language: language/en/common.php
 - icon: app/js/icons.js, app/js/map/typeicons.js

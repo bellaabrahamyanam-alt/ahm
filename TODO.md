@@ -73,6 +73,8 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 ## Done
 
+- [x] T-035 Split `sidebar/ui.js` into five files, no change of behaviour (2026-11-14, branch `refactor/sidebar-ui`)
+  Owner, in the chat: "Сделай рефакторинг sidebar/ui.js в отдельной PR"; scope chosen: 4–5 files. No protected file changed (`app/js/sidebar/` is one folder entry in `tools/domains.json`).
 - [x] T-024 Harden the `app/dist` check (2026-11-14, branch `chore/records-ci-audit`)
   Approved: 2026-11-14 owner, in the chat. `build.js --check` also fails when a bundle differs in size from the manifest; the name test finds declarations (`hasDeclaration`); tests show each failure.
 - [x] T-022 Block commits that skip CI (2026-11-14, same branch)

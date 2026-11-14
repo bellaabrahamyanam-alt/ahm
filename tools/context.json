@@ -8,6 +8,8 @@
     "sidebar": {
       "brief": "The left panel: place list and details, search and period, layers, categories, languages, place editing. Talks to the map only through AHM.map.* and events (INTERFACES.md I-2).",
       "read": [
+        "app/js/sidebar/places.js",
+        "app/js/sidebar/actions.js",
         "app/js/sidebar/ui.js",
         "app/js/sidebar/layers.js",
         "app/index.html",
