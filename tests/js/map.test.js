@@ -1198,3 +1198,124 @@ test('map: relief: the shipped config uses the AWS terrarium tiles (no own hosti
   switchBasemap('@relief');
   eq(t.tiles, ml.rec.sources['ahm-terrain'].def.tiles);
 });
+
+// ---- relief colours by height, controls, legend and height readout (T-039) ----
+const RAMPS = {
+  low: { label: 'Low', stops: [[0, '#00ff00'], [1000, '#ffff00'], [3000, '#ffffff']] },
+  alt: { label: 'Alt', stops: [[500, '#000000'], [500, '#ff0000'], [100, '#0000ff']] }, // unsorted and with a repeated height
+};
+const COLOR_TERRAIN = { ...TERRAIN, color: { opacity: 0.6, ramp: 'low', ramps: RAMPS } };
+/** A page with the colour terrain chosen, and the handlers of the relief controls captured by their selector. */
+function bootRelief(terrain = COLOR_TERRAIN) {
+  const handlers = {};
+  const b = boot({
+    before: (p) => {
+      withTerrain(terrain)(p);
+      p.el('#relief-color').checked = p.el('#relief-shade').checked = true; // checked in index.html
+      ['#relief-color', '#relief-shade', '#relief-ramp', '#relief-opacity', '#relief-strength'].forEach((sel) => {
+        p.el(sel).addEventListener = (name, fn) => (handlers[sel] = fn);
+      });
+    },
+  });
+  b.switchBasemap('@relief');
+  const layer = (id) => b.ml.rec.layers.find((l) => l.id === id);
+  const change = (sel, props) => {
+    Object.assign(b.p.el(sel), props);
+    handlers[sel]({ target: b.p.el(sel) });
+  };
+  return { ...b, layer, change, handlers };
+}
+
+test('map: relief colours: the shipped config has ramps in metres with rising stops and a valid default', () => {
+  const t = load(['config.js']).X('AHM_CONFIG.basemap.terrain');
+  const ramps = Object.entries(t.color.ramps);
+  ok(ramps.length >= 4, 'several ramps to choose from: ' + ramps.length);
+  ok(t.color.ramps[t.color.ramp], 'the default ramp exists: ' + t.color.ramp);
+  ok(t.color.opacity > 0 && t.color.opacity <= 1, 'opacity ' + t.color.opacity);
+  for (const [id, r] of ramps) {
+    ok(r.label && r.stops.length >= 2, id);
+    r.stops.forEach(([m, c], i) => {
+      ok(Number.isFinite(m) && /^#[0-9a-f]{6}$/i.test(c), id + ' stop ' + i + ': ' + m + ' ' + c);
+      ok(i === 0 || m > r.stops[i - 1][0], id + ': heights rise');
+    });
+  }
+});
+
+test('map: relief colours: the colour layer is a color-relief layer under the hillshade, with the ramp as an elevation expression', () => {
+  const { ml, layer } = bootRelief();
+  const c = layer('ahm-relief-color');
+  eq('color-relief', c.type);
+  eq('ahm-terrain', c.source);
+  eq('base-label', ml.rec.before['ahm-relief-color'], 'below the first base symbol layer, like the hillshade');
+  ok(ml.rec.layers.indexOf(c) < ml.rec.layers.indexOf(layer('ahm-relief')), 'the shading stays above the colours');
+  eq(['interpolate', ['linear'], ['elevation'], 0, '#00ff00', 1000, '#ffff00', 3000, '#ffffff'], c.paint['color-relief-color']);
+  eq(0.6, c.paint['color-relief-opacity']);
+});
+
+test('map: relief colours: stops are sorted and a repeated height is nudged up (MapLibre needs rising stops)', () => {
+  const { layer, change } = bootRelief();
+  change('#relief-ramp', { value: 'alt' });
+  const e = layer('ahm-relief-color').paint['color-relief-color'];
+  eq(['interpolate', ['linear'], ['elevation'], 100, '#0000ff', 500, '#000000', 500.1, '#ff0000'], e);
+});
+
+test('map: relief colours: without a color section in the config only the hillshade exists (nothing changes)', () => {
+  const { ml, layer, p } = bootRelief(TERRAIN);
+  ok(layer('ahm-relief'), 'hillshade');
+  ok(!layer('ahm-relief-color'), 'no colour layer');
+  ok(p.el('#relief-opts').hidden, 'no controls');
+  ok(!ml.rec.handlers.mousemove, 'no height readout');
+});
+
+test('map: relief colours: the controls switch colour and shading, set the strengths and follow the base-map choice', () => {
+  const { p, layer, change, switchBasemap } = bootRelief();
+  ok(!p.el('#relief-opts').hidden, 'controls are shown with the relief');
+  change('#relief-color', { checked: false });
+  eq('none', layer('ahm-relief-color').layout.visibility);
+  eq('visible', layer('ahm-relief').layout.visibility);
+  change('#relief-color', { checked: true });
+  change('#relief-shade', { checked: false });
+  eq('visible', layer('ahm-relief-color').layout.visibility);
+  eq('none', layer('ahm-relief').layout.visibility);
+  change('#relief-shade', { checked: true });
+  change('#relief-opacity', { value: '0.3' });
+  eq(0.3, layer('ahm-relief-color').paint['color-relief-opacity']);
+  change('#relief-strength', { value: '0.8' });
+  eq(0.8, layer('ahm-relief').paint['hillshade-exaggeration']);
+  switchBasemap('');
+  ok(p.el('#relief-opts').hidden, 'hidden on the plain map');
+  eq('none', layer('ahm-relief-color').layout.visibility);
+  eq('none', layer('ahm-relief').layout.visibility);
+});
+
+test('map: relief colours: the legend shows the ramp in metres and the ramp list comes from the config', () => {
+  const { p, change } = bootRelief();
+  ok(/Low/.test(p.el('#relief-ramp').innerHTML) && /Alt/.test(p.el('#relief-ramp').innerHTML), p.el('#relief-ramp').innerHTML);
+  eq('low', p.el('#relief-ramp').value);
+  ok(/linear-gradient/.test(p.el('#relief-legend').style.background), p.el('#relief-legend').style.background);
+  ok(/0 m|>0</.test(p.el('#relief-ticks').innerHTML) && /3000/.test(p.el('#relief-ticks').innerHTML), p.el('#relief-ticks').innerHTML);
+  change('#relief-ramp', { value: 'alt' });
+  ok(/>100</.test(p.el('#relief-ticks').innerHTML), 'the legend follows the ramp: ' + p.el('#relief-ticks').innerHTML);
+});
+
+test('map: relief colours: moving the mouse shows the height in metres read from the Terrarium tile', async () => {
+  const urls = [];
+  const { p, ml } = bootRelief();
+  // a 2x2 tile whose pixels are all R=131 G=232 B=0: 131*256 + 232 - 32768 = 1000 m
+  Object.assign(p.ctx, {
+    fetch: async (u) => (urls.push(u), { blob: async () => ({}) }),
+    createImageBitmap: async () => ({ width: 2, height: 2 }),
+    OffscreenCanvas: function () {
+      return {
+        getContext: () => ({ drawImage() {}, getImageData: () => ({ width: 2, height: 2, data: new Uint8ClampedArray([131, 232, 0, 255].concat([131, 232, 0, 255], [131, 232, 0, 255], [131, 232, 0, 255])) }) }),
+      };
+    },
+  });
+  ml.fire('mousemove', { lngLat: { lng: 44.5, lat: 40 } });
+  await new Promise((r) => setTimeout(r, 0));
+  eq(['https://forum.example/ahm-terrain/v1/7/79/48.webp'], urls, 'tile of lng 44.5, lat 40 at zoom 7');
+  eq('Height: 1,000 m', p.el('#relief-height').textContent);
+  ml.fire('mousemove', { lngLat: { lng: 44.51, lat: 40.01 } });
+  await new Promise((r) => setTimeout(r, 0));
+  eq(1, urls.length, 'the same tile is not fetched twice');
+});

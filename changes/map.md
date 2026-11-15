@@ -67,3 +67,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `app/js/config.js`, `app/dist/`, `tests/js/map.test.js` (one test: the shipped config).
 - **How to verify:** `node tests/js/run.js "shipped config"`. By eye (not done: no browser in the sandbox): choose "Map + relief".
 - **Follow-ups:** the AWS endpoint, its CORS headers, the attribution wording and the licence were not checked from the sandbox (S3 is blocked).
+
+## 2026-11-15 — Relief colours by height, controls, legend, height readout (T-039)
+
+- **What:** MapLibre 4.7.1 -> 5.24.1 in `app/index.html` (the `color-relief` layer exists from 5.6.0; checked in the npm package). `basemap.terrain.color` in `config.js`: `ramp` (first one), `opacity`, `ramps` (id -> label + [metres, colour] stops). With it, "Map + relief" adds layer `ahm-relief-color` (type `color-relief`, elevation expression) under the hillshade. Controls in `#relief-opts` (index.html, filled by `map.js`): colour on/off, shading on/off, ramp list, two strength sliders, legend in metres, and `#relief-height` ("Height: 1,234 m" under the mouse, decoded from the Terrarium tile with fetch + OffscreenCanvas, no 3D terrain). Without `color` in the config nothing of this exists.
+- **Why:** the plain hillshade shows neither heights nor the difference between low and high places (owner).
+- **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (7 tests, mocks for fetch/createImageBitmap/OffscreenCanvas).
+- **How to verify:** `node tests/js/run.js "relief colours"`. By eye (not done: no browser in the sandbox): choose "Map + relief"; move the mouse (metres), change ramp and strengths; check that markers, routes, borders and satellite still work with MapLibre 5.
+- **Follow-ups:** the MapLibre upgrade is only tested against the stand-in; the height readout needs CORS headers from the tile server.

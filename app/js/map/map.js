@@ -65,6 +65,19 @@ const terrainOn = () => {
   const t = AHM_CONFIG.basemap.terrain;
   return !!(t && t.tiles && t.tiles.length);
 };
+// Relief settings the controls change. `color` exists only when the config has a `terrain.color` section.
+const relief = { color: true, shade: true, ramp: null, opacity: 0.65, strength: 0.5 };
+const colorOn = () => !!(terrainOn() && AHM_CONFIG.basemap.terrain.color && AHM_CONFIG.basemap.terrain.color.ramps);
+// MapLibre needs strictly rising stops: sort by height, and nudge a repeated height up by 0.1 m.
+function rampExpression(stops) {
+  const s = stops.map(([m, c]) => [Number(m), c]).sort((a, b) => a[0] - b[0]);
+  for (let i = 1; i < s.length; i++) if (s[i][0] <= s[i - 1][0]) s[i][0] = s[i - 1][0] + 0.1;
+  return ["interpolate", ["linear"], ["elevation"], ...s.flat()];
+}
+const rampStops = () => {
+  const r = AHM_CONFIG.basemap.terrain.color.ramps;
+  return (r[relief.ramp] || r[Object.keys(r)[0]]).stops;
+};
 // Hillshade from our own terrain tiles. Added when first chosen, so nothing is requested until then. It goes below the first base-map
 // symbol layer: labels, markers and our own layers stay above it.
 function ensureRelief() {
@@ -83,15 +96,28 @@ function ensureRelief() {
   const before =
     layers.find((l) => l.type === "symbol" && !l.id.startsWith("ahm-")) ||
     layers.find((l) => l.id.startsWith("ahm-") && !l.id.startsWith("ahm-sat-"));
+  if (colorOn())
+    map.addLayer(
+      {
+        id: "ahm-relief-color",
+        type: "color-relief",
+        source: "ahm-terrain",
+        paint: { "color-relief-color": rampExpression(rampStops()), "color-relief-opacity": relief.opacity },
+      },
+      before && before.id,
+    );
   map.addLayer(
-    { id: "ahm-relief", type: "hillshade", source: "ahm-terrain", paint: { ...t.paint } },
+    { id: "ahm-relief", type: "hillshade", source: "ahm-terrain", paint: { ...t.paint, "hillshade-exaggeration": relief.strength } },
     before && before.id,
   );
 }
 function applyVis() {
   if (view.relief) ensureRelief();
   if (map.getLayer("ahm-relief"))
-    map.setLayoutProperty("ahm-relief", "visibility", view.relief ? "visible" : "none");
+    map.setLayoutProperty("ahm-relief", "visibility", view.relief && relief.shade ? "visible" : "none");
+  if (map.getLayer("ahm-relief-color"))
+    map.setLayoutProperty("ahm-relief-color", "visibility", view.relief && relief.color ? "visible" : "none");
+  $("#relief-opts").hidden = !(view.relief && colorOn());
   map.getStyle().layers.forEach((l) => {
     if (l.id.startsWith("ahm-")) return;
     const g = Object.keys(GROUPS).find((k) =>
@@ -137,6 +163,7 @@ function initMap() {
       .map((s) => `<option value="${s.id}">${s.label}</option>`)
       .join("") +
     (terrainOn() ? `<option value="${RELIEF}">Map + relief</option>` : "");
+  initReliefControls();
   map.on("error", (e) => {
     if (e.sourceId === "ahm-terrain")
       $("#status").textContent =
@@ -458,6 +485,91 @@ function initMap() {
     $("#status").textContent = "";
     applyVis();
   });
+}
+
+// ---- relief colours, controls and height readout (T-039) ----
+function drawReliefLegend() {
+  const st = rampStops().map(([m, c]) => [Number(m), c]).sort((a, b) => a[0] - b[0]);
+  const lo = st[0][0];
+  const span = st[st.length - 1][0] - lo || 1;
+  $("#relief-legend").style.background =
+    "linear-gradient(to right, " + st.map(([m, c]) => c + " " + (((m - lo) / span) * 100).toFixed(1) + "%").join(", ") + ")";
+  $("#relief-ticks").innerHTML = st.map(([m]) => "<span>" + Math.round(m) + "</span>").join("");
+  $("#relief-ticks").title = "metres above sea level";
+}
+function initReliefControls() {
+  if (!colorOn()) return;
+  const c = AHM_CONFIG.basemap.terrain.color;
+  relief.ramp = c.ramps[c.ramp] ? c.ramp : Object.keys(c.ramps)[0];
+  relief.opacity = c.opacity;
+  relief.strength = AHM_CONFIG.basemap.terrain.paint["hillshade-exaggeration"];
+  $("#relief-ramp").innerHTML = Object.keys(c.ramps)
+    .map((id) => `<option value="${id}">${esc(c.ramps[id].label)}</option>`)
+    .join("");
+  $("#relief-ramp").value = relief.ramp;
+  $("#relief-opacity").value = relief.opacity;
+  $("#relief-strength").value = relief.strength;
+  drawReliefLegend();
+  const onChange = () => {
+    relief.color = $("#relief-color").checked;
+    relief.shade = $("#relief-shade").checked;
+    relief.ramp = $("#relief-ramp").value;
+    relief.opacity = Number($("#relief-opacity").value);
+    relief.strength = Number($("#relief-strength").value);
+    if (map.getLayer("ahm-relief-color")) {
+      map.setPaintProperty("ahm-relief-color", "color-relief-color", rampExpression(rampStops()));
+      map.setPaintProperty("ahm-relief-color", "color-relief-opacity", relief.opacity);
+    }
+    if (map.getLayer("ahm-relief")) map.setPaintProperty("ahm-relief", "hillshade-exaggeration", relief.strength);
+    drawReliefLegend();
+    applyVis();
+  };
+  ["#relief-color", "#relief-shade", "#relief-ramp"].forEach((id) => $(id).addEventListener("change", onChange));
+  ["#relief-opacity", "#relief-strength"].forEach((id) => $(id).addEventListener("input", onChange));
+  map.on("mousemove", showHeight);
+}
+// The height under the mouse is read from the Terrarium tile itself (metres = R*256 + G + B/256 - 32768), so no 3D terrain is needed.
+// A fetched tile stays in a small cache. Without CORS headers on the tile server the fetch fails and the readout stays empty.
+const heightTiles = new Map();
+let heightBusy = false;
+async function heightAt(lng, lat) {
+  const t = AHM_CONFIG.basemap.terrain;
+  if (t.encoding !== "terrarium") return null;
+  const z = Math.max(0, Math.min(t.maxzoom, Math.round(map.getZoom())));
+  const n = 2 ** z;
+  const fx = ((lng + 180) / 360) * n;
+  const sn = Math.sin((lat * Math.PI) / 180);
+  const fy = (0.5 - Math.log((1 + sn) / (1 - sn)) / (4 * Math.PI)) * n;
+  const x = Math.floor(fx);
+  const y = Math.floor(fy);
+  if (y < 0 || y >= n) return null;
+  const xw = ((x % n) + n) % n;
+  const key = z + "/" + xw + "/" + y;
+  let img = heightTiles.get(key);
+  if (!img) {
+    const url = t.tiles[0].replace("{z}", z).replace("{x}", xw).replace("{y}", y);
+    const bmp = await createImageBitmap(await (await fetch(url)).blob(), { colorSpaceConversion: "none" });
+    const cx = new OffscreenCanvas(bmp.width, bmp.height).getContext("2d", { willReadFrequently: true });
+    cx.drawImage(bmp, 0, 0);
+    img = cx.getImageData(0, 0, bmp.width, bmp.height);
+    if (heightTiles.size >= 40) heightTiles.delete(heightTiles.keys().next().value);
+    heightTiles.set(key, img);
+  }
+  const px = Math.min(img.width - 1, Math.floor((fx - x) * img.width));
+  const py = Math.min(img.height - 1, Math.floor((fy - y) * img.height));
+  const i = (py * img.width + px) * 4;
+  return img.data[i] * 256 + img.data[i + 1] + img.data[i + 2] / 256 - 32768;
+}
+async function showHeight(e) {
+  if (!view.relief || heightBusy) return;
+  heightBusy = true;
+  try {
+    const h = await heightAt(e.lngLat.lng, e.lngLat.lat);
+    $("#relief-height").textContent = h == null ? "" : "Height: " + Math.round(h).toLocaleString("en") + " m";
+  } catch (err) {
+    $("#relief-height").textContent = "";
+  }
+  heightBusy = false;
 }
 
 // ---- hover and tooltip (task 008) ----

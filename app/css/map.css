@@ -153,3 +153,12 @@ body:not(.collapsed) .maplibregl-ctrl-bottom-left {
   justify-content: center;
 }
 
+/* Relief controls under the base-map list (js/map/map.js) */
+#relief-opts { margin-top: 6px; font-size: 12px; }
+#relief-opts label { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+#relief-opts select { width: 100%; margin: 2px 0; }
+#relief-opts input[type="range"] { flex: 1; min-width: 0; }
+#relief-legend { height: 12px; border: 1px solid #888; border-radius: 3px; margin-top: 6px; }
+#relief-ticks { display: flex; justify-content: space-between; font-size: 10px; }
+#relief-height { margin-top: 4px; font-variant-numeric: tabular-nums; min-height: 1.3em; }
+

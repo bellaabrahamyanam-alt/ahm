@@ -6,7 +6,7 @@
     <title>Armenian Highlands Map</title>
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+      href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.1/dist/maplibre-gl.css"
     />
     <!-- ahm:css -->
     <link rel="stylesheet" href="css/base.css" />
@@ -75,6 +75,16 @@
         <details class="fold" id="more-maps"><summary>Maps &amp; base map</summary><div class="fold-body">
           <div class="sn">Base map</div>
           <select id="basemap"></select>
+          <div id="relief-opts" hidden>
+            <label><input type="checkbox" id="relief-color" checked /> Colour by height</label>
+            <label><input type="checkbox" id="relief-shade" checked /> Shading</label>
+            <select id="relief-ramp" aria-label="Colour ramp"></select>
+            <label>Colour strength <input type="range" id="relief-opacity" min="0" max="1" step="0.05" /></label>
+            <label>Shading strength <input type="range" id="relief-strength" min="0" max="1" step="0.05" /></label>
+            <div id="relief-legend"></div>
+            <div id="relief-ticks"></div>
+            <div id="relief-height"></div>
+          </div>
           <div id="status" class="sn"></div>
           <div class="label">Show on map</div>
           <div id="groups"></div>
@@ -265,7 +275,7 @@
       <div id="lyErr2" class="sn"></div>
     </dialog>
     <!-- /region:sidebar -->
-    <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.1/dist/maplibre-gl.js"></script>
     <!-- ahm:js -->
     <script src="js/config.js"></script>
     <script src="js/ahm.js"></script>
