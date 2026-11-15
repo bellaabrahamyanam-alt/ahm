@@ -97,6 +97,7 @@ function makeMapLibre() {
     flyTo() {},
     fitBounds() {},
     getZoom: () => 7,
+    getBounds: () => ({ getWest: () => 43, getEast: () => 44.5, getSouth: () => 40, getNorth: () => 40.5 }),
   };
   const fire = (name, arg) => {
     if (name === 'load') rec.loaded = true;
@@ -1204,15 +1205,30 @@ const RAMPS = {
   low: { label: 'Low', stops: [[0, '#00ff00'], [1000, '#ffff00'], [3000, '#ffffff']] },
   alt: { label: 'Alt', stops: [[500, '#000000'], [500, '#ff0000'], [100, '#0000ff']] }, // unsorted and with a repeated height
 };
-const COLOR_TERRAIN = { ...TERRAIN, color: { opacity: 0.6, ramp: 'low', ramps: RAMPS } };
+const COLOR_TERRAIN = { ...TERRAIN, color: { opacity: 0.6, ramp: 'low', adapt: true, ramps: RAMPS } };
 /** A page with the colour terrain chosen, and the handlers of the relief controls captured by their selector. */
-function bootRelief(terrain = COLOR_TERRAIN) {
+/** A Terrarium tile of w x 1 pixels: each pixel is [R, G, B]; 129,244,0 = 500 m and 137,0,0 = 2304 m (R*256 + G + B/256 - 32768). */
+const tileMock = (pixels) => ({
+  fetch: async () => ({ blob: async () => ({}) }),
+  createImageBitmap: async () => ({ width: pixels.length, height: 1 }),
+  OffscreenCanvas: function () {
+    return {
+      getContext: () => ({
+        drawImage() {},
+        getImageData: () => ({ width: pixels.length, height: 1, data: new Uint8ClampedArray(pixels.flatMap((q) => [...q, 255])) }),
+      }),
+    };
+  },
+});
+const idle = () => new Promise((r) => setTimeout(r, 20));
+function bootRelief(terrain = COLOR_TERRAIN, tile = null) {
   const handlers = {};
   const b = boot({
     before: (p) => {
       withTerrain(terrain)(p);
-      p.el('#relief-color').checked = p.el('#relief-shade').checked = true; // checked in index.html
-      ['#relief-color', '#relief-shade', '#relief-ramp', '#relief-opacity', '#relief-strength'].forEach((sel) => {
+      Object.assign(p.ctx, tile ? tileMock(tile) : {}, { setTimeout: (f) => (Promise.resolve().then(f), 1), clearTimeout() {} }); // no 250 ms wait
+      p.el('#relief-color').checked = p.el('#relief-shade').checked = p.el('#relief-adapt').checked = true; // checked in index.html
+      ['#relief-color', '#relief-shade', '#relief-adapt', '#relief-ramp', '#relief-opacity', '#relief-strength'].forEach((sel) => {
         p.el(sel).addEventListener = (name, fn) => (handlers[sel] = fn);
       });
     },
@@ -1318,4 +1334,33 @@ test('map: relief colours: moving the mouse shows the height in metres read from
   ml.fire('mousemove', { lngLat: { lng: 44.51, lat: 40.01 } });
   await new Promise((r) => setTimeout(r, 0));
   eq(1, urls.length, 'the same tile is not fetched twice');
+});
+
+test('map: relief colours: the shipped config says whether the colours adapt to the view', () => {
+  eq('boolean', typeof load(['config.js']).X('AHM_CONFIG.basemap.terrain.color.adapt'));
+});
+
+test('map: relief colours: the ramp is stretched over the heights in view (2nd to 98th percentile) and follows the map when it moves', async () => {
+  // a 2 pixel tile, 500 m and 2304 m: the view (43-44.5 E, 40-40.5 N at zoom 7) lies in tile x=79 (42.19-45 E) and covers both of its halves
+  const { ml, layer, p } = bootRelief(COLOR_TERRAIN, [[129, 244, 0], [137, 0, 0]]);
+  await idle();
+  const e = layer('ahm-relief-color').paint['color-relief-color'];
+  eq(500, e[3], 'lowest stop at the lowest height in view');
+  eq(2304, e[7], 'highest stop at the highest height in view');
+  ok(Math.abs(e[5] - (500 + (1000 / 3000) * 1804)) < 0.01, 'the middle stop keeps its relative place: ' + e[5]);
+  eq('#00ff00', e[4]);
+  ok(/>500</.test(p.el('#relief-ticks').innerHTML) && />2304</.test(p.el('#relief-ticks').innerHTML), p.el('#relief-ticks').innerHTML);
+  ok(ml.rec.handlers.moveend && ml.rec.handlers.moveend.length, 'the map listens to moveend');
+});
+
+test('map: relief colours: a flat view gets at least 20 m of range, and "adapt" off brings the fixed ramp back', async () => {
+  const { layer, change, ml } = bootRelief(COLOR_TERRAIN, [[131, 232, 0]]); // 1000 m everywhere
+  await idle();
+  const e = layer('ahm-relief-color').paint['color-relief-color'];
+  eq([1000, 1020], [e[3], e[7]]);
+  change('#relief-adapt', { checked: false });
+  eq(['interpolate', ['linear'], ['elevation'], 0, '#00ff00', 1000, '#ffff00', 3000, '#ffffff'], layer('ahm-relief-color').paint['color-relief-color']);
+  ml.fire('moveend');
+  await idle();
+  eq(0, layer('ahm-relief-color').paint['color-relief-color'][3], 'no stretching while "adapt" is off');
 });

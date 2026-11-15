@@ -75,3 +75,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (7 tests, mocks for fetch/createImageBitmap/OffscreenCanvas).
 - **How to verify:** `node tests/js/run.js "relief colours"`. By eye (not done: no browser in the sandbox): choose "Map + relief"; move the mouse (metres), change ramp and strengths; check that markers, routes, borders and satellite still work with MapLibre 5.
 - **Follow-ups:** the MapLibre upgrade is only tested against the stand-in; the height readout needs CORS headers from the tile server.
+
+## 2026-11-15 — Relief colours adapt to the view (T-039, addition)
+
+- **What:** `basemap.terrain.color.adapt` (default true) and the checkbox `#relief-adapt` ("Adapt colours to the view"). After the map stops moving (`moveend`, 250 ms debounce) `map.js` reads a 16 x 16 grid of heights in view from the Terrarium tiles (same tile cache as the height readout, now a cache of promises: one fetch per tile), takes the 2nd and 98th percentile (at least 20 m apart) and stretches the chosen ramp so its first stop is the lowest and its last stop the highest height in view. The legend shows the stretched metres. Off = the fixed metres of the ramp.
+- **Why:** the owner wanted the colours to change with zooming, as on topographic-map.com. Assumption: that site rescales the colours to the visible heights; its page text does not say so and its map is script-drawn, so this was not checked.
+- **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/index.html`, `app/dist/`, `tests/js/map.test.js` (3 tests; the stand-in got `getBounds`).
+- **How to verify:** `node tests/js/run.js "relief colours"`. By eye (not done): zoom into a valley and onto a peak; the colours should use the full ramp each time.
+- **Follow-ups:** none known; a view over the sea reads the sea level of the tiles as 0 m.

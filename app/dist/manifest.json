@@ -1,5 +1,5 @@
 {
-  "hash": "75b2e716d9a95539bd2e9e379edac56facce6e0915d7d9638fece45fb80593b2",
+  "hash": "1c4c4a28634ab3eeda09642cd95d92b13568c942ce68c9209f707fe6f161532c",
   "js": [
     "js/config.js",
     "js/ahm.js",
@@ -37,7 +37,7 @@
     "css/shapes.css"
   ],
   "bytes": {
-    "app.min.js": 198161,
+    "app.min.js": 199472,
     "app.min.css": 23455
   }
 }

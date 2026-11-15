@@ -105,6 +105,7 @@ const AHM_CONFIG = {
       color: {
         ramp: "armenia",
         opacity: 0.65, // 0 = no colour, 1 = fully covers the map
+        adapt: true, // stretch the ramp over the heights in view, so the colours change as you zoom and move; false = the fixed metres of the ramp
         ramps: {
           armenia: {
             label: "Armenia (350-4100 m)",

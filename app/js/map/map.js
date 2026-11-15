@@ -66,7 +66,7 @@ const terrainOn = () => {
   return !!(t && t.tiles && t.tiles.length);
 };
 // Relief settings the controls change. `color` exists only when the config has a `terrain.color` section.
-const relief = { color: true, shade: true, ramp: null, opacity: 0.65, strength: 0.5 };
+const relief = { color: true, shade: true, ramp: null, opacity: 0.65, strength: 0.5, adapt: true, range: null }; // range = [low, high] metres in view
 const colorOn = () => !!(terrainOn() && AHM_CONFIG.basemap.terrain.color && AHM_CONFIG.basemap.terrain.color.ramps);
 // MapLibre needs strictly rising stops: sort by height, and nudge a repeated height up by 0.1 m.
 function rampExpression(stops) {
@@ -74,9 +74,18 @@ function rampExpression(stops) {
   for (let i = 1; i < s.length; i++) if (s[i][0] <= s[i - 1][0]) s[i][0] = s[i - 1][0] + 0.1;
   return ["interpolate", ["linear"], ["elevation"], ...s.flat()];
 }
-const rampStops = () => {
+const baseStops = () => {
   const r = AHM_CONFIG.basemap.terrain.color.ramps;
-  return (r[relief.ramp] || r[Object.keys(r)[0]]).stops;
+  return (r[relief.ramp] || r[Object.keys(r)[0]]).stops.map(([m, c]) => [Number(m), c]).sort((a, b) => a[0] - b[0]);
+};
+// With "adapt" the ramp is stretched so that its first stop is the lowest and its last stop the highest height in view.
+const rampStops = () => {
+  const b = baseStops();
+  if (!relief.adapt || !relief.range) return b;
+  const [lo, hi] = relief.range;
+  const m0 = b[0][0];
+  const span = b[b.length - 1][0] - m0 || 1;
+  return b.map(([m, c]) => [lo + ((m - m0) / span) * (hi - lo), c]);
 };
 // Hillshade from our own terrain tiles. Added when first chosen, so nothing is requested until then. It goes below the first base-map
 // symbol layer: labels, markers and our own layers stay above it.
@@ -484,12 +493,13 @@ function initMap() {
     view.sat = v && v !== RELIEF ? v : null;
     $("#status").textContent = "";
     applyVis();
+    scheduleAdapt();
   });
 }
 
 // ---- relief colours, controls and height readout (T-039) ----
 function drawReliefLegend() {
-  const st = rampStops().map(([m, c]) => [Number(m), c]).sort((a, b) => a[0] - b[0]);
+  const st = rampStops();
   const lo = st[0][0];
   const span = st[st.length - 1][0] - lo || 1;
   $("#relief-legend").style.background =
@@ -502,6 +512,8 @@ function initReliefControls() {
   const c = AHM_CONFIG.basemap.terrain.color;
   relief.ramp = c.ramps[c.ramp] ? c.ramp : Object.keys(c.ramps)[0];
   relief.opacity = c.opacity;
+  relief.adapt = c.adapt !== false;
+  $("#relief-adapt").checked = relief.adapt;
   relief.strength = AHM_CONFIG.basemap.terrain.paint["hillshade-exaggeration"];
   $("#relief-ramp").innerHTML = Object.keys(c.ramps)
     .map((id) => `<option value="${id}">${esc(c.ramps[id].label)}</option>`)
@@ -513,24 +525,60 @@ function initReliefControls() {
   const onChange = () => {
     relief.color = $("#relief-color").checked;
     relief.shade = $("#relief-shade").checked;
+    relief.adapt = $("#relief-adapt").checked;
     relief.ramp = $("#relief-ramp").value;
     relief.opacity = Number($("#relief-opacity").value);
     relief.strength = Number($("#relief-strength").value);
-    if (map.getLayer("ahm-relief-color")) {
-      map.setPaintProperty("ahm-relief-color", "color-relief-color", rampExpression(rampStops()));
-      map.setPaintProperty("ahm-relief-color", "color-relief-opacity", relief.opacity);
-    }
+    if (map.getLayer("ahm-relief-color")) map.setPaintProperty("ahm-relief-color", "color-relief-opacity", relief.opacity);
     if (map.getLayer("ahm-relief")) map.setPaintProperty("ahm-relief", "hillshade-exaggeration", relief.strength);
-    drawReliefLegend();
+    paintRamp();
     applyVis();
+    scheduleAdapt();
   };
-  ["#relief-color", "#relief-shade", "#relief-ramp"].forEach((id) => $(id).addEventListener("change", onChange));
+  ["#relief-color", "#relief-shade", "#relief-adapt", "#relief-ramp"].forEach((id) => $(id).addEventListener("change", onChange));
   ["#relief-opacity", "#relief-strength"].forEach((id) => $(id).addEventListener("input", onChange));
   map.on("mousemove", showHeight);
+  map.on("moveend", scheduleAdapt);
+}
+function paintRamp() {
+  if (map.getLayer("ahm-relief-color"))
+    map.setPaintProperty("ahm-relief-color", "color-relief-color", rampExpression(rampStops()));
+  drawReliefLegend();
+}
+// "Adapt": after the map stops moving, the colours are stretched over the heights now in view (a 16 x 16 grid read from the tiles).
+// The 2nd and 98th percentile are used so that one peak or one gorge does not flatten the rest; the range is at least 20 m.
+let adaptTimer = 0;
+function scheduleAdapt() {
+  if (!view.relief || !relief.adapt || !colorOn()) return;
+  clearTimeout(adaptTimer);
+  adaptTimer = setTimeout(adaptNow, 250);
+}
+async function viewRange() {
+  const b = map.getBounds();
+  const w = b.getWest();
+  const e = b.getEast();
+  const so = b.getSouth();
+  const n = b.getNorth();
+  const pts = [];
+  for (let i = 0; i < 16; i++)
+    for (let j = 0; j < 16; j++) pts.push([w + ((e - w) * (i + 0.5)) / 16, so + ((n - so) * (j + 0.5)) / 16]);
+  const hs = (await Promise.all(pts.map(([lng, lat]) => heightAt(lng, lat).catch(() => null))))
+    .filter((h) => h != null)
+    .sort((a, b2) => a - b2);
+  if (hs.length < 8) return null;
+  const lo = hs[Math.floor(0.02 * (hs.length - 1))];
+  const hi = Math.max(hs[Math.ceil(0.98 * (hs.length - 1))], lo + 20);
+  return [lo, hi];
+}
+async function adaptNow() {
+  const r = await viewRange();
+  if (!r || !view.relief || !relief.adapt) return;
+  relief.range = r;
+  paintRamp();
 }
 // The height under the mouse is read from the Terrarium tile itself (metres = R*256 + G + B/256 - 32768), so no 3D terrain is needed.
 // A fetched tile stays in a small cache. Without CORS headers on the tile server the fetch fails and the readout stays empty.
-const heightTiles = new Map();
+const heightTiles = new Map(); // key -> Promise of the tile pixels (one fetch even when many points ask at once)
 let heightBusy = false;
 async function heightAt(lng, lat) {
   const t = AHM_CONFIG.basemap.terrain;
@@ -545,16 +593,20 @@ async function heightAt(lng, lat) {
   if (y < 0 || y >= n) return null;
   const xw = ((x % n) + n) % n;
   const key = z + "/" + xw + "/" + y;
-  let img = heightTiles.get(key);
-  if (!img) {
+  let tile = heightTiles.get(key);
+  if (!tile) {
     const url = t.tiles[0].replace("{z}", z).replace("{x}", xw).replace("{y}", y);
-    const bmp = await createImageBitmap(await (await fetch(url)).blob(), { colorSpaceConversion: "none" });
-    const cx = new OffscreenCanvas(bmp.width, bmp.height).getContext("2d", { willReadFrequently: true });
-    cx.drawImage(bmp, 0, 0);
-    img = cx.getImageData(0, 0, bmp.width, bmp.height);
+    tile = (async () => {
+      const bmp = await createImageBitmap(await (await fetch(url)).blob(), { colorSpaceConversion: "none" });
+      const cx = new OffscreenCanvas(bmp.width, bmp.height).getContext("2d", { willReadFrequently: true });
+      cx.drawImage(bmp, 0, 0);
+      return cx.getImageData(0, 0, bmp.width, bmp.height);
+    })();
     if (heightTiles.size >= 40) heightTiles.delete(heightTiles.keys().next().value);
-    heightTiles.set(key, img);
+    heightTiles.set(key, tile);
+    tile.catch(() => heightTiles.delete(key)); // a failed fetch is tried again next time
   }
+  const img = await tile;
   const px = Math.min(img.width - 1, Math.floor((fx - x) * img.width));
   const py = Math.min(img.height - 1, Math.floor((fy - y) * img.height));
   const i = (py * img.width + px) * 4;
