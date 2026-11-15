@@ -83,3 +83,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/index.html`, `app/dist/`, `tests/js/map.test.js` (3 tests; the stand-in got `getBounds`).
 - **How to verify:** `node tests/js/run.js "relief colours"`. By eye (not done): zoom into a valley and onto a peak; the colours should use the full ramp each time.
 - **Follow-ups:** none known; a view over the sea reads the sea level of the tiles as 0 m.
+
+## 2026-11-15 — Relief panel on the map, ramp editor, contour lines, height profile (T-039, addition)
+
+- **What:** the relief controls moved from the sidebar to a panel on the map (`#relief-opts`, right side, in `region:map` of `index.html`; collapsible). New: **ramp editor** (edit heights and colours, add and remove stops, "Custom (edited)" entry, Reset); **contour lines** (checkbox, step automatic from the zoom or 10-1000 m; lines and labels of every 5th line from a 96 x 72 grid of heights in view, marching squares in `contourLines`, layers `ahm-contour` and `ahm-contour-label`, source `ahm-contours`); **height profile** (button "Draw height profile": clicks on the map add points, a chart with length, min, max, ascent and descent; source `ahm-profile`; the map click and double-click handlers step aside while drawing); **saved settings** (localStorage `ahm-relief`: ramp, custom stops, strengths, switches, contour step). The adaptive range now reads the same grid as the contours; tile reading is `locate`/`tileOf`/`sampleAt` (one fetch per tile).
+- **Why:** the owner: "everything sits in the sidebar, no ramp editor; missing contour lines and a height profile".
+- **Files:** `app/js/map/map.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (stand-in got `getBounds`).
+- **How to verify:** `node tests/js/run.js "map"`. By eye (not done: no browser here): panel position on desktop and phone, editing colours, contour lines and their labels at several zooms, drawing a profile across a mountain.
+- **Follow-ups:** contour lines come from the tile heights (smooth at low zoom, blocky at the highest zoom); the ascent/descent of the profile is the raw sum of height steps (a rough figure); profile hover and drag-to-edit are not there.

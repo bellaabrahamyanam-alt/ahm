@@ -7,7 +7,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 | domain | files | lines | largest file |
 |---|---|---|---|
 | sidebar | 12 | 3375 | `app/js/sidebar/layers.js` (691) |
-| map | 4 | 1910 | `app/js/map/map.js` (881) |
+| map | 4 | 2227 | `app/js/map/map.js` (1198) |
 | core | 7 | 933 | `app/js/core/dates.js` (296) |
 | state | 1 | 43 | `app/js/state/state.js` (43) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
@@ -16,7 +16,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 ## Flags
 
-- `app/js/map/map.js` has 881 lines (limit 600); owner: map
+- `app/js/map/map.js` has 1198 lines (limit 600); owner: map
 - `app/js/sidebar/layers.js` has 691 lines (limit 600); owner: sidebar
 - `app/js/sidebar/routes.js` has 629 lines (limit 600); owner: sidebar
 - `dev/save-handler.js` has 1126 lines (limit 600); owner: data
@@ -34,7 +34,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - map -> sidebar: 7 names (btns, edit, focusPlace +4)
 - sidebar -> core: 71 names (BORDER_TYPES, DATE_FORMATS, MONTHS +68)
 - sidebar -> data: 3 names (layerSave, path, save)
-- sidebar -> map: 5 names (drawShape, hideMenu, showMenu +2)
+- sidebar -> map: 6 names (drawShape, hideMenu, locate +3)
 - state -> core: 1 name (state)
 
 ## Where to look (by file name)

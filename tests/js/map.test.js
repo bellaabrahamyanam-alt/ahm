@@ -1228,8 +1228,9 @@ function bootRelief(terrain = COLOR_TERRAIN, tile = null) {
       withTerrain(terrain)(p);
       Object.assign(p.ctx, tile ? tileMock(tile) : {}, { setTimeout: (f) => (Promise.resolve().then(f), 1), clearTimeout() {} }); // no 250 ms wait
       p.el('#relief-color').checked = p.el('#relief-shade').checked = p.el('#relief-adapt').checked = true; // checked in index.html
-      ['#relief-color', '#relief-shade', '#relief-adapt', '#relief-ramp', '#relief-opacity', '#relief-strength'].forEach((sel) => {
-        p.el(sel).addEventListener = (name, fn) => (handlers[sel] = fn);
+      p.el('#relief-contours').checked = false; // off in index.html
+      ['#relief-color', '#relief-shade', '#relief-adapt', '#relief-ramp', '#relief-opacity', '#relief-strength', '#relief-contours', '#relief-interval', '#relief-stops', '#relief-add', '#relief-reset', '#relief-profile-btn', '#relief-profile-clear'].forEach((sel) => {
+        p.el(sel).addEventListener = (name, fn) => (handlers[sel] = handlers[sel + ':' + name] = fn);
       });
     },
   });
@@ -1363,4 +1364,123 @@ test('map: relief colours: a flat view gets at least 20 m of range, and "adapt" 
   ml.fire('moveend');
   await idle();
   eq(0, layer('ahm-relief-color').paint['color-relief-color'][3], 'no stretching while "adapt" is off');
+});
+
+// ---- ramp editor, contour lines, height profile, saved settings (T-039, second part) ----
+const lastColor = (layer) => layer('ahm-relief-color').paint['color-relief-color'];
+
+test('map: ramp editor: editing a stop makes a "custom" ramp, adding and removing stops works, reset goes back', () => {
+  const { p, layer, handlers, change } = bootRelief();
+  ok(/data-k="m"[^>]*value="0"/.test(p.el('#relief-stops').innerHTML) && /value="#00ff00"/.test(p.el('#relief-stops').innerHTML), p.el('#relief-stops').innerHTML);
+  handlers['#relief-stops:input']({ target: { dataset: { i: '1', k: 'm' }, value: '1200' } });
+  eq('__custom', p.el('#relief-ramp').value);
+  ok(/Custom/.test(p.el('#relief-ramp').innerHTML), 'the list has the custom entry');
+  eq(['interpolate', ['linear'], ['elevation'], 0, '#00ff00', 1200, '#ffff00', 3000, '#ffffff'], lastColor(layer), 'the edited height is used');
+  handlers['#relief-stops:input']({ target: { dataset: { i: '1', k: 'c' }, value: '#123456' } });
+  eq('#123456', lastColor(layer)[6]);
+  handlers['#relief-add']({});
+  eq(4, (p.el('#relief-stops').innerHTML.match(/data-k="m"/g) || []).length, 'a stop was added');
+  handlers['#relief-stops:click']({ target: { dataset: { act: 'del', i: '3' } } });
+  handlers['#relief-stops:click']({ target: { dataset: { act: 'del', i: '2' } } });
+  handlers['#relief-stops:click']({ target: { dataset: { act: 'del', i: '1' } } });
+  eq(2, (p.el('#relief-stops').innerHTML.match(/data-k="m"/g) || []).length, 'two stops stay: no deleting below two');
+  handlers['#relief-reset']({});
+  eq('low', p.el('#relief-ramp').value);
+  eq(3, (p.el('#relief-stops').innerHTML.match(/data-k="m"/g) || []).length);
+  ok(!/Custom/.test(p.el('#relief-ramp').innerHTML));
+  change('#relief-ramp', { value: 'alt' });
+  ok(/value="100"/.test(p.el('#relief-stops').innerHTML), 'the editor shows the chosen ramp');
+});
+
+test('map: settings are saved in localStorage and read again at the start', () => {
+  const saved = [];
+  const a = bootRelief();
+  a.p.ctx.localStorage = { getItem: () => null, setItem: (k, v) => saved.push([k, v]) };
+  a.change('#relief-opacity', { value: '0.2' });
+  const [key, json] = saved.at(-1);
+  eq('ahm-relief', key);
+  eq(0.2, JSON.parse(json).opacity);
+  const b = boot({
+    before: (p) => {
+      withTerrain(COLOR_TERRAIN)(p);
+      p.ctx.localStorage = { getItem: () => JSON.stringify({ ramp: 'alt', opacity: 0.2, strength: 0.9, contours: true }), setItem() {} };
+    },
+  });
+  eq('alt', b.p.el('#relief-ramp').value);
+  eq(0.2, b.p.el('#relief-opacity').value);
+  eq(0.9, b.p.el('#relief-strength').value);
+  eq(true, b.p.el('#relief-contours').checked);
+});
+
+test('map: contours: marching squares gives one closed line around a cone, and nothing for a flat or missing grid', () => {
+  const p = load(['typeicons.js', 'map.js']);
+  const n = 21;
+  const cone = Array.from({ length: n * n }, (_, k) => 100 - Math.hypot((k % n) - 10, Math.floor(k / n) - 10));
+  const lines = p.X('contourLines(__0, 21, 21, 95)', cone);
+  eq(1, lines.length);
+  const l = lines[0];
+  eq(l[0], l[l.length - 1], 'closed');
+  ok(l.length > 12, 'points: ' + l.length);
+  ok(l.every(([x, y]) => Math.abs(Math.hypot(x - 10, y - 10) - 5) < 0.05), 'all points lie on the circle of radius 5');
+  eq(0, p.X('contourLines(__0, 21, 21, 50)', cone).length, 'a level below the whole grid has no line');
+  eq(0, p.X('contourLines(__0, 21, 21, 100.5)', cone).length, 'a level above the whole grid has no line');
+  const holes = cone.map((v, k) => (k === 10 * 21 + 10 ? NaN : v));
+  ok(p.X('contourLines(__0, 21, 21, 99.5)', holes).length === 0, 'a cell with a missing corner makes no line');
+  // a ridge: the left half is high, the right half low -> one open line through the middle of the grid
+  const ridge = Array.from({ length: 6 * 4 }, (_, k) => ((k % 6) < 3 ? 10 : 0));
+  const r = p.X('contourLines(__0, 6, 4, 5)', ridge);
+  eq(1, r.length);
+  ok(r[0].every(([x]) => x === 2.5) && r[0].length === 4, JSON.stringify(r));
+});
+
+test('map: contours: lines are drawn for the heights in view with a step from the zoom, as GeoJSON with height and major flag', async () => {
+  // tile x=79: left half 500 m, right half 2304 m, the boundary at 43.59 E lies in the view (43-44.5 E)
+  const { ml, layer, change } = bootRelief(COLOR_TERRAIN, [[129, 244, 0], [137, 0, 0]]);
+  change('#relief-contours', { checked: true });
+  await idle();
+  const src = ml.rec.sources['ahm-contours'];
+  ok(src, 'source');
+  const f = src.data.features;
+  const hs = [...new Set(f.map((x) => x.properties.h))].sort((a, b) => a - b);
+  eq([1000, 1500, 2000], hs, 'every 500 m at zoom 7 (heights between 500 and 2304)');
+  ok(f.every((x) => x.geometry.type === 'LineString' && x.geometry.coordinates.length >= 2), 'lines');
+  ok(f.filter((x) => x.properties.h === 2500 || x.properties.h === 1000).every((x) => x.properties.major === (x.properties.h % 2500 === 0)), 'major every 5th step');
+  ok(layer('ahm-contour') && layer('ahm-contour-label'), 'line layer and label layer');
+  eq('line', layer('ahm-contour-label').layout['symbol-placement']);
+  ok(f[0].geometry.coordinates.every(([lng]) => lng > 43.5 && lng < 43.7), 'the line runs along the 500/2304 boundary: ' + f[0].geometry.coordinates[0]);
+});
+
+test('map: contours: off by default, the checkbox and the step list control them, and no lines outside the relief', async () => {
+  const { ml, layer, change, p, switchBasemap } = bootRelief(COLOR_TERRAIN, [[129, 244, 0], [137, 0, 0]]);
+  await idle();
+  ok(!ml.rec.sources['ahm-contours'] || ml.rec.sources['ahm-contours'].data.features.length === 0, 'nothing computed while off');
+  change('#relief-contours', { checked: true });
+  await idle();
+  ok(ml.rec.sources['ahm-contours'].data.features.length > 0, 'lines after switching on');
+  change('#relief-interval', { value: '1000' });
+  await idle();
+  eq([1000, 2000], [...new Set(ml.rec.sources['ahm-contours'].data.features.map((x) => x.properties.h))].sort((a, b) => a - b), 'a fixed 1000 m step');
+  change('#relief-contours', { checked: false });
+  eq('none', layer('ahm-contour').layout.visibility);
+  change('#relief-contours', { checked: true });
+  switchBasemap('');
+  eq('none', layer('ahm-contour').layout.visibility, 'hidden with the plain map');
+});
+
+test('map: height profile: clicks on the map add points, the length and heights are shown, clear removes them', async () => {
+  const { ml, handlers, p } = bootRelief(COLOR_TERRAIN, [[131, 232, 0]]); // 1000 m everywhere
+  handlers['#relief-profile-btn']({});
+  const click = (lng, lat) => ml.fire('click', { lngLat: { lng, lat }, point: { x: 0, y: 0 } });
+  click(44.0, 40.0);
+  click(44.0, 40.1);
+  click(44.1, 40.1);
+  await idle();
+  const info = p.el('#relief-profile-info').textContent;
+  ok(/19\.\d km/.test(info) || /18\.\d km/.test(info), 'length of two legs of ~11.1 km and ~8.5 km: ' + info);
+  ok(/min 1,000 m/.test(info) && /max 1,000 m/.test(info), info);
+  eq(3, ml.rec.sources['ahm-profile'].data.features.filter((f) => f.geometry.type === 'Point').length, 'three points');
+  handlers['#relief-profile-clear']({});
+  eq('', p.el('#relief-profile-info').textContent);
+  eq(0, ml.rec.sources['ahm-profile'].data.features.length);
+  eq('Draw height profile', p.el('#relief-profile-btn').textContent, 'clear also leaves the drawing mode');
 });
