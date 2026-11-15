@@ -89,6 +89,53 @@ const AHM_CONFIG = {
           '<a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless</a> by <a href="https://eox.at" target="_blank" rel="noopener">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data 2020)',
       },
     ],
+    // Relief: hillshade over the vector map. Default: the free AWS terrain tiles (Terrarium, zoom 0-15, worldwide, no hosting by you).
+    // The tiles are requested only when "Map + relief" is chosen. Empty `tiles` hides the entry.
+    // Own tiles instead (Copernicus GLO-30, docs/10, "Relief layer (optional)"): tiles [".../ahm-terrain/v1/{z}/{x}/{y}.webp"], maxzoom 11 and the attribution
+    // "produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved"
+    terrain: {
+      tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
+      encoding: "terrarium",
+      tileSize: 256,
+      maxzoom: 15, // the highest zoom of the AWS tiles; beyond it the map enlarges the last level
+      attribution:
+        "Terrain tiles: Mapzen/Tilezen on AWS; contain 3DEP, SRTM and GMTED2010 content courtesy of USGS, other sources at github.com/tilezen/joerd/blob/master/docs/attribution.md",
+      // Colour by height (MapLibre `color-relief`) under the hillshade. Ramps are [metres above sea level, colour] stops with rising heights;
+      // between stops the colour is blended. Add your own ramp here and it appears in the list under the map; `ramp` is the one chosen first.
+      color: {
+        ramp: "armenia",
+        opacity: 0.65, // 0 = no colour, 1 = fully covers the map
+        smooth: true, // the colours slide to the new range (about 0.4 s) instead of jumping; false = jump
+        adapt: true, // stretch the ramp over the heights in view, so the colours change as you zoom and move; false = the fixed metres of the ramp
+        ramps: {
+          armenia: {
+            label: "Armenia (350-4100 m)",
+            stops: [[350, "#3a7f5c"], [800, "#86b36a"], [1300, "#e3dd8c"], [1800, "#d2a860"], [2300, "#b07a48"], [3000, "#8c6552"], [3600, "#c9bcb6"], [4100, "#ffffff"]],
+          },
+          classic: {
+            label: "Classic green-brown-white",
+            stops: [[0, "#2e7d4f"], [500, "#7cb45a"], [1000, "#d9d27a"], [1500, "#c9a05a"], [2000, "#a87a4a"], [2800, "#8a6a5a"], [3500, "#cfc4c0"], [4200, "#ffffff"]],
+          },
+          rainbow: {
+            label: "Rainbow",
+            stops: [[0, "#2c7bb6"], [1000, "#abd9e9"], [1800, "#ffffbf"], [2600, "#fdae61"], [3400, "#d7191c"], [4100, "#7f0000"]],
+          },
+          viridis: {
+            label: "Viridis",
+            stops: [[0, "#440154"], [1000, "#3b528b"], [2000, "#21918c"], [3000, "#5ec962"], [4100, "#fde725"]],
+          },
+          gray: { label: "Grayscale", stops: [[0, "#000000"], [4100, "#ffffff"]] },
+        },
+      },
+      paint: {
+        // MapLibre hillshade paint properties
+        "hillshade-exaggeration": 0.5,
+        "hillshade-shadow-color": "#4a4a4a",
+        "hillshade-highlight-color": "#ffffff",
+        "hillshade-accent-color": "#7a7a7a",
+        "hillshade-illumination-direction": 335,
+      },
+    },
   },
   geocodeUrl: "https://nominatim.openstreetmap.org/search",
   routeUrl: "https://router.project-osrm.org/route/v1/driving",

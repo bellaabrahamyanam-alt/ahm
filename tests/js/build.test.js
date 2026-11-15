@@ -89,3 +89,17 @@ test('build: --check also fails when a bundle differs in size from the manifest 
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+// Terrain tile builder (T-053, tools/terrain/): the unit tests are Python (numpy and Pillow). Without them (a plain CI image) the test says so loudly
+// and does not run: a follow-up in TODO.md asks the owner to add `pip install numpy pillow` to tools/ci.sh (a protected file).
+test('terrain tool: the Python unit tests of tools/terrain pass (the GeoTIFF adapter is NOT covered)', () => {
+  const { spawnSync } = require('child_process');
+  const dir = path.join(ROOT, 'tools', 'terrain');
+  const have = spawnSync('python3', ['-I', '-c', 'import numpy, PIL'], { encoding: 'utf8' });
+  if (have.status !== 0) {
+    console.log('  !!   terrain tool tests NOT RUN: python3 with numpy and Pillow is missing here (' + String(have.stderr || have.error).trim().split('\n').pop() + ')');
+    return;
+  }
+  const r = spawnSync('python3', ['-I', '-m', 'unittest', 'discover', '-s', dir, '-p', 'test_*.py'], { encoding: 'utf8' });
+  ok(r.status === 0, 'python unit tests failed:\n' + String(r.stderr).split('\n').slice(-25).join('\n'));
+});

@@ -118,3 +118,12 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 | 014 sidebar types and shapes UI | partly | types editor (`ui.js` `typeSave`, `typeDelete`), Borders and Routes tabs instead of a "Places \| Shapes" switch; no "Shapes (n)" or "Choose shapes" in the layer detail → T-031, T-034 |
 
 **Follow-ups:** T-029 to T-034, T-028.
+
+## 2026-11-15 — T-037: terrain tile builder (`tools/terrain/`) and the relief guide
+
+- **What:** Python tool (`terrain.py`: squares, download, check, build, preview, pack), pure core `core.py` (tile maths, bilinear sampling with 2x2 to 4x4 supersampling, Terrarium, averaging pyramid built depth first and post-order so a tile on disk means its subtree is on disk = resumable, lossless WebP, `NOTICE.txt`, `.htaccess`, zip/tar, hillshade preview), `geotiff_source.py` (rasterio; the only untested part). Tests `tools/terrain/test_terrain.py`, run from `tests/js/build.test.js` when numpy and Pillow exist (otherwise a loud "NOT RUN"). Docs: `docs/10` "Relief layer (optional)", 02, 03, 04, 08, 12, 14.
+- **Why python:** WebP writing needs Pillow; Node has no WebP encoder without a new dependency. The repo already has Python (`dev/build_notes_index.py`).
+- **Memory:** one tile at a time plus the recursion path (a few MB) and rasterio's block cache; the 0.86 gigapixel mosaic is never loaded.
+- **How to verify:** `python3 -I -m unittest discover -s tools/terrain`.
+- **Known limits:** beyond the bbox edge the lower zoom tiles are flat 0 (a child outside the area is not built); raising `--maxzoom` needs a new `--version`; the real GeoTIFF part, file names, Apache and Cloudflare are unverified (docs/10).
+- **Follow-ups:** T-038.

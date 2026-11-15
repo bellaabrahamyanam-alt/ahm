@@ -59,3 +59,51 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `app/js/map/shapes.js`.
 - **How to verify:** the map library comes from a CDN, so only by eye: Routes tab, add a route, click place markers and free points, drag a handle, save.
 - **Follow-ups:** the map canvas is not covered by any automatic test.
+
+## 2026-11-15 — Relief (hillshade) base-map entry (T-053)
+
+- **What:** `basemap.terrain` in `app/js/config.js` (tiles, encoding, tileSize, maxzoom, attribution, hillshade paint). With non-empty `tiles` the base-map list gets "Map + relief" (value `@relief`); choosing it adds, once, a `raster-dem` source `ahm-terrain` (Terrarium, `bounds` = `bbox`, attribution) and a `hillshade` layer `ahm-relief` below the first non-`ahm-` symbol layer. Map and satellite hide it. A tile error shows "Relief tiles failed to load: ..." in `#status`. Labels keep the dark text (`view.sat` is not used for relief).
+- **Why:** shaded relief from tiles the owner hosts himself (no new outside service). Lazy add: no tile request until chosen. `bounds`: a missing file under phpBB's rewrite rules would reach PHP.
+- **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/dist/`, `tests/js/map.test.js` (stand-in: base symbol layer, `rec.before`, `rec.sources[id].def`).
+- **How to verify:** `node tests/js/run.js map:`. By hand (not done: MapLibre is not reachable from the sandbox): build tiles (docs/10), set `tiles`, choose "Map + relief".
+- **Follow-ups:** T-054 (CI needs numpy and Pillow for the terrain tests).
+
+## 2026-11-15 — Relief default: free AWS terrain tiles
+
+- **What:** `basemap.terrain` in `app/js/config.js` now points at the AWS Terrain Tiles (`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png`, Terrarium, 256 px, maxzoom 15, Mapzen/Tilezen attribution). "Map + relief" is shown by default. No code change in `map.js`.
+- **Why:** nothing to build or host: the tools/terrain route (own GLO-30 tiles) stays as an alternative, described in a comment in `config.js`.
+- **Files:** `app/js/config.js`, `app/dist/`, `tests/js/map.test.js` (one test: the shipped config).
+- **How to verify:** `node tests/js/run.js "shipped config"`. By eye (not done: no browser in the sandbox): choose "Map + relief".
+- **Follow-ups:** the AWS endpoint, its CORS headers, the attribution wording and the licence were not checked from the sandbox (S3 is blocked).
+
+## 2026-11-15 — Relief colours by height, controls, legend, height readout (T-039)
+
+- **What:** MapLibre 4.7.1 -> 5.24.1 in `app/index.html` (the `color-relief` layer exists from 5.6.0; checked in the npm package). `basemap.terrain.color` in `config.js`: `ramp` (first one), `opacity`, `ramps` (id -> label + [metres, colour] stops). With it, "Map + relief" adds layer `ahm-relief-color` (type `color-relief`, elevation expression) under the hillshade. Controls in `#relief-opts` (index.html, filled by `map.js`): colour on/off, shading on/off, ramp list, two strength sliders, legend in metres, and `#relief-height` ("Height: 1,234 m" under the mouse, decoded from the Terrarium tile with fetch + OffscreenCanvas, no 3D terrain). Without `color` in the config nothing of this exists.
+- **Why:** the plain hillshade shows neither heights nor the difference between low and high places (owner).
+- **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (7 tests, mocks for fetch/createImageBitmap/OffscreenCanvas).
+- **How to verify:** `node tests/js/run.js "relief colours"`. By eye (not done: no browser in the sandbox): choose "Map + relief"; move the mouse (metres), change ramp and strengths; check that markers, routes, borders and satellite still work with MapLibre 5.
+- **Follow-ups:** the MapLibre upgrade is only tested against the stand-in; the height readout needs CORS headers from the tile server.
+
+## 2026-11-15 — Relief colours adapt to the view (T-039, addition)
+
+- **What:** `basemap.terrain.color.adapt` (default true) and the checkbox `#relief-adapt` ("Adapt colours to the view"). After the map stops moving (`moveend`, 250 ms debounce) `map.js` reads a 16 x 16 grid of heights in view from the Terrarium tiles (same tile cache as the height readout, now a cache of promises: one fetch per tile), takes the 2nd and 98th percentile (at least 20 m apart) and stretches the chosen ramp so its first stop is the lowest and its last stop the highest height in view. The legend shows the stretched metres. Off = the fixed metres of the ramp.
+- **Why:** the owner wanted the colours to change with zooming, as on topographic-map.com. Assumption: that site rescales the colours to the visible heights; its page text does not say so and its map is script-drawn, so this was not checked.
+- **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/index.html`, `app/dist/`, `tests/js/map.test.js` (3 tests; the stand-in got `getBounds`).
+- **How to verify:** `node tests/js/run.js "relief colours"`. By eye (not done): zoom into a valley and onto a peak; the colours should use the full ramp each time.
+- **Follow-ups:** none known; a view over the sea reads the sea level of the tiles as 0 m.
+
+## 2026-11-15 — Relief panel on the map, ramp editor, contour lines, height profile (T-039, addition)
+
+- **What:** the relief controls moved from the sidebar to a panel on the map (`#relief-opts`, right side, in `region:map` of `index.html`; collapsible). New: **ramp editor** (edit heights and colours, add and remove stops, "Custom (edited)" entry, Reset); **contour lines** (checkbox, step automatic from the zoom or 10-1000 m; lines and labels of every 5th line from a 96 x 72 grid of heights in view, marching squares in `contourLines`, layers `ahm-contour` and `ahm-contour-label`, source `ahm-contours`); **height profile** (button "Draw height profile": clicks on the map add points, a chart with length, min, max, ascent and descent; source `ahm-profile`; the map click and double-click handlers step aside while drawing); **saved settings** (localStorage `ahm-relief`: ramp, custom stops, strengths, switches, contour step). The adaptive range now reads the same grid as the contours; tile reading is `locate`/`tileOf`/`sampleAt` (one fetch per tile).
+- **Why:** the owner: "everything sits in the sidebar, no ramp editor; missing contour lines and a height profile".
+- **Files:** `app/js/map/map.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (stand-in got `getBounds`).
+- **How to verify:** `node tests/js/run.js "map"`. By eye (not done: no browser here): panel position on desktop and phone, editing colours, contour lines and their labels at several zooms, drawing a profile across a mountain.
+- **Follow-ups:** contour lines come from the tile heights (smooth at low zoom, blocky at the highest zoom); the ascent/descent of the profile is the raw sum of height steps (a rough figure); profile hover and drag-to-edit are not there.
+
+## 2026-11-15 — Relief polish: rounder contours, smooth colours, panel back in the sidebar (T-048)
+
+- **What:** (1) contour lines: the 128 x 96 grid is blurred (`smoothGrid`, 1 2 1 / 2 4 2 / 1 2 1) before the marching squares and every line gets two rounds of corner cutting (`chaikin`; closed lines stay closed, open lines keep their ends). (2) The relief controls are back in the sidebar: More > Maps & base map, under the base-map list (`#relief-opts`, same ids; the floating panel and its CSS are gone). (3) Checkbox "Smooth colours" (`basemap.terrain.color.smooth`, default true, saved with the other settings): when the range changes (`setRange`) the colours slide to it in 400 ms with `requestAnimationFrame` (ease out); the first range, "off" and an unchanged range apply at once; a new range cancels the running one.
+- **Why:** owner: contour lines not round enough, the panel should be in the sidebar, colours jumped after 250 ms.
+- **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (3 tests).
+- **How to verify:** `node tests/js/run.js "map"`. By eye: contour lines at several zooms; zoom in and out and watch the colours slide; open More > Maps & base map and choose "Map + relief".
+- **Follow-ups:** the grid is 12288 heights per move end; on a slow phone this may need a coarser grid (not measured).
