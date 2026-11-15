@@ -8,7 +8,7 @@ function iron($extra = [])
     return array_merge(['geometry' => 'point', 'names' => [['lang' => 'en', 'name' => 'Iron mine']], 'color' => '#A0522D', 'style' => ['symbol' => 'pickaxe', 'size' => 9]], $extra);
 }
 
-test('types: the sample dictionary has every type the sample places use (point types), and the 6 area and 5 line types of the shapes', function () {
+test('types: the sample dictionary has every type the sample places use (point types), and the 6 area, 5 line and 1 river types of the shapes', function () {
     $s = fresh_store($dir);
     $list = $s->types()['types'];
     $points = array_column(array_filter($list, function ($t) {
@@ -18,7 +18,7 @@ test('types: the sample dictionary has every type the sample places use (point t
         ok(in_array($f['properties']['type'], $points, true), 'type ' . $f['properties']['type']);
     }
     foreach ($list as $t) {
-        ok(in_array($t['geometry'], ['point', 'line', 'area'], true), $t['code'] . ' geometry');
+        ok(in_array($t['geometry'], ['point', 'line', 'area', 'river'], true), $t['code'] . ' geometry');
         ok(preg_match(store::COLOR, $t['color']), $t['code'] . ' colour');
     }
     same(6, count(array_filter($list, function ($t) {
@@ -32,7 +32,7 @@ test('types: the sample dictionary has every type the sample places use (point t
     }
 });
 
-test('types: a dictionary file without line and area types still offers the 11 built-in ones, and keeps them when an administrator saves a type', function () {
+test('types: a dictionary file without line and area types still offers the 12 built-in ones, and keeps them when an administrator saves a type', function () {
     $s = fresh_store($dir);
     $f = json_file("$dir/types.json");
     $f['types'] = array_values(array_filter($f['types'], function ($t) {
@@ -56,7 +56,7 @@ test('types: a missing file is created from the seed (every type that existed be
     same(store::TYPES, array_column(array_filter($all, function ($t) {
         return $t['geometry'] === 'point';
     }), 'code'), 'the point types: same list, same order as the seed constant');
-    same(11, count($all) - count(store::TYPES), 'and the 11 built-in line and area types after them');
+    same(12, count($all) - count(store::TYPES), 'and the 12 built-in line, area and river types after them');
     ok(is_file("$dir/types.json"));
     same('Inscription site', find_by($s->types()['types'], 'code', 'inscription_site')['names'][0]['name']);
 });

@@ -76,6 +76,11 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 ## Done
 
+- [x] T-038 Rivers tab: river types (geometry `river`) in the types dictionary, a Rivers tab with its own list, card and notes, a river search by name that saves nothing, and a section of a river between two clicks (2026-11-15, branch `feat/rivers-tab`)
+  Owner, in the chat: build it, "I will sort it out before the merge".
+  Approved: 2026-11-15 owner, in the chat (adds `river` to the geometries of `interfaces/I-8` and I-9, and `riverNameAt` to I-2).
+  Contract: yes (I-2 [1.7], I-8, I-9).
+  Not verified: the OpenStreetMap search with live data, and a click on a river of the real base map (the browser test stubs both).
 - [x] T-036 Line and area types in the types dictionary (2026-11-14, branch `feat/line-area-types`). Decision of T-034 (owner, in the chat: "build it"): dictionary types, not fixed lists. Server rules in `store.php` and `save-handler.js`, registry in `core/shapes.js`, editor in More → Types.
 - [x] T-034 Owner decision on line and area types: dictionary types (2026-11-14).
 - [x] T-035 Split `sidebar/ui.js` into five files, no change of behaviour (2026-11-14, branch `refactor/sidebar-ui`)

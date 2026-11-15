@@ -87,10 +87,11 @@ const dict = [
   { code: 'high-road', geometry: 'line', names: [{ lang: 'en', name: 'High road' }], color: '#5d4037', style: { width: 2, pattern: 'solid', opacity: 1, arrow: false } },
 ];
 
-test('shape types: before a dictionary arrives the 11 built-in types work (6 areas, 5 routes)', () => {
+test('shape types: before a dictionary arrives the 12 built-in types work (6 areas, 5 routes, 1 river)', () => {
   const run = fresh();
   assert.deepEqual(run('BORDER_TYPES'), ['country', 'kingdom', 'province', 'district', 'territory', 'disputed']);
   assert.deepEqual(run('ROUTE_TYPE_LIST'), ['trade', 'military', 'migration', 'journey', 'road']);
+  assert.deepEqual(run('RIVER_TYPE_LIST'), ['waterway']);
 });
 
 test('shape types: setShapeTypes replaces the built-in lists by the line and area types of the dictionary, in its order', () => {
@@ -124,4 +125,39 @@ test('shape types: a route without its own twoway takes the one of its type', ()
   const out = JSON.parse(run('JSON.stringify(normShape({ properties: { type: "pilgrim-path", id: "x" }, geometry: { type: "LineString", coordinates: [[0, 0], [1, 1]] } }))'));
   assert.equal(out.twoway, false);
   assert.deepEqual(out.stops, []);
+});
+
+test('river section: the way along a river between two clicks, with pieces in any order and direction', () => {
+  run(`
+    var line = (x0, x1) => { const o = []; for (let x = x0; x <= x1 + 1e-9; x += 0.1) o.push([+x.toFixed(3), 40]); return o; };
+    // two pieces that meet at 44.5; the second one runs the other way round
+    var river = { type: 'MultiLineString', coordinates: [line(44.0, 44.5), line(44.5, 45.0).reverse()] };
+    var s = riverSection(river, [44.12, 40.01], [44.88, 39.99]);
+  `);
+  const J = (code) => JSON.stringify(run(code));
+  assert.strictEqual(run('s.error'), undefined);
+  assert.strictEqual(J('s.coords[0]'), '[44.1,40]');
+  assert.strictEqual(J('s.coords[s.coords.length - 1]'), '[44.9,40]');
+  assert.strictEqual(run('s.coords.length'), 9, 'every river point between the two ends, no more');
+  assert.ok(run('s.km') > 66 && run('s.km') < 70, 'about 0.8 degrees of longitude at 40 N');
+  assert.strictEqual(J('riverSection(river, [44.88, 40], [44.12, 40]).coords[0]'), '[44.9,40]', 'the direction follows the clicks');
+});
+
+test('river section: a click far from the river, or a piece that does not join, gives an error and no line', () => {
+  run(`
+    var r1 = { type: 'LineString', coordinates: [[44, 40], [44.1, 40], [44.2, 40]] };
+    var r2 = { type: 'MultiLineString', coordinates: [[[44, 40], [44.1, 40]], [[45, 40], [45.1, 40]]] };
+  `);
+  assert.strictEqual(run('riverSection(r1, [44.1, 40], [44.1, 41]).error'), 'far');
+  assert.strictEqual(run('riverSection(r2, [44, 40], [45.1, 40]).error'), 'apart');
+});
+
+test('river types: a river type is a line that is not a route and not a border; the three groups are told apart', () => {
+  const run = fresh();
+  assert.strictEqual(run("isRiverType('waterway')"), true);
+  assert.strictEqual(run("isRouteType('waterway')"), false);
+  assert.strictEqual(run("BORDER_TYPES.includes('waterway')"), false);
+  assert.strictEqual(run("shapeGroup({ type: 'waterway' })"), 'river');
+  assert.strictEqual(run("shapeGroup({ type: 'road' })"), 'route');
+  assert.strictEqual(run("shapeGroup({ type: 'country' })"), 'border');
 });

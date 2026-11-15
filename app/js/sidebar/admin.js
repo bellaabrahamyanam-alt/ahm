@@ -97,8 +97,8 @@ $("#langAdmin").addEventListener("click", async (e) => {
 // new type is made by the server from its English name and never changes; places point to a type by that code.
 let tyEditing = null; // the code being edited, or null = adding
 let tyOpen = false;
-let tyGeo = "point"; // the geometry of the type being added or edited: point (a place marker), line (a route) or area (a border)
-const TY_GEO = { point: "place", line: "line", area: "area" };
+let tyGeo = "point"; // the geometry of the type being added or edited: point (a place marker), line (a route), area (a border) or river
+const TY_GEO = { point: "place", line: "line", area: "area", river: "river" };
 const TY_PATTERNS = ["solid", "dashed", "dotted", "dashdot"]; // the patterns the map draws
 function renderTypes() {
   const l = $("#lang").value,
@@ -133,16 +133,18 @@ const tyDraft = () => {
   d.width = Number($("#tyWid").value);
   d.opacity = Number($("#tyOpa").value);
   if (tyGeo === "line") d.arrow = $("#tyArrow").checked;
-  else d.fill = Number($("#tyFill").value);
+  else if (tyGeo === "area") d.fill = Number($("#tyFill").value);
   return d;
 };
 // The style the server stores: a place marker { symbol, size }, a line { width, pattern, opacity, arrow }, an area { fill_opacity, outline }.
 const tyStyle = (d) =>
   tyGeo === "point"
     ? { symbol: d.symbol, size: d.size, ...(d.symbol === "custom" ? { path: d.path, box: d.box } : {}) }
-    : tyGeo === "line"
-      ? { width: d.width, pattern: d.pattern, opacity: d.opacity, arrow: d.arrow }
-      : { fill_opacity: d.fill, outline: { width: d.width, pattern: d.pattern, opacity: d.opacity } };
+    : tyGeo === "river"
+      ? { width: d.width, pattern: d.pattern, opacity: d.opacity }
+      : tyGeo === "line"
+        ? { width: d.width, pattern: d.pattern, opacity: d.opacity, arrow: d.arrow }
+        : { fill_opacity: d.fill, outline: { width: d.width, pattern: d.pattern, opacity: d.opacity } };
 // An SVG (a file the admin chose, or a whole <svg> pasted into the path box) becomes the path and the box of the symbol.
 function tyUseSvg(text, from) {
   const r = svgToPath(text),
@@ -194,14 +196,16 @@ function tyRenderAdmin(t) {
     return;
   }
   const names = t && t.names.length ? t.names : [{ lang: "en", name: "" }],
-    st = (t && t.style) || (tyGeo === "point" ? { symbol: "circle", size: 8 } : tyGeo === "line" ? { width: 2.5, pattern: "solid", opacity: 1, arrow: false } : { fill_opacity: 0.15, outline: { width: 2, pattern: "solid", opacity: 1 } }),
+    st = (t && t.style) || (tyGeo === "point" ? { symbol: "circle", size: 8 } : tyGeo === "river" ? { width: 3, pattern: "solid", opacity: 1 } : tyGeo === "line" ? { width: 2.5, pattern: "solid", opacity: 1, arrow: false } : { fill_opacity: 0.15, outline: { width: 2, pattern: "solid", opacity: 1 } }),
     ol = tyGeo === "area" ? st.outline || {} : st,
     pats = `<select id="tyPat" aria-label="Pattern">${TY_PATTERNS.map((p) => `<option${p === (ol.pattern || "solid") ? " selected" : ""}>${p}</option>`).join("")}</select>`,
     shapeFields =
       `<div class="label">Pattern</div>${pats}` +
       `<div class="label">Width</div><input id="tyWid" type="number" min="1" max="12" step="0.5" value="${Number(ol.width) || 2}" aria-label="Width">` +
       `<div class="label">Opacity</div><input id="tyOpa" type="range" min="0.1" max="1" step="0.05" value="${ol.opacity == null ? 1 : ol.opacity}" aria-label="Opacity">` +
-      (tyGeo === "line"
+      (tyGeo === "river"
+        ? ""
+        : tyGeo === "line"
         ? `<label class="sh-check"><input type="checkbox" id="tyArrow"${st.arrow ? " checked" : ""}> One way (drawn with arrows)</label>`
         : `<div class="label">Fill</div><input id="tyFill" type="range" min="0" max="0.8" step="0.05" value="${st.fill_opacity == null ? 0.15 : st.fill_opacity}" aria-label="Fill opacity">`);
   el.innerHTML =
