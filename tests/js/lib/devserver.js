@@ -8,7 +8,8 @@ const { execSync } = require('child_process');
 const { ROOT } = require('./ctx');
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.geojson': 'application/json', '.md': 'text/plain' };
 
-async function start() {
+/** `prepare(root)` (optional) may change the copied data before the handler starts and converts it. */
+async function start(prepare) {
   const copy = fs.mkdtempSync(path.join(os.tmpdir(), 'ahm_js_'));
   const root = path.join(copy, 'map');
   fs.mkdirSync(root);
@@ -16,6 +17,7 @@ async function start() {
   fs.mkdirSync(path.join(root, 'app'));
   execSync(`cp -r ${JSON.stringify(path.join(ROOT, 'app', 'js'))} ${JSON.stringify(path.join(ROOT, 'app', 'css'))} ${JSON.stringify(path.join(ROOT, 'app', 'index.html'))} ${JSON.stringify(path.join(root, 'app'))}`);
   if (fs.existsSync(path.join(ROOT, 'app', 'features'))) execSync(`cp -r ${JSON.stringify(path.join(ROOT, 'app', 'features'))} ${JSON.stringify(path.join(root, 'app'))}`);
+  if (prepare) prepare(root);
   const mw = require(path.join(root, 'dev', 'save-handler.js'));
   const server = http.createServer((req, res) =>
     mw(req, res, () => {

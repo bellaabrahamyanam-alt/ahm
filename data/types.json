@@ -195,6 +195,205 @@
     "symbol": "ring",
     "size": 10
    }
+  },
+  {
+   "code": "country",
+   "geometry": "area",
+   "names": [
+    {
+     "lang": "en",
+     "name": "Country"
+    }
+   ],
+   "color": "#b3261e",
+   "style": {
+    "fill_opacity": 0.1,
+    "outline": {
+     "width": 2.6,
+     "pattern": "solid",
+     "opacity": 1
+    }
+   }
+  },
+  {
+   "code": "kingdom",
+   "geometry": "area",
+   "names": [
+    {
+     "lang": "en",
+     "name": "Kingdom or empire"
+    }
+   ],
+   "color": "#7b1fa2",
+   "style": {
+    "fill_opacity": 0.18,
+    "outline": {
+     "width": 2.2,
+     "pattern": "solid",
+     "opacity": 1
+    }
+   }
+  },
+  {
+   "code": "province",
+   "geometry": "area",
+   "names": [
+    {
+     "lang": "en",
+     "name": "Region or province"
+    }
+   ],
+   "color": "#0b6e8a",
+   "style": {
+    "fill_opacity": 0.12,
+    "outline": {
+     "width": 2,
+     "pattern": "dashed",
+     "opacity": 1
+    }
+   }
+  },
+  {
+   "code": "district",
+   "geometry": "area",
+   "names": [
+    {
+     "lang": "en",
+     "name": "District"
+    }
+   ],
+   "color": "#8d6e63",
+   "style": {
+    "fill_opacity": 0.1,
+    "outline": {
+     "width": 2,
+     "pattern": "dotted",
+     "opacity": 1
+    }
+   }
+  },
+  {
+   "code": "territory",
+   "geometry": "area",
+   "names": [
+    {
+     "lang": "en",
+     "name": "Territory or area"
+    }
+   ],
+   "color": "#2e7d32",
+   "style": {
+    "fill_opacity": 0.2,
+    "outline": {
+     "width": 1.4,
+     "pattern": "solid",
+     "opacity": 1
+    }
+   }
+  },
+  {
+   "code": "disputed",
+   "geometry": "area",
+   "names": [
+    {
+     "lang": "en",
+     "name": "Disputed area"
+    }
+   ],
+   "color": "#e07b39",
+   "style": {
+    "fill_opacity": 0.12,
+    "outline": {
+     "width": 2.2,
+     "pattern": "dashdot",
+     "opacity": 1
+    }
+   }
+  },
+  {
+   "code": "trade",
+   "geometry": "line",
+   "names": [
+    {
+     "lang": "en",
+     "name": "Trade route"
+    }
+   ],
+   "color": "#b7791f",
+   "style": {
+    "width": 2.4,
+    "pattern": "dashed",
+    "opacity": 1,
+    "arrow": false
+   }
+  },
+  {
+   "code": "military",
+   "geometry": "line",
+   "names": [
+    {
+     "lang": "en",
+     "name": "Military march"
+    }
+   ],
+   "color": "#c62828",
+   "style": {
+    "width": 3,
+    "pattern": "solid",
+    "opacity": 1,
+    "arrow": true
+   }
+  },
+  {
+   "code": "migration",
+   "geometry": "line",
+   "names": [
+    {
+     "lang": "en",
+     "name": "Migration"
+    }
+   ],
+   "color": "#6a1b9a",
+   "style": {
+    "width": 2.8,
+    "pattern": "dotted",
+    "opacity": 1,
+    "arrow": true
+   }
+  },
+  {
+   "code": "journey",
+   "geometry": "line",
+   "names": [
+    {
+     "lang": "en",
+     "name": "Journey or embassy"
+    }
+   ],
+   "color": "#00796b",
+   "style": {
+    "width": 2.4,
+    "pattern": "dashdot",
+    "opacity": 1,
+    "arrow": true
+   }
+  },
+  {
+   "code": "road",
+   "geometry": "line",
+   "names": [
+    {
+     "lang": "en",
+     "name": "Road"
+    }
+   ],
+   "color": "#5d4037",
+   "style": {
+    "width": 2,
+    "pattern": "solid",
+    "opacity": 1,
+    "arrow": false
+   }
   }
  ]
 }

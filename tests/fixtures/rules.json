@@ -1086,10 +1086,10 @@
    "expect": "unknown type"
   },
   {
-   "name": "type: line geometry not yet",
+   "name": "type: an unknown geometry",
    "via": "type",
    "body": {
-    "geometry": "line",
+    "geometry": "volume",
     "names": [
      {
       "lang": "en",
@@ -1397,6 +1397,569 @@
     }
    },
    "expect": "box"
+  },
+  {
+   "name": "type: a new line type",
+   "via": "type",
+   "body": {
+    "geometry": "line",
+    "names": [
+     {
+      "lang": "en",
+      "name": "Pilgrim path"
+     }
+    ],
+    "color": "#336699",
+    "style": {
+     "width": 2.5,
+     "pattern": "dashed",
+     "opacity": 1,
+     "arrow": false
+    }
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "type: a new area type",
+   "via": "type",
+   "body": {
+    "geometry": "area",
+    "names": [
+     {
+      "lang": "en",
+      "name": "Fiefdom"
+     }
+    ],
+    "color": "#339966",
+    "style": {
+     "fill_opacity": 0.2,
+     "outline": {
+      "width": 1.5,
+      "pattern": "solid",
+      "opacity": 1
+     }
+    }
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "type line: width above 12",
+   "via": "type",
+   "body": {
+    "geometry": "line",
+    "names": [
+     {
+      "lang": "en",
+      "name": "Bad width"
+     }
+    ],
+    "color": "#336699",
+    "style": {
+     "width": 13,
+     "pattern": "dashed",
+     "opacity": 1,
+     "arrow": false
+    }
+   },
+   "expect": "width must be"
+  },
+  {
+   "name": "type line: unknown pattern",
+   "via": "type",
+   "body": {
+    "geometry": "line",
+    "names": [
+     {
+      "lang": "en",
+      "name": "Bad pattern"
+     }
+    ],
+    "color": "#336699",
+    "style": {
+     "width": 2.5,
+     "pattern": "wavy",
+     "opacity": 1,
+     "arrow": false
+    }
+   },
+   "expect": "pattern must be"
+  },
+  {
+   "name": "type line: opacity below 0.1",
+   "via": "type",
+   "body": {
+    "geometry": "line",
+    "names": [
+     {
+      "lang": "en",
+      "name": "Bad opacity"
+     }
+    ],
+    "color": "#336699",
+    "style": {
+     "width": 2.5,
+     "pattern": "dashed",
+     "opacity": 0.05,
+     "arrow": false
+    }
+   },
+   "expect": "opacity must be"
+  },
+  {
+   "name": "type line: arrow is not a boolean",
+   "via": "type",
+   "body": {
+    "geometry": "line",
+    "names": [
+     {
+      "lang": "en",
+      "name": "Bad arrow"
+     }
+    ],
+    "color": "#336699",
+    "style": {
+     "width": 2.5,
+     "pattern": "dashed",
+     "opacity": 1,
+     "arrow": "yes"
+    }
+   },
+   "expect": "arrow must be"
+  },
+  {
+   "name": "type area: fill opacity above 0.8",
+   "via": "type",
+   "body": {
+    "geometry": "area",
+    "names": [
+     {
+      "lang": "en",
+      "name": "Bad fill"
+     }
+    ],
+    "color": "#339966",
+    "style": {
+     "fill_opacity": 0.9,
+     "outline": {
+      "width": 1.5,
+      "pattern": "solid",
+      "opacity": 1
+     }
+    }
+   },
+   "expect": "fill opacity must be"
+  },
+  {
+   "name": "type area: unknown outline pattern",
+   "via": "type",
+   "body": {
+    "geometry": "area",
+    "names": [
+     {
+      "lang": "en",
+      "name": "Bad outline"
+     }
+    ],
+    "color": "#339966",
+    "style": {
+     "fill_opacity": 0.2,
+     "outline": {
+      "width": 1.5,
+      "pattern": "wavy",
+      "opacity": 1
+     }
+    }
+   },
+   "expect": "pattern must be"
+  },
+  {
+   "name": "type: the geometry of a type never changes",
+   "via": "type",
+   "body": {
+    "geometry": "area",
+    "names": [
+     {
+      "lang": "en",
+      "name": "Fiefdom"
+     }
+    ],
+    "color": "#339966",
+    "style": {
+     "fill_opacity": 0.2,
+     "outline": {
+      "width": 1.5,
+      "pattern": "solid",
+      "opacity": 1
+     }
+    },
+    "code": "pilgrim-path",
+    "edit": true
+   },
+   "expect": "geometry of a type never changes"
+  },
+  {
+   "name": "type: edit a line type",
+   "via": "type",
+   "body": {
+    "geometry": "line",
+    "names": [
+     {
+      "lang": "en",
+      "name": "Pilgrim path"
+     }
+    ],
+    "color": "#336699",
+    "style": {
+     "width": 4,
+     "pattern": "dashed",
+     "opacity": 1,
+     "arrow": false
+    },
+    "code": "pilgrim-path",
+    "edit": true
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "shape: an area of an area type",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "fiefdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    }
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "shape: an area of a built-in area type",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "kingdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    }
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "shape: a line of a line type with stops",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "pilgrim-path",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "LineString",
+     "coordinates": [
+      [
+       44.5,
+       40.2
+      ],
+      [
+       45.0,
+       40.5
+      ]
+     ]
+    },
+    "stops": [
+     "@P0",
+     "@P1"
+    ],
+    "twoway": true
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "shape: a line type needs a line",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "pilgrim-path",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    }
+   },
+   "expect": "a route must be a line"
+  },
+  {
+   "name": "shape: a point type is not a shape type",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "settlement",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    }
+   },
+   "expect": "unknown border type"
+  },
+  {
+   "name": "shape: an unknown type",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "nope",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    }
+   },
+   "expect": "unknown border type"
+  },
+  {
+   "name": "shape: stops of a line type must be places",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "pilgrim-path",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "LineString",
+     "coordinates": [
+      [
+       44.5,
+       40.2
+      ],
+      [
+       45.0,
+       40.5
+      ]
+     ]
+    },
+    "stops": [
+     "00000000-0000-4000-8000-000000000000"
+    ]
+   },
+   "expect": "unknown place among the route stops"
+  },
+  {
+   "name": "shape: twoway must be true or false",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "pilgrim-path",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "LineString",
+     "coordinates": [
+      [
+       44.5,
+       40.2
+      ],
+      [
+       45.0,
+       40.5
+      ]
+     ]
+    },
+    "twoway": "yes"
+   },
+   "expect": "twoway must be true or false"
+  },
+  {
+   "name": "place: a line type is not a place type",
+   "via": "save",
+   "body": {
+    "place": {
+     "names": [
+      {
+       "lang": "en",
+       "name": "x"
+      }
+     ],
+     "type": "pilgrim-path",
+     "lon": 44.5,
+     "lat": 40.1
+    }
+   },
+   "expect": "bad type"
   }
  ]
 }

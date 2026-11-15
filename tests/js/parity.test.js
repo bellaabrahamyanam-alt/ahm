@@ -3,7 +3,7 @@ const { start } = require('./lib/devserver');
 const path = require('path');
 const fs = require('fs');
 const table = require('../fixtures/rules.json').cases;
-const URLS = { save: '/api/save', layer: '/api/layer/save', category: '/api/category/save', language: '/api/language/save', type: '/api/type/save' };
+const URLS = { save: '/api/save', layer: '/api/layer/save', category: '/api/category/save', language: '/api/language/save', type: '/api/type/save', shape: '/api/shape/save' };
 
 test('parity table: the Node dev server gives the verdict the table says (PHP is checked against the same table)', async () => {
   const s = await start();
@@ -47,6 +47,39 @@ test('dev server: deleting a border archives its notes, removes them from the in
     const idx = s.data('layer-notes/index.json').notes;
     ok(!idx.some((n) => n.layer === sid), 'not in the index');
     ok(idx.some((n) => n.layer === L0), 'the note of the layer stays');
+  } finally {
+    await s.stop();
+  }
+});
+
+test('dev server: a line or area type that shapes use cannot be deleted; an unused built-in one can; the 11 built-in types are written with the first new type', async () => {
+  const s = await start();
+  try {
+    await fetch(s.base + '/data/places.geojson');
+    const types = () => s.data('types.json').types;
+    ok(types().some((t) => t.code === 'kingdom' && t.geometry === 'area'), 'the area type kingdom is in the dictionary');
+    ok(types().some((t) => t.code === 'trade' && t.geometry === 'line'), 'the line type trade is in the dictionary');
+    const used = s.data('shapes.geojson').features[0].properties.type;
+    const r = await s.post('/api/type/delete', { code: used });
+    ok(r.status === 400 && /shapes? use the type/.test(r.json.error), JSON.stringify(r.json));
+    eq(200, (await s.post('/api/type/delete', { code: 'road' })).status);
+    ok(!types().some((t) => t.code === 'road'));
+  } finally {
+    await s.stop();
+  }
+});
+
+test('dev server: a border of the old type "region" becomes "province" when the data is brought up to date', async () => {
+  const s = await start((root) => {
+    const f = path.join(root, 'data', 'shapes.geojson'),
+      d = JSON.parse(fs.readFileSync(f, 'utf8'));
+    d.features[0].properties.type = 'region';
+    fs.writeFileSync(f, JSON.stringify(d));
+  });
+  try {
+    await fetch(s.base + '/data/places.geojson');
+    const types = s.data('shapes.geojson').features.map((x) => x.properties.type);
+    ok(types.includes('province') && !types.includes('region'), types.join(','));
   } finally {
     await s.stop();
   }
