@@ -74,6 +74,71 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
   Done when: the texts say a PR need not commit `app/dist/` (a local build is still allowed); `tests/js/build.test.js` stays unchanged. Needs `Approved:` (protected: `AGENTS.md`, `.claude/`, `DOMAINS.md`).
   Contract: no.
 
+**Map analysis block (owner, in the chat, 2026-11-15).** Order: T-040 -> T-041 -> T-043 -> T-045 -> T-042 -> T-046 -> T-047; T-044 and T-048 as soon as the relief PRs (#19 and branch `feat/relief-aws`, T-039) are merged. The date model already exists (`core/dates.js`: exact, approximate, range; `date_from` / `date_to` on places, shapes and layers), so none of this needs old data to be changed. Decisions the owner still has to make: T-049 to T-052.
+- [ ] T-040 Time slider: the map at one moment ("year X"), with play
+  What: a bar on the map with a date field (the same `datefield.js` input), a slider over the earliest and latest date found in the data, play / pause, a speed (years per second) and "Off" (today's behaviour). Places, borders, routes and rivers outside their life are hidden, the others stay.
+  Logic: `AHM.state` gets `time: { at: <ts text> | null, playing, speed }` and the event `time:changed`. A core function `visibleAt(item, at)` uses the existing `dateBounds(d)` = [from, to): hidden when `at` is before the start of `date_from` or at or after the end of `date_to`; in the part of an approximate or range date that is only possible (not certain) the object is drawn faded. `date_to: null` means the end is unknown, not "still exists" (docs/05), so it never hides. Objects with no dates at all: see T-049. The map filters its features with that function; the sidebar lists follow it and show a chip "Time: <date>". The period filter (From / To = existed in a period) stays and is a different thing: both can be on.
+  Done when: tests show the rule for exact, approximate, range and unknown dates (table of cases, same in Node and PHP if the server needs it), the map hides and shows features when `at` changes, play moves `at` by the speed and stops at the end, "Off" brings back all objects, the chip shows and removes the filter.
+  Contract: yes (I-6 `time`, I-2 event, I-3 `visibleAt`). Needs `Approved:` before the interface files are edited.
+- [ ] T-041 Versions of one border, route or river in time (same shape, different times)
+  What: a shape can have several versions, each with its own geometry and dates. In the shape editor "Add version for another time" copies the shape, asks for its `date_from` and offers to close the previous version (`date_to`). The sheet lists "Other versions" with their dates.
+  Logic: no nested geometry. A version is a normal feature of `shapes.geojson`; versions of one shape share a new optional property `series` (UUID). With T-040 the slider shows the version valid at the date by itself; without a date all versions show. Absent `series` = a single shape, so no old data changes. Notes and layer membership stay with the version they were made on. Server rules (`store.php`, `save-handler.js`, row in `tests/fixtures/rules.json`): `series` is a UUID or absent, all versions of a series are of the same kind (area or line), and two versions whose dates are both known must not overlap (error `versions of one series overlap`). docs/05 gets a section.
+  Done when: tests (PHP, Node, `rules.json`) cover the three rules, the editor creates a version, the sheet lists the others, and a version can be edited and deleted alone.
+  Contract: yes (I-9 property `series`, I-1).
+- [ ] T-042 Border change between two dates: area gained and lost
+  What: choose a border (a series from T-041) and two dates A and B. The map shows what was gained (green) and lost (red); a panel shows km2 and % of each. A note says that old borders are approximate.
+  Logic: take the version valid at A and at B; gained = B minus A, lost = A minus B (polygon difference); area on the sphere (not on the flat map). For the difference use the MIT library `polygon-clipping`, vendored and pinned (exact result); the simpler option without a library is to compare the two polygons on a grid of cells (approximate to the cell size). Owner decides in T-052. Result is drawn as a temporary map layer, not saved.
+  Done when: a test with two squares of known size gives the exact gained and lost area, the panel shows the numbers, the layer is removed when the panel is closed.
+  Contract: maybe (a new `AHM.map` command in I-2); the builder says which in the item before the code.
+  Needs: T-040, T-041, T-052.
+- [ ] T-043 Names over time
+  What: a place or shape can have names that are valid only in a period (a name per era and language). The map and the lists show the name of the chosen language that is valid at the slider date. Search finds every name, old ones too, and shows which name matched when it is not the shown one.
+  Logic: `names[]` entries get optional `date_from` and `date_to` (date model); absent = always. Rule: with the slider off nothing changes (the first name of a language, as today). With it on: the first name of that language whose period contains `at`, else the first name of that language. Core function `nameAt(item, lang, at)`. Rules in `store.php` and `save-handler.js` (parity table rows). The place form (`placeform.js`) and the shape form get "from / to" per name row with `datefield.js`. Applies to places and shapes first.
+  Done when: tests cover `nameAt` (period inside, outside, no period, unknown language), the server accepts and refuses the new fields, search finds an old name, the forms save and show them.
+  Contract: yes (I-1 property, I-3 `nameAt`). Works without T-040 (shows the first name).
+- [ ] T-044 Height profile for routes, rivers and borders (needs the relief PRs merged)
+  What: the action "Height profile" in the sheet of a route, river or border. It uses the object's own line, not clicked points. A route marks its stops on the chart; a river shows start, end, total fall and mean slope; a border uses its outline or a section between two clicks (the Rivers tab already has "a section between two clicks"). Hover on the chart shows distance and height and moves a point on the map.
+  Logic: the relief code (branch `feat/relief-aws`) already samples 120 points along a line from the Terrarium tiles (`sampleAt`) and draws a chart. Make that a function of any line (`profileOf(coordinates)`), move the tile reader (`locate`, `tileOf`, `sampleAt`, `decodeAt`) into its own file `app/js/map/terrain.js` (T-045 needs it too), and add the command `AHM.map.profile(shapeId, { from, to })`.
+  Done when: tests (stand-in with a mocked tile) show a route, a river and a border section give the expected length, min, max, ascent and descent, the route stops are marked, and the sidebar action calls the command.
+  Contract: yes (I-2 command).
+- [ ] T-045 Travel time and least-cost path from the terrain
+  What: (a) from a place or click: the area reachable in 1, 2, 3 ... days (rounded bands); (b) the least-cost path between two places with its time; (c) the places inside the one-day area, and "places within one day of this route" (a route as the start). A route can show its computed time next to the time a source gives.
+  Logic: a cost grid from the Terrarium tiles (cell 250 m to 1 km by the size of the area); slope from the 8 neighbours; speed by Tobler's hiking function v = 6 * exp(-3.5 * |tan(slope) + 0.05|) km/h; a mode multiplier (foot 1.0, loaded animals, cart or army: values in `config.js`, editable, hours of walking per day default 8). Dijkstra with a binary heap in a Web Worker (so the page does not freeze); for a route as the start all its cells are sources at cost 0. Bands from the existing marching squares (`contourLines`) smoothed like T-048. Needs `terrain.js` from T-044.
+  Limits (go to docs/14): modern terrain only; no rivers, lakes, snow, seasons, roads or borders as obstacles; the result is an estimate, and the panel says so.
+  Done when: tests on a small synthetic grid (flat = distance / speed, a ridge is avoided, a steeper way costs more), the worker answers, the sidebar shows bands, path, time and the list of places.
+  Contract: yes (I-2 commands and events).
+- [ ] T-046 Certainty and sources per object
+  What: phase 1: a dictionary of sources (title, citation, link; like languages and categories, editors add). Places and shapes get an optional certainty (exact, approximate, disputed), an optional radius in metres (drawn as a faded circle around approximate and disputed points) and a list of sources. Filters by source and certainty. Phase 2: competing claims: the same object at two places or two shapes according to two sources, each with its sources; the sheet lists "Other claims" and a source toggle shows one author's version or all.
+  Logic: every new property is optional and absent = unchanged, so adding this later changes no data; nothing needs migrating now. `shapes.geojson` already has a free-text `source`; it stays. New file `sources.json` (id, title, citation, url) with the usual store rules. Phase 2 uses the same link idea as `series` in T-041 (a `claim_of` id); the builder checks if one mechanism fits both.
+  Done when (phase 1): server rules and parity rows, the forms save the new fields, the map draws the circle, the filters work. Phase 2 is its own item after the owner has seen phase 1.
+  Contract: yes (I-1, I-9, new file in I-1).
+- [ ] T-047 Share and export (no image export)
+  What: (a) a link that reopens the same view: position, zoom, base map and relief settings, active layers and filters, the slider date, the opened place or shape. A "Copy link" button. (b) Export to GeoJSON and KML of what is shown (the filtered result, one layer, or everything).
+  Logic: (a) a versioned URL hash (`#v1/...`), written when something changes (debounced) and read at the start; unknown keys are ignored; nothing private is put in the link. (b) done in the browser (a download from a Blob), no server change. GeoJSON keeps the date objects of the date model. KML: names in the chosen language, description from the place notes, line and fill colours from the types; a `<TimeSpan>` only for years 0001 to 9999 (KML has no BCE years), other dates are written into the description.
+  Done when: tests show the hash round trip (encode, decode, ignore unknown keys), the exported GeoJSON opens as valid GeoJSON with the same features, the KML has the expected elements and escapes text.
+  Contract: no (the builder confirms; if a new `AHM` function is needed it says so first).
+- [ ] T-048 Relief polish (follow-up of T-039; after the relief PRs are merged, or into branch `feat/relief-aws` before)
+  What: (1) rounder contour lines like Google; (2) the relief panel back in the sidebar, not floating on the map; (3) a checkbox "Smooth colours": when the map stops moving the colours slide to the new range instead of jumping after 250 ms.
+  Logic: (1) smooth the grid of heights (small blur) before marching squares, a denser grid at high zoom, and cut the corners of each line (Chaikin, 2 rounds). (2) move the markup of `#relief-opts` into a sidebar section; ids stay, so the tests stay. (3) animate the stretched range from the old [low, high] to the new one over about 400 ms with `requestAnimationFrame`; the box is in the settings and saved with them; off = the jump of today.
+  Done when: a test shows a smoothed line has no sharp corners (angle between neighbouring segments within a limit) and still closes, the panel is in the sidebar, and the animation reaches the new range and stops (fake clock).
+  Contract: no.
+- [ ] T-049 Decide: objects with no dates when the time slider is on (T-040)
+  1. always shown; 2. always hidden; 3. shown faded, with a switch "Show undated" in the slider bar. Recommendation: 3 (nothing disappears by surprise, and you can still clear the map).
+  Done when: you write `Approved: <date> 1`, `2` or `3`.
+  Contract: no.
+- [ ] T-050 Decide: swipe compare of historical map pictures (overlays)
+  What it is: a vertical curtain you drag over the map: on one side the old picture, on the other the modern map, plus a fade slider. It shows at once where the old picture matches (rivers, coasts, towns) and where it does not. It builds on the overlays you already have (`overlays.json`, a picture fitted by four corners). 1. build it after T-040; 2. skip. Recommendation: 1, it is small. True georeferencing with control points is a separate, bigger item.
+  Done when: you write `Approved: <date> 1` or `2`.
+  Contract: no.
+- [ ] T-051 Decide: marking "fact" or "hypothesis" (instead of drawn annotations)
+  What: no drawing tools. Each note gets an optional status `fact` (from a source) or `hypothesis` (your interpretation), shown as a small badge and usable in search filters. It is a new header line `status:` in the note file and one field in the note form. 1. build it; 2. no. Recommendation: 1 only if you want to separate sources from your own readings; otherwise 2.
+  Done when: you write `Approved: <date> 1` or `2`.
+  Contract: no.
+- [ ] T-052 Decide: how to compute the border change (T-042)
+  1. add the MIT library `polygon-clipping`, vendored and pinned (exact, about 40 KB); 2. compare on a grid of cells (no library, approximate). Recommendation: 1.
+  Done when: you write `Approved: <date> 1` or `2`.
+  Contract: no.
+
 ## Done
 
 - [x] T-036 Line and area types in the types dictionary (2026-11-14, branch `feat/line-area-types`). Decision of T-034 (owner, in the chat: "build it"): dictionary types, not fixed lists. Server rules in `store.php` and `save-handler.js`, registry in `core/shapes.js`, editor in More → Types.
