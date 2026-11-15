@@ -90,7 +90,7 @@ test('build: --check also fails when a bundle differs in size from the manifest 
   }
 });
 
-// Terrain tile builder (T-037, tools/terrain/): the unit tests are Python (numpy and Pillow). Without them (a plain CI image) the test says so loudly
+// Terrain tile builder (T-053, tools/terrain/): the unit tests are Python (numpy and Pillow). Without them (a plain CI image) the test says so loudly
 // and does not run: a follow-up in TODO.md asks the owner to add `pip install numpy pillow` to tools/ci.sh (a protected file).
 test('terrain tool: the Python unit tests of tools/terrain pass (the GeoTIFF adapter is NOT covered)', () => {
   const { spawnSync } = require('child_process');

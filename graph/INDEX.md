@@ -7,16 +7,16 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 | domain | files | lines | largest file |
 |---|---|---|---|
 | sidebar | 12 | 3514 | `app/js/sidebar/layers.js` (691) |
-| map | 4 | 2236 | `app/js/map/map.js` (1198) |
+| map | 4 | 2306 | `app/js/map/map.js` (1268) |
 | core | 7 | 1039 | `app/js/core/shapes.js` (367) |
 | state | 1 | 43 | `app/js/state/state.js` (43) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
 | data | 8 | 3841 | `service/store.php` (1884) |
-| shared | 5 | 248 | `app/js/config.js` (141) |
+| shared | 5 | 249 | `app/js/config.js` (142) |
 
 ## Flags
 
-- `app/js/map/map.js` has 1198 lines (limit 600); owner: map
+- `app/js/map/map.js` has 1268 lines (limit 600); owner: map
 - `app/js/sidebar/layers.js` has 691 lines (limit 600); owner: sidebar
 - `app/js/sidebar/routes.js` has 629 lines (limit 600); owner: sidebar
 - `app/js/sidebar/shapes.js` has 683 lines (limit 600); owner: sidebar

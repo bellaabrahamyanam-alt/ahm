@@ -105,6 +105,7 @@ const AHM_CONFIG = {
       color: {
         ramp: "armenia",
         opacity: 0.65, // 0 = no colour, 1 = fully covers the map
+        smooth: true, // the colours slide to the new range (about 0.4 s) instead of jumping; false = jump
         adapt: true, // stretch the ramp over the heights in view, so the colours change as you zoom and move; false = the fixed metres of the ramp
         ramps: {
           armenia: {

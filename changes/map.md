@@ -60,13 +60,13 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **How to verify:** the map library comes from a CDN, so only by eye: Routes tab, add a route, click place markers and free points, drag a handle, save.
 - **Follow-ups:** the map canvas is not covered by any automatic test.
 
-## 2026-11-15 — Relief (hillshade) base-map entry (T-037)
+## 2026-11-15 — Relief (hillshade) base-map entry (T-053)
 
 - **What:** `basemap.terrain` in `app/js/config.js` (tiles, encoding, tileSize, maxzoom, attribution, hillshade paint). With non-empty `tiles` the base-map list gets "Map + relief" (value `@relief`); choosing it adds, once, a `raster-dem` source `ahm-terrain` (Terrarium, `bounds` = `bbox`, attribution) and a `hillshade` layer `ahm-relief` below the first non-`ahm-` symbol layer. Map and satellite hide it. A tile error shows "Relief tiles failed to load: ..." in `#status`. Labels keep the dark text (`view.sat` is not used for relief).
 - **Why:** shaded relief from tiles the owner hosts himself (no new outside service). Lazy add: no tile request until chosen. `bounds`: a missing file under phpBB's rewrite rules would reach PHP.
 - **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/dist/`, `tests/js/map.test.js` (stand-in: base symbol layer, `rec.before`, `rec.sources[id].def`).
 - **How to verify:** `node tests/js/run.js map:`. By hand (not done: MapLibre is not reachable from the sandbox): build tiles (docs/10), set `tiles`, choose "Map + relief".
-- **Follow-ups:** T-038 (CI needs numpy and Pillow for the terrain tests).
+- **Follow-ups:** T-054 (CI needs numpy and Pillow for the terrain tests).
 
 ## 2026-11-15 — Relief default: free AWS terrain tiles
 
@@ -99,3 +99,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `app/js/map/map.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (stand-in got `getBounds`).
 - **How to verify:** `node tests/js/run.js "map"`. By eye (not done: no browser here): panel position on desktop and phone, editing colours, contour lines and their labels at several zooms, drawing a profile across a mountain.
 - **Follow-ups:** contour lines come from the tile heights (smooth at low zoom, blocky at the highest zoom); the ascent/descent of the profile is the raw sum of height steps (a rough figure); profile hover and drag-to-edit are not there.
+
+## 2026-11-15 — Relief polish: rounder contours, smooth colours, panel back in the sidebar (T-048)
+
+- **What:** (1) contour lines: the 128 x 96 grid is blurred (`smoothGrid`, 1 2 1 / 2 4 2 / 1 2 1) before the marching squares and every line gets two rounds of corner cutting (`chaikin`; closed lines stay closed, open lines keep their ends). (2) The relief controls are back in the sidebar: More > Maps & base map, under the base-map list (`#relief-opts`, same ids; the floating panel and its CSS are gone). (3) Checkbox "Smooth colours" (`basemap.terrain.color.smooth`, default true, saved with the other settings): when the range changes (`setRange`) the colours slide to it in 400 ms with `requestAnimationFrame` (ease out); the first range, "off" and an unchanged range apply at once; a new range cancels the running one.
+- **Why:** owner: contour lines not round enough, the panel should be in the sidebar, colours jumped after 250 ms.
+- **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (3 tests).
+- **How to verify:** `node tests/js/run.js "map"`. By eye: contour lines at several zooms; zoom in and out and watch the colours slide; open More > Maps & base map and choose "Map + relief".
+- **Follow-ups:** the grid is 12288 heights per move end; on a slow phone this may need a coarser grid (not measured).

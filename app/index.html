@@ -76,6 +76,42 @@
         <details class="fold" id="more-maps"><summary>Maps &amp; base map</summary><div class="fold-body">
           <div class="sn">Base map</div>
           <select id="basemap"></select>
+          <div id="relief-opts" hidden>
+          <div class="label">Relief</div>
+          <label><input type="checkbox" id="relief-color" checked /> Colour by height</label>
+          <label><input type="checkbox" id="relief-shade" checked /> Shading</label>
+          <label><input type="checkbox" id="relief-adapt" checked /> Adapt colours to the view</label>
+          <label><input type="checkbox" id="relief-smooth" checked /> Smooth colours</label>
+          <select id="relief-ramp" aria-label="Colour ramp"></select>
+          <details id="relief-edit">
+            <summary>Edit colours</summary>
+            <div id="relief-stops"></div>
+            <button type="button" id="relief-add">+ colour</button>
+            <button type="button" id="relief-reset">Reset</button>
+          </details>
+          <label>Colour strength <input type="range" id="relief-opacity" min="0" max="1" step="0.05" /></label>
+          <label>Shading strength <input type="range" id="relief-strength" min="0" max="1" step="0.05" /></label>
+          <div id="relief-legend"></div>
+          <div id="relief-ticks"></div>
+          <label><input type="checkbox" id="relief-contours" /> Contour lines</label>
+          <select id="relief-interval" aria-label="Contour step">
+            <option value="auto">Step: automatic</option>
+            <option value="10">10 m</option>
+            <option value="20">20 m</option>
+            <option value="50">50 m</option>
+            <option value="100">100 m</option>
+            <option value="200">200 m</option>
+            <option value="500">500 m</option>
+            <option value="1000">1000 m</option>
+          </select>
+          <div class="rbtns">
+            <button type="button" id="relief-profile-btn">Draw height profile</button>
+            <button type="button" id="relief-profile-clear">Clear</button>
+          </div>
+          <canvas id="relief-profile" width="240" height="90"></canvas>
+          <div id="relief-profile-info"></div>
+          <div id="relief-height"></div>
+          </div>
           <div id="status" class="sn"></div>
           <div class="label">Show on map</div>
           <div id="groups"></div>
@@ -232,43 +268,6 @@
     <!-- /region:sidebar -->
     <!-- region:map -->
     <div id="map"></div>
-    <div id="relief-opts" hidden>
-      <details open>
-        <summary>Relief</summary>
-        <label><input type="checkbox" id="relief-color" checked /> Colour by height</label>
-        <label><input type="checkbox" id="relief-shade" checked /> Shading</label>
-        <label><input type="checkbox" id="relief-adapt" checked /> Adapt colours to the view</label>
-        <select id="relief-ramp" aria-label="Colour ramp"></select>
-        <details id="relief-edit">
-          <summary>Edit colours</summary>
-          <div id="relief-stops"></div>
-          <button type="button" id="relief-add">+ colour</button>
-          <button type="button" id="relief-reset">Reset</button>
-        </details>
-        <label>Colour strength <input type="range" id="relief-opacity" min="0" max="1" step="0.05" /></label>
-        <label>Shading strength <input type="range" id="relief-strength" min="0" max="1" step="0.05" /></label>
-        <div id="relief-legend"></div>
-        <div id="relief-ticks"></div>
-        <label><input type="checkbox" id="relief-contours" /> Contour lines</label>
-        <select id="relief-interval" aria-label="Contour step">
-          <option value="auto">Step: automatic</option>
-          <option value="10">10 m</option>
-          <option value="20">20 m</option>
-          <option value="50">50 m</option>
-          <option value="100">100 m</option>
-          <option value="200">200 m</option>
-          <option value="500">500 m</option>
-          <option value="1000">1000 m</option>
-        </select>
-        <div class="rbtns">
-          <button type="button" id="relief-profile-btn">Draw height profile</button>
-          <button type="button" id="relief-profile-clear">Clear</button>
-        </div>
-        <canvas id="relief-profile" width="240" height="90"></canvas>
-        <div id="relief-profile-info"></div>
-        <div id="relief-height"></div>
-      </details>
-    </div>
     <!-- /region:map -->
     <!-- region:sidebar -->
     <dialog id="dlg">

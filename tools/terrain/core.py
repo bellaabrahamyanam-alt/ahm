@@ -1,4 +1,4 @@
-"""Pure core of the terrain tile builder (T-037): tile maths, resampling, Terrarium encoding, pyramid, WebP writing, notice files, pack,
+"""Pure core of the terrain tile builder (T-053): tile maths, resampling, Terrarium encoding, pyramid, WebP writing, notice files, pack,
 preview. Needs only numpy and Pillow. It never reads a GeoTIFF: a `Mosaic` subclass (geotiff_source.py for the real data) gives it pixels."""
 import math
 import os

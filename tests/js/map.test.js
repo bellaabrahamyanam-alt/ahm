@@ -1116,7 +1116,7 @@ test('map: AHM.map.setTypes before the map is ready only updates the table; the 
   eq(1, calls.length, 'on load, from the new table');
 });
 
-// ---- relief layer (T-037): hillshade from self-hosted terrain tiles, optional entry of the base-map dropdown ----
+// ---- relief layer (T-053): hillshade from self-hosted terrain tiles, optional entry of the base-map dropdown ----
 const TERRAIN = {
   tiles: ['https://forum.example/ahm-terrain/v1/{z}/{x}/{y}.webp'],
   encoding: 'terrarium',
@@ -1205,7 +1205,7 @@ const RAMPS = {
   low: { label: 'Low', stops: [[0, '#00ff00'], [1000, '#ffff00'], [3000, '#ffffff']] },
   alt: { label: 'Alt', stops: [[500, '#000000'], [500, '#ff0000'], [100, '#0000ff']] }, // unsorted and with a repeated height
 };
-const COLOR_TERRAIN = { ...TERRAIN, color: { opacity: 0.6, ramp: 'low', adapt: true, ramps: RAMPS } };
+const COLOR_TERRAIN = { ...TERRAIN, color: { opacity: 0.6, ramp: 'low', adapt: true, smooth: true, ramps: RAMPS } };
 /** A page with the colour terrain chosen, and the handlers of the relief controls captured by their selector. */
 /** A Terrarium tile of w x 1 pixels: each pixel is [R, G, B]; 129,244,0 = 500 m and 137,0,0 = 2304 m (R*256 + G + B/256 - 32768). */
 const tileMock = (pixels) => ({
@@ -1227,9 +1227,9 @@ function bootRelief(terrain = COLOR_TERRAIN, tile = null) {
     before: (p) => {
       withTerrain(terrain)(p);
       Object.assign(p.ctx, tile ? tileMock(tile) : {}, { setTimeout: (f) => (Promise.resolve().then(f), 1), clearTimeout() {} }); // no 250 ms wait
-      p.el('#relief-color').checked = p.el('#relief-shade').checked = p.el('#relief-adapt').checked = true; // checked in index.html
+      p.el('#relief-color').checked = p.el('#relief-shade').checked = p.el('#relief-adapt').checked = p.el('#relief-smooth').checked = true; // checked in index.html
       p.el('#relief-contours').checked = false; // off in index.html
-      ['#relief-color', '#relief-shade', '#relief-adapt', '#relief-ramp', '#relief-opacity', '#relief-strength', '#relief-contours', '#relief-interval', '#relief-stops', '#relief-add', '#relief-reset', '#relief-profile-btn', '#relief-profile-clear'].forEach((sel) => {
+      ['#relief-color', '#relief-shade', '#relief-adapt', '#relief-smooth', '#relief-ramp', '#relief-opacity', '#relief-strength', '#relief-contours', '#relief-interval', '#relief-stops', '#relief-add', '#relief-reset', '#relief-profile-btn', '#relief-profile-clear'].forEach((sel) => {
         p.el(sel).addEventListener = (name, fn) => (handlers[sel] = handlers[sel + ':' + name] = fn);
       });
     },
@@ -1339,6 +1339,7 @@ test('map: relief colours: moving the mouse shows the height in metres read from
 
 test('map: relief colours: the shipped config says whether the colours adapt to the view', () => {
   eq('boolean', typeof load(['config.js']).X('AHM_CONFIG.basemap.terrain.color.adapt'));
+  eq('boolean', typeof load(['config.js']).X('AHM_CONFIG.basemap.terrain.color.smooth'));
 });
 
 test('map: relief colours: the ramp is stretched over the heights in view (2nd to 98th percentile) and follows the map when it moves', async () => {
@@ -1483,4 +1484,73 @@ test('map: height profile: clicks on the map add points, the length and heights 
   eq('', p.el('#relief-profile-info').textContent);
   eq(0, ml.rec.sources['ahm-profile'].data.features.length);
   eq('Draw height profile', p.el('#relief-profile-btn').textContent, 'clear also leaves the drawing mode');
+});
+
+// ---- relief polish (T-048): rounder contour lines, smooth colour changes ----
+const turnDeg = (l) => {
+  let m = 0;
+  for (let i = 1; i < l.length - 1; i++) {
+    const a = Math.atan2(l[i][1] - l[i - 1][1], l[i][0] - l[i - 1][0]);
+    const b = Math.atan2(l[i + 1][1] - l[i][1], l[i + 1][0] - l[i][0]);
+    m = Math.max(m, Math.abs(((((b - a) * 180) / Math.PI + 540) % 360) - 180));
+  }
+  return m;
+};
+
+test('map: contours: cutting the corners (Chaikin) makes a ring rounder and keeps it closed; an open line keeps its ends', () => {
+  const p = load(['typeicons.js', 'map.js']);
+  const n = 21;
+  const cone = Array.from({ length: n * n }, (_, k) => 100 - Math.hypot((k % n) - 10, Math.floor(k / n) - 10) + 0.3 * Math.sin(k));
+  const raw = p.X('contourLines(__0, 21, 21, 94)', cone)[0];
+  const sm = p.X('chaikin(__0, 2)', raw);
+  eq(sm[0], sm[sm.length - 1], 'still closed');
+  ok(turnDeg(sm) < turnDeg(raw) * 0.6, 'sharpest turn ' + turnDeg(raw).toFixed(0) + ' -> ' + turnDeg(sm).toFixed(0) + ' degrees');
+  ok(sm.length > raw.length, 'more points');
+  const open = [[0, 0], [4, 0], [4, 4]];
+  const o = p.X('chaikin(__0, 2)', open);
+  eq([0, 0], o[0]);
+  eq([4, 4], o[o.length - 1]);
+  ok(turnDeg(o) < 90, 'the right angle is cut');
+});
+
+test('map: contours: the grid blur lowers a spike (1 2 1 / 2 4 2 / 1 2 1 over 16), renormalises at the edge and keeps missing cells missing', () => {
+  const p = load(['typeicons.js', 'map.js']);
+  const g = Array(25).fill(0);
+  g[12] = 100;
+  const b = p.X('smoothGrid(__0, 5, 5)', g);
+  eq(25, b[12]);
+  eq(12.5, b[11]);
+  eq(6.25, b[6]);
+  const flat = p.X('smoothGrid(__0, 5, 5)', Array(25).fill(7));
+  ok(flat.every((v) => Math.abs(v - 7) < 1e-9), 'a flat grid stays flat, also at the edges');
+  const hole = Array(25).fill(7);
+  hole[12] = NaN;
+  const h2 = p.X('smoothGrid(__0, 5, 5)', hole);
+  ok(Number.isNaN(h2[12]) && h2[11] === 7, 'a missing cell stays missing and does not spoil the neighbours');
+});
+
+test('map: relief colours: "Smooth colours" slides the range to the new one in 400 ms; off jumps', () => {
+  const { p, change } = bootRelief();
+  let now = 0;
+  const frames = [];
+  Object.assign(p.ctx, { performance: { now: () => now }, requestAnimationFrame: (f) => frames.push(f) });
+  const range = () => p.X('relief.range');
+  p.X('relief.range = [500, 2000]; setRange([1000, 3000])');
+  eq([500, 2000], range(), 'nothing moves before the first frame');
+  now = 200;
+  frames.shift()(now);
+  const mid = range();
+  ok(mid[0] > 500 && mid[0] < 1000 && mid[1] > 2000 && mid[1] < 3000, 'half way: ' + mid);
+  now = 400;
+  frames.shift()(now);
+  eq([1000, 3000], range());
+  eq(0, frames.length, 'the animation stops at the end');
+  p.X('setRange([1000, 3000])');
+  eq(0, frames.length, 'no animation for the same range');
+  change('#relief-smooth', { checked: false });
+  p.X('setRange([2000, 4000])');
+  eq([2000, 4000], range(), 'off: the range jumps');
+  eq(0, frames.length);
+  p.X('relief.smooth = true; relief.range = null; setRange([10, 30])');
+  eq([10, 30], range(), 'the first range is set at once');
 });

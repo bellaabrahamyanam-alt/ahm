@@ -66,7 +66,7 @@ const terrainOn = () => {
   return !!(t && t.tiles && t.tiles.length);
 };
 // Relief settings the controls change. `color` exists only when the config has a `terrain.color` section.
-const relief = { color: true, shade: true, ramp: null, custom: null, opacity: 0.65, strength: 0.5, adapt: true, range: null, contours: false, interval: "auto" }; // range = [low, high] metres in view; custom = the stops edited by the user
+const relief = { color: true, shade: true, ramp: null, custom: null, opacity: 0.65, strength: 0.5, adapt: true, smooth: true, range: null, contours: false, interval: "auto" }; // range = [low, high] metres in view; custom = the stops edited by the user
 const prof = { on: false, pts: [] }; // the height profile: drawing mode and clicked points [lng, lat]
 const colorOn = () => !!(terrainOn() && AHM_CONFIG.basemap.terrain.color && AHM_CONFIG.basemap.terrain.color.ramps);
 // MapLibre needs strictly rising stops: sort by height, and nudge a repeated height up by 0.1 m.
@@ -515,8 +515,8 @@ function loadSettings() {
 }
 function saveSettings() {
   try {
-    const { ramp, custom, opacity, strength, adapt, color, shade, contours, interval } = relief;
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ ramp, custom, opacity, strength, adapt, color, shade, contours, interval }));
+    const { ramp, custom, opacity, strength, adapt, smooth, color, shade, contours, interval } = relief;
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ ramp, custom, opacity, strength, adapt, smooth, color, shade, contours, interval }));
   } catch (e) {
     // private mode or no storage: the settings are just not kept
   }
@@ -568,13 +568,14 @@ function initReliefControls() {
   relief.ramp = c.ramps[c.ramp] ? c.ramp : Object.keys(c.ramps)[0];
   relief.opacity = c.opacity;
   relief.adapt = c.adapt !== false;
+  relief.smooth = c.smooth !== false;
   relief.strength = AHM_CONFIG.basemap.terrain.paint["hillshade-exaggeration"];
   // saved settings of the user win over the config, when they are still valid
   if (goodStops(sv.custom)) relief.custom = sv.custom;
   if (c.ramps[sv.ramp] || (sv.ramp === "__custom" && relief.custom)) relief.ramp = sv.ramp;
   if (typeof sv.opacity === "number" && sv.opacity >= 0 && sv.opacity <= 1) relief.opacity = sv.opacity;
   if (typeof sv.strength === "number" && sv.strength >= 0 && sv.strength <= 1) relief.strength = sv.strength;
-  ["adapt", "color", "shade", "contours"].forEach((k) => {
+  ["adapt", "smooth", "color", "shade", "contours"].forEach((k) => {
     if (typeof sv[k] === "boolean") relief[k] = sv[k];
   });
   if (sv.interval === "auto" || [10, 20, 50, 100, 200, 500, 1000].includes(Number(sv.interval))) relief.interval = String(sv.interval);
@@ -583,6 +584,7 @@ function initReliefControls() {
   $("#relief-color").checked = relief.color;
   $("#relief-shade").checked = relief.shade;
   $("#relief-adapt").checked = relief.adapt;
+  $("#relief-smooth").checked = relief.smooth;
   $("#relief-contours").checked = relief.contours;
   $("#relief-interval").value = relief.interval;
   $("#relief-opacity").value = relief.opacity;
@@ -593,6 +595,7 @@ function initReliefControls() {
     relief.color = $("#relief-color").checked;
     relief.shade = $("#relief-shade").checked;
     relief.adapt = $("#relief-adapt").checked;
+    relief.smooth = $("#relief-smooth").checked;
     relief.contours = $("#relief-contours").checked;
     relief.interval = $("#relief-interval").value;
     relief.ramp = $("#relief-ramp").value;
@@ -606,7 +609,7 @@ function initReliefControls() {
     scheduleAdapt();
     saveSettings();
   };
-  ["#relief-color", "#relief-shade", "#relief-adapt", "#relief-ramp", "#relief-contours", "#relief-interval"].forEach((id) =>
+  ["#relief-color", "#relief-shade", "#relief-adapt", "#relief-smooth", "#relief-ramp", "#relief-contours", "#relief-interval"].forEach((id) =>
     $(id).addEventListener("change", onChange),
   );
   ["#relief-opacity", "#relief-strength"].forEach((id) => $(id).addEventListener("input", onChange));
@@ -723,9 +726,31 @@ async function showHeight(e) {
 }
 
 // ---- what is in view: the adaptive colour range and the contour lines (one 96 x 72 grid of heights, read after the map stops moving) ----
-const GRID = [96, 72];
+const GRID = [128, 96];
 const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
 const latOfY = (y) => ((2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180) / Math.PI;
+// "Smooth colours": the stretched range slides from the old to the new one in 400 ms (ease out) instead of jumping. The first range, a switch
+// that is off and a range that did not change are applied at once. A new range cancels the animation that is running.
+let rangeAnim = 0;
+function setRange(to) {
+  const from = relief.range;
+  const token = ++rangeAnim;
+  if (!from || !relief.smooth) {
+    relief.range = to;
+    return paintRamp();
+  }
+  if (Math.abs(from[0] - to[0]) < 0.5 && Math.abs(from[1] - to[1]) < 0.5) return;
+  const t0 = performance.now();
+  const step = (now) => {
+    if (token !== rangeAnim) return;
+    const k = Math.min(1, (now - t0) / 400);
+    const e = 1 - (1 - k) ** 3;
+    relief.range = k >= 1 ? to : [from[0] + (to[0] - from[0]) * e, from[1] + (to[1] - from[1]) * e];
+    paintRamp();
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 let adaptTimer = 0;
 let viewToken = 0;
 function scheduleAdapt() {
@@ -747,8 +772,7 @@ async function viewNow() {
   if (relief.adapt) {
     // the 2nd and 98th percentile, so that one peak or one gorge does not flatten the rest; at least 20 m apart
     const lo = ok[Math.floor(0.02 * (ok.length - 1))];
-    relief.range = [lo, Math.max(ok[Math.ceil(0.98 * (ok.length - 1))], lo + 20)];
-    paintRamp();
+    setRange([lo, Math.max(ok[Math.ceil(0.98 * (ok.length - 1))], lo + 20)]);
   }
   if (relief.contours) drawContours(h, ok[0], ok[ok.length - 1], [w, e, yS, yN]);
 }
@@ -794,14 +818,60 @@ function drawContours(h, lo, hi, [w, e, yS, yN]) {
   while ((hi - lo) / step > 60) step *= 2; // never more than ~60 levels
   const [nx, ny] = GRID;
   const features = [];
+  const hs = smoothGrid(h, nx, ny);
   for (let L = Math.ceil(lo / step) * step; L <= hi; L += step)
-    for (const line of contourLines(h, nx, ny, L))
+    for (const line0 of contourLines(hs, nx, ny, L)) {
+      const line = chaikin(line0, 2);
       features.push({
         type: "Feature",
         properties: { h: L, major: Math.round(L / step) % 5 === 0 },
         geometry: { type: "LineString", coordinates: line.map(([x, y]) => [w + ((e - w) * x) / (nx - 1), latOfY(yS + ((yN - yS) * y) / (ny - 1))]) },
       });
+    }
   map.getSource("ahm-contours").setData({ type: "FeatureCollection", features });
+}
+// A light blur of the grid (1 2 1 / 2 4 2 / 1 2 1 over 16; at the edge and next to a missing cell the weights are renormalised): it takes the
+// stair steps out of the lines. A missing (NaN) cell stays missing.
+function smoothGrid(h, nx, ny) {
+  const out = new Array(nx * ny);
+  for (let j = 0; j < ny; j++)
+    for (let i = 0; i < nx; i++) {
+      if (Number.isNaN(h[j * nx + i])) {
+        out[j * nx + i] = NaN;
+        continue;
+      }
+      let sum = 0;
+      let wt = 0;
+      for (let dj = -1; dj <= 1; dj++)
+        for (let di = -1; di <= 1; di++) {
+          const x = i + di;
+          const y = j + dj;
+          if (x < 0 || y < 0 || x >= nx || y >= ny) continue;
+          const v = h[y * nx + x];
+          if (Number.isNaN(v)) continue;
+          const k = (di ? 1 : 2) * (dj ? 1 : 2);
+          sum += v * k;
+          wt += k;
+        }
+      out[j * nx + i] = sum / wt;
+    }
+  return out;
+}
+// Corner cutting (Chaikin): each round replaces every corner by two points at 1/4 and 3/4 of its segments. A closed line (first point = last
+// point) stays closed; an open line keeps its two ends.
+function chaikin(line, rounds) {
+  let pts = line;
+  for (let r = 0; r < rounds; r++) {
+    const closed = pts.length > 2 && pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1];
+    const out = closed ? [] : [pts[0]];
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [a, b] = [pts[i], pts[i + 1]];
+      out.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]], [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]);
+    }
+    out.push(closed ? out[0] : pts[pts.length - 1]);
+    pts = out;
+  }
+  return pts;
 }
 // Marching squares on a grid of nx * ny heights (row by row): the lines of height L as arrays of [x, y] in grid units. A cell with a missing
 // (NaN) corner has no line. Lines are joined into polylines (closed ones end where they start).

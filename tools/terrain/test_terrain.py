@@ -1,4 +1,4 @@
-"""Unit tests of the terrain tile builder (T-037). Run: python3 -I -m unittest discover -s tools/terrain -p "test_*.py"
+"""Unit tests of the terrain tile builder (T-053). Run: python3 -I -m unittest discover -s tools/terrain -p "test_*.py"
 Needs only numpy and Pillow. The GeoTIFF adapter (geotiff_source.py, rasterio) is NOT tested here: no rasterio, no real files."""
 import json
 import math
