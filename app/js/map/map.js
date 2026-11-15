@@ -662,55 +662,8 @@ function initReliefControls() {
   map.on("moveend", scheduleAdapt);
 }
 
-// ---- heights from the Terrarium tiles (metres = R*256 + G + B/256 - 32768), no 3D terrain needed ----
-// A fetched tile stays in a small cache of promises (one fetch per tile even when many points ask at once). Without CORS headers on the
-// tile server the fetch fails: the readout, the adaptive range, the contours and the profile then stay empty.
-const heightTiles = new Map();
-function locate(lng, lat, z) {
-  const n = 2 ** z;
-  const fx = ((lng + 180) / 360) * n;
-  const sn = Math.sin((lat * Math.PI) / 180);
-  const fy = (0.5 - Math.log((1 + sn) / (1 - sn)) / (4 * Math.PI)) * n;
-  const x = Math.floor(fx);
-  const y = Math.floor(fy);
-  if (!(y >= 0 && y < n)) return null;
-  const xw = ((x % n) + n) % n;
-  return { key: z + "/" + xw + "/" + y, z, x: xw, y, u: fx - x, v: fy - y };
-}
-function tileOf(l) {
-  let tile = heightTiles.get(l.key);
-  if (!tile) {
-    const url = AHM_CONFIG.basemap.terrain.tiles[0].replace("{z}", l.z).replace("{x}", l.x).replace("{y}", l.y);
-    tile = (async () => {
-      const bmp = await createImageBitmap(await (await fetch(url)).blob(), { colorSpaceConversion: "none" });
-      const cx = new OffscreenCanvas(bmp.width, bmp.height).getContext("2d", { willReadFrequently: true });
-      cx.drawImage(bmp, 0, 0);
-      return cx.getImageData(0, 0, bmp.width, bmp.height);
-    })();
-    if (heightTiles.size >= 60) heightTiles.delete(heightTiles.keys().next().value);
-    heightTiles.set(l.key, tile);
-    tile.catch(() => heightTiles.delete(l.key)); // a failed fetch is tried again next time
-  }
-  return tile;
-}
-function decodeAt(img, u, v) {
-  const px = Math.min(img.width - 1, Math.floor(u * img.width));
-  const py = Math.min(img.height - 1, Math.floor(v * img.height));
-  const i = (py * img.width + px) * 4;
-  return img.data[i] * 256 + img.data[i + 1] + img.data[i + 2] / 256 - 32768;
-}
-// Heights of many points [lng, lat] at the tile level of the current zoom: an array of metres, NaN where a tile is missing.
-async function sampleAt(points) {
-  const t = AHM_CONFIG.basemap.terrain;
-  if (t.encoding !== "terrarium") return points.map(() => NaN);
-  const z = Math.max(0, Math.min(t.maxzoom, Math.round(map.getZoom())));
-  const locs = points.map(([lng, lat]) => locate(lng, lat, z));
-  const need = new Map();
-  locs.forEach((l) => l && !need.has(l.key) && need.set(l.key, tileOf(l)));
-  const done = new Map();
-  await Promise.all([...need].map(async ([k, pr]) => { try { done.set(k, await pr); } catch (e) { /* missing tile */ } }));
-  return locs.map((l) => (l && done.get(l.key) ? decodeAt(done.get(l.key), l.u, l.v) : NaN));
-}
+// ---- heights from the Terrarium tiles: the reader is in terrain.js; here the zoom of the map decides the tile level ----
+const sampleAt = (points) => terrainSample(points, map.getZoom());
 const fmtM = (m) => Math.round(m).toLocaleString("en");
 let heightBusy = false;
 async function showHeight(e) {
@@ -937,11 +890,6 @@ function ensureProfile() {
   map.addLayer({ id: "ahm-profile-line", type: "line", source: "ahm-profile", filter: ["==", ["geometry-type"], "LineString"], paint: { "line-color": "#d7191c", "line-width": 3 } }, before && before.id);
   map.addLayer({ id: "ahm-profile-pt", type: "circle", source: "ahm-profile", filter: ["==", ["geometry-type"], "Point"], paint: { "circle-radius": 5, "circle-color": "#ffffff", "circle-stroke-color": "#d7191c", "circle-stroke-width": 2 } }, before && before.id);
 }
-const km = (a, b) => {
-  const r = Math.PI / 180;
-  const q = Math.sin(((b[1] - a[1]) * r) / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(((b[0] - a[0]) * r) / 2) ** 2;
-  return 12742 * Math.asin(Math.sqrt(q));
-};
 function onProfileClick(e) {
   if (!prof.on) return;
   prof.pts.push([e.lngLat.lng, e.lngLat.lat]);
@@ -958,27 +906,14 @@ function onProfileClick(e) {
 async function profileNow() {
   if (prof.pts.length < 2) return;
   const my = ++profToken;
-  const cum = [0];
-  for (let i = 1; i < prof.pts.length; i++) cum.push(cum[i - 1] + km(prof.pts[i - 1], prof.pts[i]));
-  const total = cum[cum.length - 1];
-  const N = 120;
-  const pts = [];
-  for (let k = 0, i = 1; k < N; k++) {
-    const d = (total * k) / (N - 1);
-    while (i < cum.length - 1 && cum[i] < d) i++;
-    const f = cum[i] === cum[i - 1] ? 0 : Math.min(1, (d - cum[i - 1]) / (cum[i] - cum[i - 1]));
-    pts.push([prof.pts[i - 1][0] + (prof.pts[i][0] - prof.pts[i - 1][0]) * f, prof.pts[i - 1][1] + (prof.pts[i][1] - prof.pts[i - 1][1]) * f]);
-  }
-  const hs = await sampleAt(pts).catch(() => null);
+  const r = resampleLine(prof.pts, 120);
+  const hs = await sampleAt(r.pts).catch(() => null);
   if (!hs || my !== profToken) return;
-  const v = Array.from(hs).filter((x) => !Number.isNaN(x));
-  if (v.length < 2) return void ($("#relief-profile-info").textContent = "No heights (tiles not available)");
-  let up = 0;
-  let down = 0;
-  v.forEach((x, i) => i && (x > v[i - 1] ? (up += x - v[i - 1]) : (down += v[i - 1] - x)));
+  const s = profileStats(Array.from(hs), r.total);
+  if (!s) return void ($("#relief-profile-info").textContent = "No heights (tiles not available)");
   $("#relief-profile-info").textContent =
-    total.toFixed(1) + " km \u00b7 min " + fmtM(Math.min(...v)) + " m \u00b7 max " + fmtM(Math.max(...v)) + " m \u00b7 +" + fmtM(up) + " m / \u2212" + fmtM(down) + " m";
-  drawChart(v);
+    s.length.toFixed(1) + " km \u00b7 min " + fmtM(s.min) + " m \u00b7 max " + fmtM(s.max) + " m \u00b7 +" + fmtM(s.up) + " m / \u2212" + fmtM(s.down) + " m";
+  drawChart(Array.from(hs).filter((x) => !Number.isNaN(x)));
 }
 function drawChart(v) {
   const cv = $("#relief-profile");

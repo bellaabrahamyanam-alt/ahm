@@ -129,7 +129,7 @@ function makeMapLibre() {
 /** map.js in a page of its own. `ready: false` leaves the map before its load event; `before(p)` runs before initMap().
  *  Handler errors of AHM.emit are only logged, so they are collected in `errors`. */
 function boot({ ready = true, before } = {}) {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const ml = makeMapLibre();
   const errors = [];
   Object.assign(p.ctx, {
@@ -463,7 +463,7 @@ function makeUx(glyphs) {
 
 /** map.js (with typeicons.js, for TYPE_STYLE) in a page of its own, on the richer stand-in and a fake clock. */
 function bootUx({ ready = true, glyphs = true } = {}) {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const ml = makeUx(glyphs);
   const clock = makeClock();
   const errors = [];
@@ -965,7 +965,7 @@ test('types: setTypeStyles rebuilds the table from point types; bad symbol, colo
 });
 
 test('types: getSymbols lists the symbols the map can draw, every one has a shape', () => {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const syms = J(p.X('AHM.map.getSymbols()'));
   const names = syms.map((s) => s.name);
   for (const n of ['circle', 'tree', 'sword', 'pickaxe', 'flag', 'star']) ok(names.includes(n), n);
@@ -973,7 +973,7 @@ test('types: getSymbols lists the symbols the map can draw, every one has a shap
 });
 
 test('types: AHM.map.setTypes before the map is ready only updates the table (icons are made on load)', () => {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   p.X('AHM.map.setTypes(__0)', TYPES_DICT);
   ok(p.X('"iron-mine" in TYPE_STYLE'));
 });
@@ -1414,7 +1414,7 @@ test('map: settings are saved in localStorage and read again at the start', () =
 });
 
 test('map: contours: marching squares gives one closed line around a cone, and nothing for a flat or missing grid', () => {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const n = 21;
   const cone = Array.from({ length: n * n }, (_, k) => 100 - Math.hypot((k % n) - 10, Math.floor(k / n) - 10));
   const lines = p.X('contourLines(__0, 21, 21, 95)', cone);
@@ -1498,7 +1498,7 @@ const turnDeg = (l) => {
 };
 
 test('map: contours: cutting the corners (Chaikin) makes a ring rounder and keeps it closed; an open line keeps its ends', () => {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const n = 21;
   const cone = Array.from({ length: n * n }, (_, k) => 100 - Math.hypot((k % n) - 10, Math.floor(k / n) - 10) + 0.3 * Math.sin(k));
   const raw = p.X('contourLines(__0, 21, 21, 94)', cone)[0];
@@ -1514,7 +1514,7 @@ test('map: contours: cutting the corners (Chaikin) makes a ring rounder and keep
 });
 
 test('map: contours: the grid blur lowers a spike (1 2 1 / 2 4 2 / 1 2 1 over 16), renormalises at the edge and keeps missing cells missing', () => {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const g = Array(25).fill(0);
   g[12] = 100;
   const b = p.X('smoothGrid(__0, 5, 5)', g);
@@ -1553,4 +1553,67 @@ test('map: relief colours: "Smooth colours" slides the range to the new one in 4
   eq(0, frames.length);
   p.X('relief.smooth = true; relief.range = null; setRange([10, 30])');
   eq([10, 30], range(), 'the first range is set at once');
+});
+
+// ---- terrain.js: height profiles of lines (T-044) ----
+const terrainPage = () => {
+  const p = load(['terrain.js']);
+  Object.assign(p.ctx, { AHM_CONFIG: { basemap: { terrain: { encoding: 'terrarium', maxzoom: 12, tiles: ['t/{z}/{x}/{y}'] } } } });
+  return p;
+};
+/** A tile stand-in of 256 x 1 pixels: the height of pixel x is f(x) metres (Terrarium: R*256 + G + B/256 - 32768). */
+const heightTile = (f) => ({
+  width: 256,
+  height: 1,
+  data: new Uint8ClampedArray(Array.from({ length: 256 }, (_, x) => { const v = Math.round((f(x) + 32768) * 256), r = Math.floor(v / 65536); return [r, Math.floor(v / 256) % 256, v % 256, 255]; }).flat()),
+});
+test('terrain: resampleLine spreads points evenly along a line and gives its length', () => {
+  const p = terrainPage();
+  const r = J(p.X('resampleLine(__0, 5)', [[44, 40], [44, 40.1], [44.1, 40.1]]));
+  eq(5, r.pts.length);
+  ok(Math.abs(r.total - 19.6) < 0.4, 'two legs of 11.1 and 8.5 km: ' + r.total);
+  ok(Math.abs(r.dist[4] - r.total) < 1e-9 && r.dist[0] === 0, 'from 0 to the total');
+  ok(r.dist.every((d, i) => !i || Math.abs(d - r.dist[i - 1] - r.total / 4) < 1e-9), 'equal gaps');
+  eq([44, 40], r.pts[0]);
+});
+test('terrain: profileStats: min, max, ascent, descent, fall and slope; NaN is skipped; fewer than two heights give null', () => {
+  const p = terrainPage();
+  const s = J(p.X('profileStats(__0, 10)', [100, 140, 120, NaN, 90, 60]));
+  eq(140, s.max); eq(60, s.min);
+  eq(40, s.up, 'ascent'); eq(80, s.down, 'descent: 20 + 30 + 30');
+  eq(40, s.fall, 'first 100 minus last 60'); ok(Math.abs(s.slope - 0.4) < 1e-9, '40 m over 10 km = 0.4 %');
+  eq(null, p.X('profileStats(__0, 5)', [100, NaN]));
+});
+test('terrain: lineSection: the part of a line between the vertices nearest to two points, in the direction of the points; a ring gives its shorter way', () => {
+  const p = terrainPage();
+  const line = [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]];
+  eq([[1, 0], [2, 0], [3, 0]], J(p.X('lineSection(__0, [1.1, 0.2], [2.9, -0.1])', line)));
+  eq([[3, 0], [2, 0], [1, 0]], J(p.X('lineSection(__0, [3, 0], [1, 0])', line)), 'reversed when the points come the other way');
+  const ring = [[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]];
+  eq([[0, 0], [1, 0]], J(p.X('lineSection(__0, [0, 0], [1, 0])', ring)), 'one side of a square, not the three others');
+  const diag = J(p.X('lineSection(__0, [0, 0], [1, 1])', ring));
+  ok(diag.length === 3 && J(diag[0]).toString() === '0,0' && diag[2].toString() === '1,1', 'to the opposite corner: one of the two ways round, 3 vertices');
+  eq(null, p.X('lineSection(__0, [0, 0], [1, 1])', [[0, 0]]));
+});
+test('terrain: profileLevel: a long line is read from coarse tiles, a short one from fine tiles, within 3 and 12', () => {
+  const p = terrainPage();
+  ok(p.X('profileLevel(500, 40)') < p.X('profileLevel(5, 40)'), 'coarser for 500 km than for 5 km');
+  eq(3, p.X('profileLevel(20000, 40)')); eq(12, p.X('profileLevel(0.01, 40)'));
+});
+test('terrain: profileOf reads the heights of a line from tiles (a stand-in tile) and gives the numbers of a rise of 255 m', async () => {
+  const p = terrainPage();
+  p.ctx.tile = heightTile((x) => 1000 + x); // 1000 m in the west edge of every tile, +1 m per pixel to the east
+  const d = J(await p.X('profileOf(__0, 8, 20, () => tile)', [[0, 40], [0.5, 40]]));
+  eq(20, d.h.length);
+  ok(d.min >= 1000 && d.max <= 1255 && d.max > d.min, 'heights within the tile: ' + d.min + '..' + d.max);
+  ok(d.up >= 0 && d.length > 40, 'length of 0.5 degrees at 40 N is ~42.6 km: ' + d.length);
+  p.ctx.AHM_CONFIG.basemap.terrain.encoding = 'mapbox';
+  const none = await p.X('profileOf(__0, 8, 20, () => tile)', [[0, 40], [0.5, 40]]);
+  eq(null, none, 'a tile server that is not Terrarium gives no profile');
+});
+test('terrain: a missing tile gives NaN heights and no profile', async () => {
+  const p = terrainPage();
+  const d = await p.X('terrainSample(__0, 8, () => Promise.reject(new Error("404")))', [[0, 40], [1, 41]]);
+  eq([true, true], J(d).map((x) => x === null || Number.isNaN(x)), 'NaN (null in JSON) where a tile is missing');
+  eq(null, await p.X('profileOf(__0, 8, 10, () => Promise.reject(new Error("404")))', [[0, 40], [1, 41]]));
 });

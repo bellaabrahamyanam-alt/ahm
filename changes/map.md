@@ -50,6 +50,14 @@
 - **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (browser test "the Rivers tab ...", `riverSection` tests, `shape:` and `type:` river rows of `tests/fixtures/rules.json`).
 - **Follow-ups:** the OpenStreetMap search and a click on a river of the real base map were not tried with live data.
 
+## 2026-11-15 — Height profile of routes, rivers and borders (T-044)
+
+- **What:** new `app/js/map/terrain.js`: the tile reader (`terrainLocate`, `terrainTile`, `terrainDecode`, `terrainSample`) moved out of `map.js`, plus `resampleLine`, `profileStats`, `lineSection`, `profileLevel`, `profileOf`; `map.js` uses them (the relief panel profile too); commands `AHM.map.profile(id, { from, to })` and `profileMark(lonlat | null)` (I-2 [1.8]).
+- **Why:** TODO T-044 (owner, in the chat).
+- **Files:** `app/js/map/terrain.js`, `app/js/map/map.js`, `app/js/map/shapes.js`, `interfaces/I-2-sidebar-map.md`, `tests/js/map.test.js`, `tests/js/contract.test.js`
+- **How to verify:** `node tests/js/run.js` (terrain tests in `map.test.js`; the Chromium test "the height profile of a river and of a route" reads a PNG tile).
+- **Follow-ups:** T-045 uses `terrain.js` for the cost grid.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the map domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ## 2026-11-14 — T-021: routes on the map (written afterwards; commits `b0b76d2`, `571630d`, `2f38036`)

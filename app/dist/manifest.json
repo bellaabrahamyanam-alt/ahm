@@ -1,5 +1,5 @@
 {
-  "hash": "0896508b28508a85c74ca08dcdee63855cb1e16a9753ed004429c7d3b5cbc93d",
+  "hash": "171804f6db5892624f9420d790e7381e41dfa374e6e2288615d120b861c01190",
   "js": [
     "js/config.js",
     "js/ahm.js",
@@ -17,12 +17,14 @@
     "js/sidebar/period.js",
     "js/sidebar/placeform.js",
     "js/map/typeicons.js",
+    "js/map/terrain.js",
     "js/map/map.js",
     "js/map/shapes.js",
     "js/map/overlays.js",
     "js/sidebar/layers.js",
     "js/sidebar/shapes.js",
     "js/sidebar/routes.js",
+    "js/sidebar/profile.js",
     "js/sidebar/layout.js",
     "js/sidebar/places.js",
     "js/sidebar/actions.js",
@@ -37,7 +39,7 @@
     "css/shapes.css"
   ],
   "bytes": {
-    "app.min.js": 220884,
-    "app.min.css": 23830
+    "app.min.js": 228285,
+    "app.min.css": 23952
   }
 }

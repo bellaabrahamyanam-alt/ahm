@@ -1217,3 +1217,15 @@ select {
   color: var(--error-color);
 }
 
+
+/* height profile of a shape (T-044) */
+.pr-box {
+  margin: 8px 0;
+}
+.pr-box canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 4px 0;
+  background: var(--panel, transparent);
+}

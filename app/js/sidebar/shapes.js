@@ -68,7 +68,8 @@ function shSetMode(m) {
   if (sh.draw) shCancelDraw(); // a drawing belongs to its tab: leaving the tab cancels it
   sh.modes[sh.mode].q = $('#shQ').value;
   sh.mode = m;
-  sh.open = null;
+  const cur = sh.open && shapeById(sh.open);
+  if (!cur || shapeGroup(cur) !== SH_GROUP[m]) sh.open = null; // an open card stays when the tab is changed for it (shOpen)
   sh.adding = false;
   if (m === 'rivers' && !sh.river.seen) (sh.river.on = true), (sh.river.seen = true); // the first time, the Rivers tab follows a river by default; after that the choice is kept
   const t = SH_TEXT[m];
@@ -250,8 +251,8 @@ function shRenderView() {
     (can && free.length ? `<select id="shAddLayer" aria-label="Add to a layer"><option value="">Add to a layer…</option>${free.map((ly) => `<option value="${ly.id}">${esc(lyName(ly, l))}</option>`).join('')}</select>` : '') +
     lyOwnerNotesHTML(s.id, l, 'shact') +
     (osm ? `<div class="sn">Outline © <a href="https://www.openstreetmap.org/${osm[1]}/${osm[2]}" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL).</div>` : '') +
-    `<div class="err-line" id="shErr"></div></div><div class="dock-foot">` +
-    `<button type="button" data-shact="fit">Fit map</button>` +
+    `<div class="pr-host"></div><div class="err-line" id="shErr"></div></div><div class="dock-foot">` +
+    `<button type="button" data-shact="fit">Fit map</button><button type="button" data-shact="profile">Height profile</button>` +
     (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-shact="editshape">Edit shape</button>' : ''}<button type="button" class="danger" data-shact="delete">Delete</button>` : '') +
     `</div>`;
   shShow(true);
@@ -317,6 +318,7 @@ $('#shDetail').addEventListener('click', async (e) => {
   if (act === 'cancel') return shCancelForm();
   if (!s) return;
   if (act === 'fit') shFit(s.id);
+  else if (act === 'profile') prOpen(s);
   else if (act === 'layer') lyOpen(b.dataset.lid);
   else if (act === 'addnote') lyOpenNoteDlg(s, null, 'border');
   else if (act === 'editnote') lyOpenNoteDlg(s, layerNotes.find((n) => n.id === b.dataset.id), 'border');

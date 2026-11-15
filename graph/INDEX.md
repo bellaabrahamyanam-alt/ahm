@@ -6,8 +6,8 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 | domain | files | lines | largest file |
 |---|---|---|---|
-| sidebar | 12 | 3514 | `app/js/sidebar/layers.js` (691) |
-| map | 4 | 2306 | `app/js/map/map.js` (1268) |
+| sidebar | 13 | 3656 | `app/js/sidebar/layers.js` (691) |
+| map | 5 | 2397 | `app/js/map/map.js` (1203) |
 | core | 7 | 1039 | `app/js/core/shapes.js` (367) |
 | state | 1 | 43 | `app/js/state/state.js` (43) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
@@ -16,10 +16,10 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 ## Flags
 
-- `app/js/map/map.js` has 1268 lines (limit 600); owner: map
+- `app/js/map/map.js` has 1203 lines (limit 600); owner: map
 - `app/js/sidebar/layers.js` has 691 lines (limit 600); owner: sidebar
-- `app/js/sidebar/routes.js` has 629 lines (limit 600); owner: sidebar
-- `app/js/sidebar/shapes.js` has 683 lines (limit 600); owner: sidebar
+- `app/js/sidebar/routes.js` has 630 lines (limit 600); owner: sidebar
+- `app/js/sidebar/shapes.js` has 685 lines (limit 600); owner: sidebar
 - `dev/save-handler.js` has 1137 lines (limit 600); owner: data
 - `service/store.php` has 1884 lines (limit 600); owner: data
 
@@ -32,16 +32,16 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - data -> sidebar: 1 name (edit)
 - map -> core: 5 names (label, places, route +2)
 - map -> data: 3 names (ovDelete, ovSave, path)
-- map -> sidebar: 7 names (btns, edit, focusPlace +4)
+- map -> sidebar: 8 names (btns, edit, focusPlace +5)
 - sidebar -> core: 76 names (BORDER_TYPES, DATE_FORMATS, MONTHS +73)
 - sidebar -> data: 3 names (layerSave, path, save)
-- sidebar -> map: 6 names (drawShape, hideMenu, locate +3)
+- sidebar -> map: 6 names (drawShape, hideMenu, relief +3)
 - state -> core: 1 name (state)
 
 ## Where to look (by file name)
 
-- sidebar: app/js/sidebar/actions.js, app/js/sidebar/admin.js, app/js/sidebar/datefield.js +9
-- map: app/js/map/map.js, app/js/map/overlays.js, app/js/map/shapes.js +1
+- sidebar: app/js/sidebar/actions.js, app/js/sidebar/admin.js, app/js/sidebar/datefield.js +10
+- map: app/js/map/map.js, app/js/map/overlays.js, app/js/map/shapes.js +2
 - layer: app/js/core/layer-rules.js, app/js/sidebar/layers.js
 - search: app/js/core/search.js, app/js/sidebar/searchfield.js
 - date: app/js/core/dates.js, app/js/sidebar/datefield.js, service/dates.php
