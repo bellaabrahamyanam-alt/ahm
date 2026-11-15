@@ -49,6 +49,22 @@
 - **How to verify:** `php tests/php/run.php`, `php tests/data/run.php`.
 - **Follow-ups:** the type editor of the sidebar (`ui.js`) and `dev/save-handler.js` have no new tests: the editor needs a browser run, the dev server was left out on purpose.
 
+## 2026-11-15 — Rivers tab (T-038)
+
+- **What:** geometry `river` for types (style without arrow), a shape of a river type must be a line, optional `width` of a shape; built-in and sample type `waterway`; parity rows.
+- **Why:** owner, in the chat: rivers as their own entity with a tab, notes, a name search that saves nothing, and a section of a river by two clicks.
+- **Files:** `service/store.php`, `dev/save-handler.js`, `data/types.json`, `tests/fixtures/rules.json`, `tests/php/TypeTest.php`, `tests/js/parity.test.js`
+- **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (browser test "the Rivers tab ...", `riverSection` tests, `shape:` and `type:` river rows of `tests/fixtures/rules.json`).
+- **Follow-ups:** the OpenStreetMap search and a click on a river of the real base map were not tried with live data.
+
+## 2026-11-15 — Rivers tab fix: a dictionary without a river type (T-038)
+
+- **What:** an old dictionary with line or area types but no river type now also offers the built-in river type `waterway` (PHP and Node), so the Rivers tab works with existing data.
+- **Why:** owner's screenshot: "can't access property dataset" on Save in the Rivers tab, because the live types.json had no river type and the type chips were empty.
+- **Files:** `service/store.php`, `dev/save-handler.js`, `tests/php/TypeTest.php`
+- **How to verify:** `php tests/php/run.php`, `node tests/js/run.js`.
+- **Follow-ups:** none.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the data domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ## 2026-11-14 — #5 T-027: notes for borders and routes

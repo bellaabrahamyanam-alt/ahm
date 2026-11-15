@@ -697,6 +697,9 @@ class store
             $o = is_array($st['outline'] ?? null) ? $st['outline'] : [];
             return ['fill_opacity' => self::style_number($st['fill_opacity'] ?? 0.15, 0, 0.8, 'fill opacity'), 'outline' => self::clean_stroke($o)];
         }
+        if ($geometry === 'river') {
+            return self::clean_stroke($st); // a river has no direction: width, pattern, opacity only
+        }
         if (isset($st['arrow']) && !is_bool($st['arrow'])) {
             throw self::bad('arrow must be true or false');
         }
@@ -708,8 +711,8 @@ class store
     {
         return $this->locked(function () use ($in) {
             $geometry = $in['geometry'] ?? '';
-            if (!in_array($geometry, ['point', 'line', 'area'], true)) {
-                throw self::bad('the geometry must be "point", "line" or "area"');
+            if (!in_array($geometry, ['point', 'line', 'area', 'river'], true)) {
+                throw self::bad('the geometry must be "point", "line", "area" or "river"');
             }
             $names = self::clean_names($in['names'] ?? [], array_column($this->lang_load(), 'code'), 'a type needs at least one name');
             $color = (string) ($in['color'] ?? '');
@@ -1362,7 +1365,8 @@ class store
         ['military', 'Military march', 'line', '#c62828', 'solid', 3, true],
         ['migration', 'Migration', 'line', '#6a1b9a', 'dotted', 2.8, true],
         ['journey', 'Journey or embassy', 'line', '#00796b', 'dashdot', 2.4, true],
-        ['road', 'Road', 'line', '#5d4037', 'solid', 2, false]
+        ['road', 'Road', 'line', '#5d4037', 'solid', 2, false],
+        ['waterway', 'River', 'river', '#1e88e5', 'solid', 3, false]
     ];
     private static function builtin_shape_types()
     {
@@ -1376,21 +1380,31 @@ class store
                 'color' => $color,
                 'style' => $geometry === 'area'
                     ? ['fill_opacity' => $x, 'outline' => ['width' => $width, 'pattern' => $pattern, 'opacity' => 1]]
-                    : ['width' => $width, 'pattern' => $pattern, 'opacity' => 1, 'arrow' => $x]
+                    : ($geometry === 'river'
+                        ? ['width' => $width, 'pattern' => $pattern, 'opacity' => 1]
+                        : ['width' => $width, 'pattern' => $pattern, 'opacity' => 1, 'arrow' => $x])
             ];
         }
         return $out;
     }
     private static function with_shape_types(array $list)
     {
+        $has = [];
         foreach ($list as $t) {
-            if (in_array($t['geometry'] ?? 'point', ['line', 'area'], true)) {
-                return $list;
-            }
+            $has[$t['geometry'] ?? 'point'] = true;
         }
-        return array_merge($list, self::builtin_shape_types());
+        if (!isset($has['line']) && !isset($has['area']) && !isset($has['river'])) {
+            return array_merge($list, self::builtin_shape_types());
+        }
+        if (!isset($has['river'])) {
+            // a dictionary made before rivers existed: the built-in river type is offered, so the Rivers tab works at once
+            return array_merge($list, array_values(array_filter(self::builtin_shape_types(), function ($t) {
+                return $t['geometry'] === 'river';
+            })));
+        }
+        return $list;
     }
-    /** { code => 'line' | 'area' } of the shape types. Caller holds the lock. */
+    /** { code => 'line' | 'area' | 'river' } of the shape types. Caller holds the lock. */
     private function shape_kinds()
     {
         $k = [];
@@ -1544,6 +1558,13 @@ class store
             'date_to' => $to,
             'source' => $source
         ];
+        // width: the line width in pixels, 0.5 to 12. Absent = unchanged (a new shape then uses the width of its type).
+        if (array_key_exists('width', $in)) {
+            if (is_bool($in['width']) || !is_numeric($in['width']) || (float) $in['width'] < 0.5 || (float) $in['width'] > 12) {
+                throw self::bad('the width must be between 0.5 and 12');
+            }
+            $out['width'] = round((float) $in['width'], 1);
+        }
         if ($kinds[$in['type']] === 'line') {
             // stops: the places the route passes, in order (ids of existing places; at most 60). twoway: usable both ways. Absent = unchanged.
             if (array_key_exists('stops', $in)) {
@@ -1568,11 +1589,11 @@ class store
         return $out;
     }
 
-    /** A route is a line: refuses an area for a route type. */
+    /** A route or a river is a line: refuses an area for such a type. */
     private static function route_geometry_check($type, array $g, array $kinds)
     {
-        if (($kinds[$type] ?? '') === 'line' && !in_array($g['type'], ['LineString', 'MultiLineString'], true)) {
-            throw self::bad('a route must be a line');
+        if (in_array($kinds[$type] ?? '', ['line', 'river'], true) && !in_array($g['type'], ['LineString', 'MultiLineString'], true)) {
+            throw self::bad(($kinds[$type] ?? '') === 'river' ? 'a river must be a line' : 'a route must be a line');
         }
     }
 

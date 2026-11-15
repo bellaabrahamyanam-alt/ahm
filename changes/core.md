@@ -8,6 +8,22 @@
 - **How to verify:** `node tests/js/run.js`.
 - **Follow-ups:** none.
 
+## 2026-11-15 — Rivers tab (T-038)
+
+- **What:** `river` geometry in `setShapeTypes` (`isRiverType`, `isRiver`, `RIVER_TYPE_LIST`, `shapeGroup`, `shapesRun` group `river`); `riverSection(g, a, b)`; `geocodeShapes` takes an optional simplification threshold.
+- **Why:** owner, in the chat: rivers as their own entity with a tab, notes, a name search that saves nothing, and a section of a river by two clicks.
+- **Files:** `app/js/core/shapes.js`, `app/js/core/providers.js`, `tests/js/routes.test.js`
+- **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (browser test "the Rivers tab ...", `riverSection` tests, `shape:` and `type:` river rows of `tests/fixtures/rules.json`).
+- **Follow-ups:** the OpenStreetMap search and a click on a river of the real base map were not tried with live data.
+
+## 2026-11-15 — Rivers tab: critic fixes (T-038)
+
+- **What:** a click counts as on the river only within 1 km (`RIVER_CLICK_KM`, was 5 km), so a tributary is not taken for the river.
+- **Why:** critic review of the PR: the fallback straight line lost the clicks; a near river could be taken for the wrong one; the tab could show the wrong list while drawing.
+- **Files:** `app/js/core/shapes.js`, `tests/js/routes.test.js`
+- **How to verify:** `node tests/js/run.js` (browser test: a leg with no river keeps its clicks).
+- **Follow-ups:** none.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the core domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ---

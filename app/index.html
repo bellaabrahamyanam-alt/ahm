@@ -24,6 +24,7 @@
         <button data-tab="explore" class="on">Explore</button>
         <button data-tab="shapes">Borders</button>
         <button data-tab="routes">Routes</button>
+        <button data-tab="rivers">Rivers</button>
         <button data-tab="layers">Layers</button>
         <button data-tab="more">More</button>
       </nav>
@@ -146,12 +147,12 @@
           <div id="catAdmin"></div>
         </div></details></section>
         <section id="tab-shapes" hidden>
-          <p class="sn">
+          <p class="sn" id="shIntro">
             Borders of countries, regions and other areas, and lines. Colour them,
             make them transparent and show their names on the map. They can belong
             to layers and follow the period filter of Explore.
           </p>
-          <div class="label">Search borders</div>
+          <div class="label" id="shSearchLbl">Search borders</div>
           <div data-searchfield="shQ" data-placeholder="Search borders…"></div>
           <div id="shTypes" class="chips"></div>
           <div class="bar">

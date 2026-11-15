@@ -42,6 +42,14 @@
 - **How to verify:** `node tests/js/run.js`.
 - **Follow-ups:** the type editor of the sidebar (`ui.js`) and `dev/save-handler.js` have no new tests: the editor needs a browser run, the dev server was left out on purpose.
 
+## 2026-11-15 — Rivers tab (T-038)
+
+- **What:** `riverNameAt([lon, lat])`: the name of the base-map waterway under a point (I-2 [1.7]).
+- **Why:** owner, in the chat: rivers as their own entity with a tab, notes, a name search that saves nothing, and a section of a river by two clicks.
+- **Files:** `app/js/map/shapes.js`, `interfaces/I-2-sidebar-map.md`, `tests/js/contract.test.js`
+- **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (browser test "the Rivers tab ...", `riverSection` tests, `shape:` and `type:` river rows of `tests/fixtures/rules.json`).
+- **Follow-ups:** the OpenStreetMap search and a click on a river of the real base map were not tried with live data.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the map domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ## 2026-11-14 — T-021: routes on the map (written afterwards; commits `b0b76d2`, `571630d`, `2f38036`)

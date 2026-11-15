@@ -1,7 +1,7 @@
 // Shapes on the map (map domain): borders (areas) and lines, drawn exactly as the sidebar describes them. The map knows nothing about
 // border types: every feature arrives with its look (colour, opacity, width, dash) already resolved. Also the drawing tool.
 // Commands (AHM.map.*, INTERFACES.md I-2): setShapes(fc), highlightShape(id|null), previewShape(id, {color, opacity}|null),
-//   showPreview(geometry|null) (a blue draft outline), drawShape({ kind: 'area'|'line', coords?, ids?, snap? }, onChange), isDrawing().
+//   showPreview(geometry|null) (a blue draft outline), drawShape({ kind: 'area'|'line', coords?, ids?, snap? }, onChange), isDrawing(), riverNameAt([lon, lat]).
 // Events: shape:click { id } (a click on a line or an outline, 6 px tolerance), map:click now carries shapes: [{ id }] (areas under the
 //   cursor), draw:finish (Enter or double click while drawing), draw:cancel (Esc).
 // Feature properties: kind ('area' | 'line' | 'label'), id, name, type (text), dates (text), color, ink (label colour), opacity, width,
@@ -430,6 +430,15 @@ Object.assign(AHM.map, {
     foundNow = geometry ? { type: 'Feature', geometry, properties: {} } : null;
     const f = mapReady && map.getSource('ahm-found');
     if (f) f.setData(foundNow || EMPTY);
+  },
+  /** The name of the river of the base map under a point [lon, lat] (the nearest waterway within 10 px that has a name), or ''. */
+  riverNameAt(p) {
+    if (!mapReady) return '';
+    const pt = map.project(p),
+      f = map
+        .queryRenderedFeatures([[pt.x - 10, pt.y - 10], [pt.x + 10, pt.y + 10]])
+        .find((x) => x.sourceLayer === 'waterway' && x.properties && (x.properties.name || x.properties['name:latin']));
+    return f ? f.properties.name || f.properties['name:latin'] : '';
   },
   drawShape,
   isDrawing: () => !!shapeDrawing,

@@ -138,9 +138,48 @@ scenario('browser: languages, optional dates in many formats, mountain height, n
     
 });
 
+scenario('browser: the Rivers tab lists only rivers, has its own add panel and finds rivers by name without saving them', null, async (pg, S) => {
+  const dense = (x0, x1) => { const o = []; for (let x = x0; x <= x1 + 1e-9; x += 0.01) o.push([+x.toFixed(3), +(40 + (x - 44) * 0.2).toFixed(4)]); return o; }; // a river with a point every kilometre or so
+  await pg.route('**/nominatim.openstreetmap.org/**', (r) =>
+    r.fulfill({ contentType: 'application/json', body: JSON.stringify([
+      { display_name: 'Araks, Armenia', osm_type: 'relation', osm_id: 1, type: 'river', addresstype: 'river', geojson: { type: 'MultiLineString', coordinates: [dense(44.0, 44.5), dense(44.5, 45.0)] } },
+      { display_name: 'Araks, Turkey', osm_type: 'relation', osm_id: 2, type: 'river', addresstype: 'river', geojson: { type: 'LineString', coordinates: [[42.0, 39.9], [43.0, 40.0]] } },
+    ]) }));
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
+  const saved = await pg.evaluate(async () => {
+    const x = await fetch('/api/shape/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: [{ lang: 'en', name: 'Test river' }], type: 'waterway', color: '#1e88e5', opacity: 1, label: true, source: '', date_from: null, date_to: null, width: 4, geometry: { type: 'LineString', coordinates: [[44.1, 40.0], [44.4, 40.1]] } }) });
+    await shReload();
+    return x.status;
+  });
+  ok(saved === 200, 'a river is saved through the shape endpoint');
+  await pg.evaluate(() => tab('rivers'));
+  ok(await pg.locator('#tab-shapes').isVisible() && (await pg.locator('.tabs button.on').innerText()) === 'Rivers', 'the Rivers tab shows the shapes panel and is the selected tab');
+  ok(/1 of 1 rivers/.test(await pg.locator('#shCount').innerText()) && (await pg.locator('#shList li[data-sid]').count()) === 1, 'the Rivers list has the river');
+  ok(/Find rivers/.test(await pg.locator('#shAdd').innerText()) && !/Add a border/.test(await pg.locator('#shAdd').innerText()), 'the Rivers tab has the river search, not the border add panel');
+  await pg.fill('#shRvQ', 'Araks'); await pg.click('[data-shadd="rvfind"]'); await pg.waitForTimeout(500);
+  ok((await pg.locator('#shRvRes li[data-i]').count()) === 2, 'a search finds several rivers');
+  ok((await pg.locator('#shRvRes button').count()) === 0, 'found rivers have no Add button');
+  ok((await pg.locator('#shList li[data-sid]').count()) === 1, 'finding rivers saves nothing');
+  const leg = await pg.evaluate(async () => {
+    sh.draw = { kind: 'line', mode: 'new' }; // the drawing tool asks shRiverLeg for the points between two clicks
+    sh.river.on = true; sh.river.clicks = [];
+    const far = await shRiverLeg([10, 10], [10.1, 10]), farClicks = sh.river.clicks.length;
+    const near = await shRiverLeg([44.1, 40.02], [44.4, 40.08]), nearClicks = sh.river.clicks.length;
+    sh.draw = null;
+    return { far, farClicks, near: near && near.length, nearClicks, first: near && near[0] };
+  });
+  ok(leg.far === null && leg.farClicks === 0, 'a click that gets no river section is kept in the line (not recorded to be dropped)');
+  ok(leg.near > 25 && leg.nearClicks === 2 && leg.first[0] === 44.1, 'two clicks on the river give its points between them, and only then the clicks are recorded');
+  await pg.evaluate(() => tab('shapes'));
+  ok(!/Test river/.test(await pg.locator('#shList').innerText()) && /\+ Add border/.test(await pg.locator('#shAdd').innerText()), 'the Borders tab does not list the river and has its own add button');
+  await pg.evaluate(() => tab('rivers'));
+  await pg.click('#shList li[data-sid] b');
+  ok(/Test river/.test(await pg.locator('#shDetail').innerText()) && (await pg.locator('#shWidth').count()) === 1, 'the river card opens with a Width slider');
+});
+
 scenario('browser: tabs, sheets, filters, layers (only / hide / search / create / choose places / notes / delete), categories', null, async (pg, S) => {
   await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
-    ok(await pg.locator('.tabs button').count()===5 && await pg.locator('#more-maps #basemap').count()===1, 'five tabs (Explore, Borders, Routes, Layers, More); Maps is a fold in More');
+    ok(await pg.locator('.tabs button').count()===6 && await pg.locator('#more-maps #basemap').count()===1, 'six tabs (Explore, Borders, Routes, Rivers, Layers, More); Maps is a fold in More');
     await pg.evaluate(()=>tab('route')); ok(await pg.locator('#more-route').evaluate(e=>e.open) && !(await pg.locator('#more-maps').evaluate(e=>e.open)) && await pg.locator('#tab-more').isVisible(), 'tab(route) opens the Directions fold in More');
     await pg.evaluate(()=>tab('explore'));
     // selected types are shown inside Filters only: no chips under the Filters block

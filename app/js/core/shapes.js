@@ -17,29 +17,41 @@ const SHAPE_TYPES = {
   migration: { label: 'Migration', dash: 'dotted', width: 2.8, color: '#6a1b9a', fill: 1, route: true, twoway: false },
   journey: { label: 'Journey or embassy', dash: 'dashdot', width: 2.4, color: '#00796b', fill: 1, route: true, twoway: false },
   road: { label: 'Road', dash: 'solid', width: 2, color: '#5d4037', fill: 1, route: true, twoway: true },
+  // Rivers: lines that are not routes (no stops, never used by path finding); they have their own tab.
+  waterway: { label: 'River', dash: 'solid', width: 3, color: '#1e88e5', fill: 1, river: true },
 };
 const isRouteType = (t) => !!(SHAPE_TYPES[t] && SHAPE_TYPES[t].route);
 const isRoute = (s) => isRouteType(s.type);
-const BORDER_TYPES = Object.keys(SHAPE_TYPES).filter((t) => !isRouteType(t));
+const isRiverType = (t) => !!(SHAPE_TYPES[t] && SHAPE_TYPES[t].river);
+const isRiver = (s) => isRiverType(s.type);
+const shapeGroup = (s) => (isRoute(s) ? 'route' : isRiver(s) ? 'river' : 'border');
+const BORDER_TYPES = Object.keys(SHAPE_TYPES).filter((t) => !isRouteType(t) && !isRiverType(t));
 const ROUTE_TYPE_LIST = Object.keys(SHAPE_TYPES).filter(isRouteType);
+const RIVER_TYPE_LIST = Object.keys(SHAPE_TYPES).filter(isRiverType);
 const SHAPE_FALLBACK = { label: 'Area', dash: 'solid', width: 1.4, color: '#2e7d32', fill: 0.2 };
 // A stored shape whose type is gone from the dictionary is drawn like the first area type.
 const shapeType = (t) => SHAPE_TYPES[t] || SHAPE_TYPES[BORDER_TYPES[0]] || SHAPE_FALLBACK;
 const MAP_DASH = ['solid', 'dashed', 'dotted', 'dashdot']; // the patterns the map draws; double and triple are drawn solid for now
-/** The line and area types of the types dictionary replace the built-in ones above (a dictionary without any keeps them). Call it when the dictionary loads or changes. */
+/** The line, river and area types of the types dictionary replace the built-in ones above (a dictionary without any keeps them). Call it when the dictionary loads or changes. */
 function setShapeTypes(list) {
-  const kinds = (list || []).filter((t) => t.geometry === 'line' || t.geometry === 'area');
+  const kinds = (list || []).filter((t) => t.geometry === 'line' || t.geometry === 'area' || t.geometry === 'river');
   if (!kinds.length) return;
   Object.keys(SHAPE_TYPES).forEach((k) => delete SHAPE_TYPES[k]);
   BORDER_TYPES.length = 0;
   ROUTE_TYPE_LIST.length = 0;
+  RIVER_TYPE_LIST.length = 0;
   kinds.forEach((t) => {
     const st = t.style || {},
       o = t.geometry === 'area' ? st.outline || {} : st,
       label = ((t.names || []).find((n) => n.lang === 'en') || (t.names || [])[0] || {}).name || t.code,
       look = { label, dash: MAP_DASH.includes(o.pattern) ? o.pattern : 'solid', width: o.width || 2, color: t.color };
-    SHAPE_TYPES[t.code] = t.geometry === 'line' ? { ...look, fill: 1, route: true, twoway: st.arrow !== true } : { ...look, fill: st.fill_opacity == null ? 0.15 : st.fill_opacity };
-    (t.geometry === 'line' ? ROUTE_TYPE_LIST : BORDER_TYPES).push(t.code);
+    SHAPE_TYPES[t.code] =
+      t.geometry === 'line'
+        ? { ...look, fill: 1, route: true, twoway: st.arrow !== true }
+        : t.geometry === 'river'
+          ? { ...look, fill: 1, river: true }
+          : { ...look, fill: st.fill_opacity == null ? 0.15 : st.fill_opacity };
+    (t.geometry === 'line' ? ROUTE_TYPE_LIST : t.geometry === 'river' ? RIVER_TYPE_LIST : BORDER_TYPES).push(t.code);
   });
 }
 const MAX_SHAPE_POINTS = 20000; // the server refuses more; imports are simplified to IMPORT_POINTS
@@ -70,12 +82,12 @@ const shapeDefaults = (type, kind) => ({
 });
 
 /** The shapes that pass the filters, sorted by name. options: q = text, lang = language code or '', types = Set (empty = all), period = [start, end) in seconds,
- *  group = 'border' | 'route' (omitted = both). */
+ *  group = 'border' | 'route' | 'river' (omitted = all). */
 function shapesRun({ q: text = '', lang: l = '', types = new Set(), period: [a, b] = [null, null], group = '' } = {}) {
   const q = norm(text);
   return shapes
     .filter((s) => {
-      if (group && isRoute(s) !== (group === 'route')) return false;
+      if (group && shapeGroup(s) !== group) return false;
       if (types.size && !types.has(s.type)) return false;
       if (!layerAllows(s.id)) return false; // the Only / Hide filters of the layers work on shapes too
       if (a !== null || b !== null) {
@@ -204,6 +216,98 @@ function guessShapeType(x) {
   if (['state', 'region', 'province', 'state_district'].includes(t)) return pick('province');
   if (['county', 'district', 'municipality', 'city', 'town', 'village', 'suburb', 'borough', 'city_district'].includes(t)) return pick('district');
   return pick('territory');
+}
+// ---- a section of a river between two clicks (the river twin of "follow modern roads" for routes) ----
+const RIVER_CLICK_KM = 1; // a click farther than this from the river is not on it (two rivers closer than that cannot be told apart by clicks)
+const RIVER_JOIN_KM = 0.3; // pieces of a river whose ends are closer than this count as joined
+const riverGraphs = new WeakMap(); // geometry -> { pts, adj }, built once per geometry
+function riverGraph(g) {
+  let r = riverGraphs.get(g);
+  if (r) return r;
+  const pts = [],
+    adj = [],
+    ends = [];
+  geomLines(g).forEach((l) => {
+    if (l.length < 2) return;
+    ends.push(pts.length);
+    l.forEach((p, i) => {
+      pts.push(p), adj.push([]);
+      if (!i) return;
+      const k = pts.length - 1,
+        w = lineKm([pts[k - 1], p]);
+      adj[k - 1].push([k, w]), adj[k].push([k - 1, w]);
+    });
+    ends.push(pts.length - 1);
+  });
+  for (let i = 0; i < ends.length; i++)
+    for (let j = i + 1; j < ends.length; j++) {
+      const w = lineKm([pts[ends[i]], pts[ends[j]]]);
+      if (w <= RIVER_JOIN_KM) adj[ends[i]].push([ends[j], w]), adj[ends[j]].push([ends[i], w]);
+    }
+  riverGraphs.set(g, (r = { pts, adj }));
+  return r;
+}
+/** The way along the river `g` (LineString or MultiLineString, pieces may touch) from the point nearest to `a` to the point nearest to `b`.
+ *  Returns { coords, km, offKm } (offKm: how far the clicks were from the river) or { error: 'far' | 'apart' }: a click more than
+ *  `maxKm` (1 km) from the river, or the two points are on pieces that do not join. */
+function riverSection(g, a, b, maxKm = RIVER_CLICK_KM) {
+  const { pts, adj } = riverGraph(g),
+    near = (p) => {
+      const c = Math.cos((p[1] * Math.PI) / 180);
+      let best = -1,
+        d = Infinity;
+      pts.forEach((q, i) => {
+        const e = ((q[0] - p[0]) * c) ** 2 + (q[1] - p[1]) ** 2;
+        if (e < d) (d = e), (best = i);
+      });
+      return best;
+    },
+    s = near(a),
+    t = near(b);
+  if (s < 0 || t < 0) return { error: 'far' };
+  const offKm = Math.max(lineKm([a, pts[s]]), lineKm([b, pts[t]]));
+  if (offKm > maxKm) return { error: 'far', offKm };
+  const dist = new Float64Array(pts.length).fill(Infinity),
+    prev = new Int32Array(pts.length).fill(-1),
+    heap = [[0, s]];
+  dist[s] = 0;
+  const push = (x) => {
+      heap.push(x);
+      for (let i = heap.length - 1, p; i > 0 && heap[(p = (i - 1) >> 1)][0] > heap[i][0]; i = p) [heap[p], heap[i]] = [heap[i], heap[p]];
+    },
+    pop = () => {
+      const top = heap[0],
+        last = heap.pop();
+      if (heap.length) {
+        heap[0] = last;
+        for (let i = 0; ; ) {
+          let m = i;
+          const l = 2 * i + 1,
+            r = l + 1;
+          if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+          if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+          if (m === i) break;
+          [heap[m], heap[i]] = [heap[i], heap[m]];
+          i = m;
+        }
+      }
+      return top;
+    };
+  while (heap.length) {
+    const [d, u] = pop();
+    if (d > dist[u]) continue;
+    if (u === t) break;
+    for (const [v, w] of adj[u])
+      if (d + w < dist[v]) (dist[v] = d + w), (prev[v] = u), push([d + w, v]);
+  }
+  if (dist[t] === Infinity) return { error: 'apart' };
+  const coords = [];
+  for (let v = t; v !== -1; v = prev[v]) {
+    const q = pts[v],
+      l = coords[coords.length - 1];
+    if (!l || l[0] !== q[0] || l[1] !== q[1]) coords.push(q.slice()); // two pieces that meet share a point
+  }
+  return { coords: coords.reverse(), km: dist[t], offKm };
 }
 /** The colour of the name drawn on the map: the shape colour, darkened so it reads on the white halo. */
 function shapeInk(hex) {

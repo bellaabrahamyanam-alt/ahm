@@ -394,6 +394,22 @@
     "opacity": 1,
     "arrow": false
    }
+  },
+  {
+   "code": "waterway",
+   "geometry": "river",
+   "names": [
+    {
+     "lang": "en",
+     "name": "River"
+    }
+   ],
+   "color": "#1e88e5",
+   "style": {
+    "width": 3,
+    "pattern": "solid",
+    "opacity": 1
+   }
   }
  ]
 }

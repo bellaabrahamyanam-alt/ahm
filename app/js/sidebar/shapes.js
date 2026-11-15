@@ -3,13 +3,18 @@
 // Look changes (colour, opacity, name on the map) are saved at once from the card; names, type and dates have a form.
 const sh = {
   open: null, // id of the shape whose card is open
-  types: new Set(), // type filter
+  mode: 'borders', // the tab the list and the card serve: 'borders' (areas and lines) or 'rivers' (rivers), same code, two tabs
+  modes: { borders: { q: '', types: new Set() }, rivers: { q: '', types: new Set() } }, // the search text and the type filter of each tab
+  get types() {
+    return this.modes[this.mode].types;
+  },
   hidden: new Set(), // shapes the person switched off in the list (this session only)
   form: null, // { id | null, kind, geometry, source } while the form is shown
   draw: null, // { mode: 'new' | 'edit', kind, id, ctl } while the drawing tool is on
   adding: false, // the add panel is open
   geo: [], // results of the OpenStreetMap search
   geoQ: '',
+  river: { on: false, seen: false, q: '', lines: [], clicks: [], res: [] }, // rivers: the river lines found by name (only used for drawing and looking, never saved) and the clicks they were used for
 };
 const shCan = () => AHM_CONFIG.canEdit;
 const shBox = (s) => s._box || (s._box = geomBBox(s.geometry));
@@ -52,8 +57,38 @@ function shIcon(type) {
   return (shIcons[type] = `<img class="ti" alt="" width="16" height="16" src="${c.toDataURL()}">`);
 }
 
+// ---- the two tabs of this module: Borders and Rivers (the card, the form, the notes and the drawing tool are shared) ----
+const SH_TEXT = {
+  borders: { intro: 'Borders of countries, regions and other areas, and lines. Colour them, make them transparent and show their names on the map. They can belong to layers and follow the period filter of Explore.', search: 'Search borders', ph: 'Search borders…', fit: 'Zoom the map to the borders in the list' },
+  rivers: { intro: 'Rivers. Find a river by name, then draw the part you need by clicking two points on it. Colour them, set the width and show their names on the map. They can belong to layers and follow the period filter of Explore.', search: 'Search rivers', ph: 'Search rivers…', fit: 'Zoom the map to the rivers in the list' },
+};
+/** Called by tab(): the Borders and the Rivers tab show the same panel with their own list, filters, types and add panel. */
+function shSetMode(m) {
+  if (m === sh.mode) return;
+  if (sh.draw) shCancelDraw(); // a drawing belongs to its tab: leaving the tab cancels it
+  sh.modes[sh.mode].q = $('#shQ').value;
+  sh.mode = m;
+  sh.open = null;
+  sh.adding = false;
+  if (m === 'rivers' && !sh.river.seen) (sh.river.on = true), (sh.river.seen = true); // the first time, the Rivers tab follows a river by default; after that the choice is kept
+  const t = SH_TEXT[m];
+  $('#shQ').value = sh.modes[m].q;
+  $('#shQ').placeholder = t.ph;
+  $('#shIntro').textContent = t.intro;
+  $('#shSearchLbl').textContent = t.search;
+  $('#shFit').title = t.fit;
+  shRenderList();
+  shRenderAdd();
+}
 // ---- data ----
-const shVisible = () => shapesRun({ q: $('#shQ') ? $('#shQ').value : '', lang: $('#lang').value, types: sh.types, period: periodBounds(), group: 'border' });
+const SH_GROUP = { borders: 'border', rivers: 'river' };
+/** The shapes of one tab (borders or rivers) that pass its search, type filter and the period. */
+const shVisibleOf = (m) =>
+  shapesRun({ q: m === sh.mode && $('#shQ') ? $('#shQ').value : sh.modes[m].q, lang: $('#lang').value, types: sh.modes[m].types, period: periodBounds(), group: SH_GROUP[m] });
+const shVisible = () => shVisibleOf(sh.mode);
+const shTypeList = () => (sh.mode === 'rivers' ? RIVER_TYPE_LIST : BORDER_TYPES);
+const shOnTab = () => curTab === (sh.mode === 'rivers' ? 'rivers' : 'shapes');
+const shWord = () => (sh.mode === 'rivers' ? 'rivers' : 'borders');
 async function shReload() {
   shapes = await loadShapes();
   shRefresh();
@@ -69,7 +104,7 @@ function shRefresh() {
 function shPush() {
   const l = $('#lang').value,
     out = [];
-  [...shVisible().filter((s) => !sh.hidden.has(s.id)), ...rtVisible().filter((s) => !rts.hidden.has(s.id))] // borders and routes (routes.js)
+  [...shVisibleOf('borders'), ...shVisibleOf('rivers')].filter((s) => !sh.hidden.has(s.id)).concat(rtVisible().filter((s) => !rts.hidden.has(s.id))) // borders, rivers and routes (routes.js)
     .filter((s) => !(sh.draw && sh.draw.id === s.id) && !(rts.draw && rts.draw.id === s.id)) // the shape whose outline is being redrawn is drawn by the tool
     .sort((a, b) => bboxArea(shBox(b)) - bboxArea(shBox(a))) // big first: small shapes end on top
     .forEach((s) => {
@@ -84,7 +119,7 @@ function shPush() {
           color: s.color,
           ink: shapeInk(s.color),
           opacity: s.opacity,
-          width: t.width,
+          width: s.width || t.width,
           dash: t.dash,
           label: s.label,
           arrows: isRoute(s) && !s.twoway,
@@ -101,8 +136,8 @@ function shPush() {
 // ---- the list ----
 function shRenderTypes() {
   const c = {};
-  shapes.filter((s) => !isRoute(s)).forEach((s) => (c[s.type] = (c[s.type] || 0) + 1));
-  $('#shTypes').innerHTML = BORDER_TYPES.filter((t) => c[t] || sh.types.has(t))
+  shapes.filter((s) => shapeGroup(s) === SH_GROUP[sh.mode]).forEach((s) => (c[s.type] = (c[s.type] || 0) + 1));
+  $('#shTypes').innerHTML = shTypeList().filter((t) => c[t] || sh.types.has(t))
     .map((t) => `<button class="chip${sh.types.has(t) ? ' on' : ''}" data-t="${t}">${shIcon(t)}${esc(SHAPE_TYPES[t].label)} <span>${c[t] || 0}</span></button>`)
     .join('');
 }
@@ -110,7 +145,7 @@ function shRenderList() {
   const l = $('#lang').value,
     rows = shVisible();
   shRenderTypes();
-  $('#shCount').textContent = rows.length + ' of ' + shapes.filter((s) => !isRoute(s)).length + ' borders';
+  $('#shCount').textContent = rows.length + ' of ' + shapes.filter((s) => shapeGroup(s) === SH_GROUP[sh.mode]).length + ' ' + shWord();
   $('#shList').innerHTML = rows.length
     ? rows
         .map((s) => {
@@ -123,7 +158,7 @@ function shRenderList() {
           );
         })
         .join('')
-    : `<li class="empty">${shapes.some((s) => !isRoute(s)) ? 'No borders match. Try fewer filters.' : 'No borders yet.'}</li>`;
+    : `<li class="empty">${shapes.some((s) => shapeGroup(s) === SH_GROUP[sh.mode]) ? `No ${shWord()} match. Try fewer filters.` : `No ${shWord()} yet.`}</li>`;
 }
 $('#shList').addEventListener('click', (e) => {
   if (e.target.closest('.sh-eye')) return;
@@ -160,7 +195,7 @@ function shOpen(id, fit) {
   if (isRoute(shapeById(id))) return rtOpen(id, fit); // a route has its own tab and card (routes.js)
   shCancelForm();
   sh.open = id;
-  tab('shapes');
+  tab(isRiver(shapeById(id)) ? 'rivers' : 'shapes');
   shRenderList();
   shRenderView();
   history.replaceState(null, '', '#border-' + id);
@@ -181,10 +216,10 @@ function shShow(on) {
 function shRenderView() {
   const s = sh.open && shapeById(sh.open),
     d = $('#shDetail');
-  if (!(rts.open && curTab === 'routes')) AHM.map.highlightShape(s && curTab === 'shapes' ? s.id : null); // a route card owns the highlight (routes.js)
+  if (!(rts.open && curTab === 'routes')) AHM.map.highlightShape(s && shOnTab() ? s.id : null); // a route card owns the highlight (routes.js)
   document.querySelectorAll('#shList li.on').forEach((x) => x.classList.remove('on'));
-  if (sh.form) return shShow(curTab === 'shapes');
-  if (!s || curTab !== 'shapes') return shShow(false);
+  if (sh.form) return shShow(shOnTab());
+  if (!s || !shOnTab()) return shShow(false);
   const li = $(`#shList li[data-sid="${s.id}"]`),
     l = $('#lang').value,
     t = shapeType(s.type),
@@ -207,6 +242,7 @@ function shRenderView() {
     `<div class="label">Look</div><div class="sh-look">` +
     `<label>Colour <input type="color" id="shColor" value="${esc(s.color)}"${dis}></label>` +
     `<label>${kind === 'area' ? 'Fill opacity' : 'Line opacity'} <input type="range" id="shOp" min="0" max="1" step="0.05" value="${s.opacity}"${dis}> <span id="shOpVal">${Math.round(s.opacity * 100)}%</span></label>` +
+    (kind === 'line' ? `<label>Width <input type="range" id="shWidth" min="0.5" max="12" step="0.5" value="${s.width || t.width}"${dis}> <span id="shWidthVal">${s.width || t.width} px</span></label>` : '') +
     `<label class="sh-check"><input type="checkbox" id="shLabel"${s.label ? ' checked' : ''}${dis}> Show the name on the map</label></div>` +
     `<div class="label">In layers</div><div class="chips">` +
     (inLy.length ? inLy.map((ly) => `<button class="chip ly-chip" data-shact="layer" data-lid="${ly.id}"${ly.color ? ` style="--a:${esc(ly.color)}"` : ''}>${esc(lyName(ly, l))}</button>`).join('') : '<span class="sn">None yet.</span>') +
@@ -222,7 +258,7 @@ function shRenderView() {
   if (li) revealRow(li);
 }
 const shErr = (m) => ($('#shErr') ? ($('#shErr').textContent = m || '') : m && alert(m));
-const shBody = (s, o = {}) => ({ id: s.id, names: s.names, type: s.type, color: s.color, opacity: s.opacity, label: s.label, date_from: s.date_from, date_to: s.date_to, source: s.source || '', ...o });
+const shBody = (s, o = {}) => ({ id: s.id, names: s.names, type: s.type, color: s.color, opacity: s.opacity, ...(s.width ? { width: s.width } : {}), label: s.label, date_from: s.date_from, date_to: s.date_to, source: s.source || '', ...o });
 /** Saves a look change at once (the map is already showing it). */
 async function shStyle(s, patch) {
   const old = Object.fromEntries(Object.keys(patch).map((k) => [k, s[k]]));
@@ -248,12 +284,14 @@ $('#shDetail').addEventListener('input', (e) => {
     AHM.map.previewShape(s.id, { opacity: +e.target.value });
     $('#shOpVal').textContent = Math.round(e.target.value * 100) + '%';
   }
+  if (e.target.id === 'shWidth') $('#shWidthVal').textContent = e.target.value + ' px';
 });
 $('#shDetail').addEventListener('change', async (e) => {
   const s = shCur();
   if (!s || sh.form) return;
   if (e.target.id === 'shColor') shStyle(s, { color: e.target.value });
   else if (e.target.id === 'shOp') shStyle(s, { opacity: +e.target.value });
+  else if (e.target.id === 'shWidth') shStyle(s, { width: +e.target.value });
   else if (e.target.id === 'shLabel') shStyle(s, { label: e.target.checked });
   else if (e.target.id === 'shAddLayer' && e.target.value) {
     try {
@@ -300,22 +338,22 @@ $('#shDetail').addEventListener('click', async (e) => {
 
 // ---- the form: names, type, dates (new shape or details of an existing one) ----
 const shTypeChips = (cur) =>
-  BORDER_TYPES.map((t) => `<button type="button" class="chip${t === cur ? ' on' : ''}" data-shact="typepick" data-t="${t}" title="${esc(SHAPE_TYPES[t].label)}">${shIcon(t)}${esc(SHAPE_TYPES[t].label)}</button>`)
+  shTypeList().map((t) => `<button type="button" class="chip${t === cur ? ' on' : ''}" data-shact="typepick" data-t="${t}" title="${esc(SHAPE_TYPES[t].label)}">${shIcon(t)}${esc(SHAPE_TYPES[t].label)}</button>`)
     .join('');
 function shOpenForm(f) {
   sh.form = f;
   const names = f.names && f.names.length ? f.names : [{ lang: $('#lang').value || 'en', name: '' }];
   $('#shDetail').innerHTML =
-    `<div class="dock-head"><span class="tmark">${shIcon(f.type || 'territory')}</span><h3 class="dock-title">${f.id ? 'Edit details' : f.kind === 'area' ? 'New border (area)' : 'New border (line)'}</h3><span class="dock-btns">${shBtn('cancel', 'close', 'Cancel')}</span></div>` +
+    `<div class="dock-head"><span class="tmark">${shIcon(f.type || shTypeList()[0] || 'territory')}</span><h3 class="dock-title">${f.id ? 'Edit details' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)'}</h3><span class="dock-btns">${shBtn('cancel', 'close', 'Cancel')}</span></div>` +
     `<div class="dock-body"><div class="pf" id="shForm"><div class="label">Names</div><div class="pf-names">${names.map(pfRow).join('')}</div>` +
     `<button type="button" class="pf-add">+ Add another name</button><div class="sn">${LANG_HINT}</div>` +
-    `<div class="label">Type</div><div class="chips sh-typepick">${shTypeChips(f.type || 'territory')}</div>` +
+    `<div class="label">Type</div><div class="chips sh-typepick">${shTypeChips(f.type || shTypeList()[0] || 'territory')}</div>` +
     `<div class="sn">The type sets the line pattern and the first colour. You can change the colour afterwards.</div>` +
     `<div class="label">Dates (optional)</div><div class="sn">Leave “Unknown” for a modern border or when you do not know. Borders with dates follow the period filter.</div>` +
     `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}</div>` +
     `<div class="err-line" id="shErr"></div></div><div class="dock-foot"><button type="button" class="primary" data-shact="save">Save</button><button type="button" data-shact="cancel">Cancel</button></div>`;
   shShow(true);
-  tab('shapes');
+  tab(sh.mode === 'rivers' ? 'rivers' : 'shapes');
   const n = $('#shForm .nn');
   if (n) n.focus();
 }
@@ -327,7 +365,9 @@ function shReadForm() {
   names.forEach((n) => {
     if (!languages.some((l) => l.code === n.lang)) throw Error(`The language “${n.lang || '?'}” is not in the list. Ask an administrator to add it.`);
   });
-  const type = root.querySelector('.sh-typepick .chip.on').dataset.t,
+  const chip = root.querySelector('.sh-typepick .chip.on');
+  if (!chip) throw Error('Choose a type. If there is none, an administrator adds one in More > Types.');
+  const type = chip.dataset.t,
     from = dfRead(root.querySelector('.pf-from'), 'Began'),
     to = dfRead(root.querySelector('.pf-to'), 'Ended');
   dateOrderCheck(from, to);
@@ -362,6 +402,7 @@ function shCancelForm() {
 
 // ---- drawing ----
 function shStartDraw(kind, existing) {
+  sh.river.clicks = [];
   shCancelForm();
   if (rts.draw) rtCancelDraw();
   if (sh.draw) sh.draw.ctl.remove();
@@ -371,7 +412,7 @@ function shStartDraw(kind, existing) {
   shRenderView();
   AHM.map.showPreview(null);
   const coords = existing ? geomToDraw(existing.geometry) : [],
-    ctl = AHM.map.drawShape({ kind, coords }, (g) => {
+    ctl = AHM.map.drawShape({ kind, coords, expand: shRiverLeg }, (g) => {
       const f = $('#shFinish');
       if (f) f.disabled = !g;
     });
@@ -380,16 +421,81 @@ function shStartDraw(kind, existing) {
   shRenderAdd();
   if (existing) AHM.map.fitTo(bboxCorners(shBox(existing)));
 }
+const shRiverMsg = (m) => ($('#shRiverMsg') ? ($('#shRiverMsg').textContent = m) : $('#shAddMsg') ? ($('#shAddMsg').textContent = m) : 0);
+/** Finds rivers by name on OpenStreetMap: several can come back. They are only shown on the map and used by the drawing tool, never saved. */
+async function shRiverFind(q) {
+  const rv = sh.river;
+  q = (q || '').trim();
+  if (!q) return;
+  rv.q = q;
+  shRiverMsg('Searching…');
+  try {
+    const rs = await geocodeShapes(q, $('#lang').value, 0.0005);
+    rv.res = rs.filter((r) => /LineString$/.test(r.geometry.type) && (!r.kind || ['river', 'stream', 'canal', 'drain', 'ditch', 'brook', 'waterway'].includes(r.kind))); // only waterways, not villages or boundaries of the same name
+    rv.lines = rv.res.map((r) => r.geometry);
+    shRiverShow(null);
+    shRiverMsg(rv.lines.length ? '' : 'No river line found. Try another spelling.');
+  } catch (e) {
+    shRiverMsg(e.message);
+  }
+  if ($('#shRvRes')) shRenderRivers();
+}
+/** Shows one found river (index) or all of them (null) on the map as a blue draft. */
+function shRiverShow(i) {
+  const L = i == null ? sh.river.lines : [sh.river.lines[i]];
+  AHM.map.showPreview(L.length ? { type: 'MultiLineString', coordinates: L.flatMap(geomLines) } : null);
+}
+function shRenderRivers() {
+  const ul = $('#shRvRes');
+  if (!ul) return;
+  const rs = sh.river.res;
+  ul.innerHTML = rs
+    .map((r, i) => `<li data-i="${i}"><div class="t"><b>${esc(r.name.split(',').slice(0, 2).join(','))}</b></div><div class="sn">${esc(r.name)} · ${geomCount(r.geometry)} points</div></li>`)
+    .join('');
+  if (rs.length) ul.insertAdjacentHTML('beforeend', '<li class="empty">These rivers are only shown, not saved. Draw a river and follow one to save a section.</li>');
+}
+/** Like the road of a route: the points of the river between two clicks (called by the drawing tool for every click after the first). */
+async function shRiverLeg(a, b) {
+  const rv = sh.river;
+  if (!rv.on || !sh.draw || sh.draw.kind !== 'line' || sh.draw.mode !== 'new') return null;
+  // the river whose line passes nearest to both clicks (within RIVER_CLICK_KM); its name is told, so a wrong river is seen at once
+  const cut = () =>
+    rv.res
+      .map((r) => ({ ...riverSection(r.geometry, a, b), name: r.name.split(',').slice(0, 2).join(',') }))
+      .filter((r) => r.coords)
+      .sort((x, y) => x.offKm - y.offKm)[0];
+  let best = cut();
+  if (!best) {
+    // no river loaded near these clicks: take the name of the river under them from the base map and find it on OpenStreetMap
+    const nm = AHM.map.riverNameAt(a) || AHM.map.riverNameAt(b);
+    if (nm) {
+      shRiverMsg(`Looking for ${nm}…`);
+      await shRiverFind(nm);
+      best = cut();
+    }
+  }
+  if (!best) return shRiverMsg('No river found at these two points: a straight line was used. Click right on the river, or type its name above.'), null;
+  rv.clicks.push(a, b); // only a click that got a section is dropped from the line at the end (the section starts and ends on the river)
+  shRiverMsg(`River section of ${best.km.toFixed(1)} km (${best.name}). Click again to continue along it, or Finish.`);
+  return best.coords;
+}
 async function shFinishDraw() {
-  const d = sh.draw,
-    g = d.ctl.getGeometry();
+  const d = sh.draw;
+  let g = d.ctl.getGeometry();
   if (!g) return ($('#shAddMsg').textContent = d.kind === 'area' ? 'An area needs at least 3 points.' : 'A line needs at least 2 points.');
+  const rv = sh.river;
+  if (d.mode === 'new' && d.kind === 'line' && rv.on && rv.clicks.length) {
+    // the clicks only told where on the river to start and stop: the line keeps the points of the river itself
+    const raw = new Set(rv.clicks.map((c) => c.join())),
+      kept = d.ctl.points().filter((p) => !raw.has(p.join()));
+    if (kept.length >= 2) g = { type: 'LineString', coordinates: kept };
+  }
   d.ctl.remove();
   sh.draw = null;
   if (d.mode === 'new') {
     shRenderAdd();
     AHM.map.showPreview(g);
-    return shOpenForm({ id: null, kind: d.kind, geometry: g });
+    return shOpenForm({ id: null, kind: d.kind, geometry: g, ...(sh.mode === 'rivers' ? { type: RIVER_TYPE_LIST[0] } : {}) });
   }
   try {
     await postJSON(shUrl().shapeSave, shBody(shapeById(d.id), { geometry: g }));
@@ -416,17 +522,32 @@ AHM.on('shape:click', ({ id }) => (lyState.editing ? lyToggleMember(id) : shOpen
 // ---- adding: OpenStreetMap search, drawing, a file ----
 function shRenderAdd() {
   const box = $('#shAdd');
-  if (!shCan()) {
+  if (!shCan() && sh.mode !== 'rivers') {
     box.innerHTML = '';
     return;
   }
   if (sh.draw) {
     const d = sh.draw;
     box.innerHTML =
-      `<div class="sh-banner"><b>${d.mode === 'edit' ? 'Editing the shape' : d.kind === 'area' ? 'Drawing an area' : 'Drawing a line'}</b>` +
+      `<div class="sh-banner"><b>${d.mode === 'edit' ? 'Editing the shape' : d.kind === 'area' ? 'Drawing an area' : sh.mode === 'rivers' ? 'Drawing a river' : 'Drawing a line'}</b>` +
       `<div class="sn">Click the map to add points. Drag a point to move it, right-click to remove it, Backspace undoes. Enter or a double click finishes, Esc cancels.</div>` +
+      (d.kind === 'line' && d.mode === 'new'
+        ? `<label class="sh-check"><input type="checkbox" id="shRiverOn"${sh.river.on ? ' checked' : ''}> Follow a river between the points I click</label>` +
+          (sh.river.on
+            ? `<div class="row"><input type="text" id="shRiverQ" placeholder="River name, e.g. Araks" value="${esc(sh.river.q)}"><button type="button" data-shadd="riverfind">Find</button></div>` +
+              `<div class="sn" id="shRiverMsg">${sh.river.lines.length ? sh.river.lines.length + ' river line(s) loaded (blue). Click near the start, then near the end.' : 'Type the river name and press Find.'}</div>`
+            : '')
+        : '') +
       `<div class="row"><button type="button" data-shadd="undo">Undo</button><button type="button" class="primary" id="shFinish" data-shadd="finish"${d.ctl.getGeometry() ? '' : ' disabled'}>${d.mode === 'edit' ? 'Save shape' : 'Finish'}</button>` +
       `<button type="button" data-shadd="canceldraw">Cancel</button></div><div class="err-line" id="shAddMsg"></div></div>`;
+  } else if (sh.mode === 'rivers') {
+    box.innerHTML =
+      `<div class="sh-banner"><b>Find rivers</b><div class="sn">Search OpenStreetMap by name. Several rivers can be found; they are only shown (blue), not saved.</div>` +
+      `<div class="row"><input type="text" id="shRvQ" placeholder="River name, e.g. Araks" value="${esc(sh.river.q)}"><button type="button" data-shadd="rvfind">Find</button></div><ul id="shRvRes"></ul><div class="err-line" id="shAddMsg"></div></div>` +
+      (shCan()
+        ? `<button type="button" class="wide" data-shadd="drawline">+ Draw a river</button><div class="row"><button type="button" data-shadd="import">GeoJSON file…</button></div><input type="file" id="shFile" accept=".geojson,.json,application/geo+json,application/json" hidden>`
+        : '');
+    shRenderRivers();
   } else if (sh.adding) {
     box.innerHTML =
       `<div class="sh-banner"><b>Add a border</b><div class="label">Find it on OpenStreetMap</div>` +
@@ -504,7 +625,7 @@ async function shImport(file) {
     for (const f of feats) {
       const p = f.properties || {},
         name = String(p.name || p.NAME || p['name:en'] || p.title || p.admin || '').trim() || 'Imported border ' + (n + 1);
-      last = await shCreate({ names: [{ lang, name: name.slice(0, 200) }], type: 'territory', date_from: null, date_to: null, source: '', geometry: simplifyGeometry(f.geometry) });
+      last = await shCreate({ names: [{ lang, name: name.slice(0, 200) }], type: shTypeList()[0] || 'territory', date_from: null, date_to: null, source: '', geometry: simplifyGeometry(f.geometry) });
       shMsg(`Imported ${++n} of ${feats.length}…`);
     }
     sh.adding = false;
@@ -528,6 +649,8 @@ $('#shAdd').addEventListener('click', (e) => {
   if (a === 'open') (sh.adding = true), shRenderAdd();
   else if (a === 'closeadd') (sh.adding = false), AHM.map.showPreview(null), shRenderAdd();
   else if (a === 'search') shSearch();
+  else if (a === 'riverfind') shRiverFind($('#shRiverQ').value);
+  else if (a === 'rvfind') shRiverFind($('#shRvQ').value);
   else if (a === 'geoadd') shAddOsm(+b.dataset.i);
   else if (a === 'drawarea') shStartDraw('area');
   else if (a === 'drawline') shStartDraw('line');
@@ -536,8 +659,19 @@ $('#shAdd').addEventListener('click', (e) => {
   else if (a === 'finish') shFinishDraw();
   else if (a === 'canceldraw') shCancelDraw();
 });
-$('#shAdd').addEventListener('keydown', (e) => e.target.id === 'shGeoQ' && e.key === 'Enter' && shSearch());
+$('#shAdd').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  if (e.target.id === 'shGeoQ') shSearch();
+  else if (e.target.id === 'shRvQ') shRiverFind(e.target.value);
+  else if (e.target.id === 'shRiverQ') e.stopPropagation(), shRiverFind(e.target.value);
+});
+// a found river: show it alone on the map
+$('#shAdd').addEventListener('click', (e) => {
+  const li = e.target.closest('#shRvRes li[data-i]');
+  if (li) shRiverShow(+li.dataset.i);
+});
 $('#shAdd').addEventListener('change', (e) => {
+  if (e.target.id === 'shRiverOn') (sh.river.on = e.target.checked), shRenderAdd();
   if (e.target.id === 'shFile' && e.target.files[0]) shImport(e.target.files[0]);
   if (e.target.id === 'shFile') e.target.value = '';
 });

@@ -52,7 +52,7 @@ test('dev server: deleting a border archives its notes, removes them from the in
   }
 });
 
-test('dev server: a line or area type that shapes use cannot be deleted; an unused built-in one can; the 11 built-in types are written with the first new type', async () => {
+test('dev server: a line or area type that shapes use cannot be deleted; an unused built-in one can; the 12 built-in types are written with the first new type', async () => {
   const s = await start();
   try {
     await fetch(s.base + '/data/places.geojson');

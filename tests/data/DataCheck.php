@@ -125,8 +125,8 @@ class DataCheck
             if (isset($seen[$c])) {
                 $this->bad('type-duplicate', "$w: code used twice");
             }
-            if (!in_array($t['geometry'] ?? '', ['point', 'line', 'area'], true)) {
-                $this->bad('type-geometry', "$w: geometry must be point, line or area");
+            if (!in_array($t['geometry'] ?? '', ['point', 'line', 'area', 'river'], true)) {
+                $this->bad('type-geometry', "$w: geometry must be point, line, area or river");
             }
             if (!preg_match(store::COLOR, (string) ($t['color'] ?? ''))) {
                 $this->bad('type-color', "$w: colour must look like #aabbcc");

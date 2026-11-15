@@ -1960,6 +1960,171 @@
     }
    },
    "expect": "bad type"
+  },
+  {
+   "name": "type: a river type has width, pattern and opacity, and no arrow",
+   "via": "type",
+   "body": {
+    "geometry": "river",
+    "names": [
+     {
+      "lang": "en",
+      "name": "Stream"
+     }
+    ],
+    "color": "#2277cc",
+    "style": {
+     "width": 2,
+     "pattern": "dotted",
+     "opacity": 0.8
+    }
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "shape: a river is a line of a river type and takes a width",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "Araks"
+     }
+    ],
+    "type": "waterway",
+    "color": "#1e88e5",
+    "opacity": 1,
+    "label": true,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "LineString",
+     "coordinates": [
+      [
+       44.5,
+       40.2
+      ],
+      [
+       45.0,
+       40.5
+      ]
+     ]
+    },
+    "width": 4.5
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "shape: a river needs a line",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "Araks"
+     }
+    ],
+    "type": "waterway",
+    "color": "#1e88e5",
+    "opacity": 1,
+    "label": true,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    }
+   },
+   "expect": "a river must be a line"
+  },
+  {
+   "name": "shape: width above 12 is refused",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "Araks"
+     }
+    ],
+    "type": "waterway",
+    "color": "#1e88e5",
+    "opacity": 1,
+    "label": true,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "LineString",
+     "coordinates": [
+      [
+       44.5,
+       40.2
+      ],
+      [
+       45.0,
+       40.5
+      ]
+     ]
+    },
+    "width": 13
+   },
+   "expect": "width must be between"
+  },
+  {
+   "name": "shape: width must be a number",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "Araks"
+     }
+    ],
+    "type": "waterway",
+    "color": "#1e88e5",
+    "opacity": 1,
+    "label": true,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "LineString",
+     "coordinates": [
+      [
+       44.5,
+       40.2
+      ],
+      [
+       45.0,
+       40.5
+      ]
+     ]
+    },
+    "width": "wide"
+   },
+   "expect": "width must be between"
   }
  ]
 }
