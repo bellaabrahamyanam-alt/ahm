@@ -35,6 +35,9 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 ## Next (builder)
 
+- [ ] T-037 Relief (hillshade) base-map entry from self-hosted Copernicus GLO-30 terrain tiles — branch `feat/relief-layer`
+  Owner, in the chat (decisions fixed, see the pull request). Done when: (1) `basemap.terrain` in `app/js/config.js`; with empty `tiles` nothing changes, otherwise the dropdown has "Map + relief" and choosing it adds a `raster-dem` source (Terrarium, `bounds`, attribution) and a `hillshade` layer below the first base symbol layer, labels stay dark; (2) tile errors show in `#status`; (3) `tools/terrain/` builds the tiles (download, check, build, preview, pack) with a unit-tested pure core; (4) the build writes `NOTICE.txt` and `.htaccess`; (5) `docs/10` has the step-by-step owner guide, docs 04/12 and the configuration table are updated.
+  Contract: no (no protected file changes).
 - [ ] T-036 Line and area types in the types dictionary — branch `feat/line-area-types`
   Owner, in the chat: "build it" (decision of T-034: dictionary types, like point types). Done when: `type-save` takes `geometry` `point`, `line` or `area` with the styles of `interfaces/I-8-types-dictionary.md`; a shape's type must be a line or area type of the dictionary (no fixed lists in `store.php`, `save-handler.js`); a line type needs a line; a place takes point types only; `type-delete` counts places and shapes; the 11 built-in types are in `data/types.json`; the Types editor adds line and area types; the Borders and Routes tabs follow; PHP, Node and `rules.json` agree.
   Contract: no (no protected file changes).
