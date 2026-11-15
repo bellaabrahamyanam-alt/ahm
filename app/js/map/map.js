@@ -59,8 +59,39 @@ const GROUPS = {
   Places: ["place"],
   Boundaries: ["boundary"],
 };
-const view = { sat: null, off: new Set() }; // sat = id of the active satellite source, or null
+const view = { sat: null, relief: false, off: new Set() }; // sat = id of the active satellite source, or null
+const RELIEF = "@relief"; // value of the dropdown entry (a satellite id never starts with @)
+const terrainOn = () => {
+  const t = AHM_CONFIG.basemap.terrain;
+  return !!(t && t.tiles && t.tiles.length);
+};
+// Hillshade from our own terrain tiles. Added when first chosen, so nothing is requested until then. It goes below the first base-map
+// symbol layer: labels, markers and our own layers stay above it.
+function ensureRelief() {
+  if (map.getLayer("ahm-relief")) return;
+  const t = AHM_CONFIG.basemap.terrain;
+  map.addSource("ahm-terrain", {
+    type: "raster-dem",
+    tiles: t.tiles,
+    encoding: t.encoding,
+    tileSize: t.tileSize,
+    maxzoom: t.maxzoom,
+    bounds: t.bounds || AHM_CONFIG.bbox, // no requests outside the built area (a missing file would reach PHP)
+    attribution: t.attribution,
+  });
+  const layers = map.getStyle().layers;
+  const before =
+    layers.find((l) => l.type === "symbol" && !l.id.startsWith("ahm-")) ||
+    layers.find((l) => l.id.startsWith("ahm-") && !l.id.startsWith("ahm-sat-"));
+  map.addLayer(
+    { id: "ahm-relief", type: "hillshade", source: "ahm-terrain", paint: { ...t.paint } },
+    before && before.id,
+  );
+}
 function applyVis() {
+  if (view.relief) ensureRelief();
+  if (map.getLayer("ahm-relief"))
+    map.setLayoutProperty("ahm-relief", "visibility", view.relief ? "visible" : "none");
   map.getStyle().layers.forEach((l) => {
     if (l.id.startsWith("ahm-")) return;
     const g = Object.keys(GROUPS).find((k) =>
@@ -104,8 +135,13 @@ function initMap() {
     '<option value="">Map</option>' +
     b.satellites
       .map((s) => `<option value="${s.id}">${s.label}</option>`)
-      .join("");
+      .join("") +
+    (terrainOn() ? `<option value="${RELIEF}">Map + relief</option>` : "");
   map.on("error", (e) => {
+    if (e.sourceId === "ahm-terrain")
+      $("#status").textContent =
+        "Relief tiles failed to load: " +
+        ((e.error && e.error.message) || "unknown error");
     if ((e.sourceId || "").startsWith("ahm-sat-"))
       $("#status").textContent =
         "Satellite tiles failed to load: " +
@@ -416,7 +452,9 @@ function initMap() {
     applyVis();
   });
   $("#basemap").addEventListener("change", (e) => {
-    view.sat = e.target.value || null;
+    const v = e.target.value;
+    view.relief = v === RELIEF && terrainOn();
+    view.sat = v && v !== RELIEF ? v : null;
     $("#status").textContent = "";
     applyVis();
   });

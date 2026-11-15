@@ -25,7 +25,10 @@ ahm/map/
 │
 ├─ app/features/<name>/           optional, switchable features (first: campaigns); loaded by app/js/features.js only when switched on
 ├─ tools/build.js                 `bun tools/build.js` minifies the scripts and styles into app/dist/; `node tools/build.js --check` tells if it is stale
+├─ tools/terrain/                 builder of the optional relief tiles (Python: terrain.py CLI, core.py pure core, geotiff_source.py the only part that reads GeoTIFF; test_terrain.py)
 ├─ tools/prompts/                 the Claude Project instructions; the two agent roles (builder, critic) are in `.claude/agents/`
+│
+├─ (outside the extension, on the server) <forum>/ahm-terrain/   the relief tiles `v1/{z}/{x}/{y}.webp`, `.htaccess`, `NOTICE.txt`: built with tools/terrain, never inside ext/ (updates replace it)
 │
 ├─ controller/main.php            page, data, notes, save, overlays: login + permissions
 ├─ service/store.php              ALL data rules (places, notes, languages, overlays, search index, migration)

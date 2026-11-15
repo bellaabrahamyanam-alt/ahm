@@ -30,6 +30,7 @@
 
    Outside services used by the browser, all behind js/config.js:
    base-map tiles · satellite tiles · place search · directions
+   (the optional relief tiles are NOT an outside service: static files on the forum's own domain, `basemap.terrain.tiles`)
 ```
 
 ### Layers and responsibilities

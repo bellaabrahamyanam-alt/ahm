@@ -211,6 +211,12 @@ class Build(unittest.TestCase):
             self.assertEqual(n, len(self.files(out)))
             self.assertEqual(n - first, st['written'])
 
+    def test_version_folder(self):
+        with tempfile.TemporaryDirectory() as out:
+            core.build(Synth(self.BB, ppd=120), out, self.BB, maxzoom=2, version='v2')
+            self.assertTrue(os.path.isfile(os.path.join(out, 'v2', '0', '0', '0.webp')))
+            self.assertFalse(os.path.exists(os.path.join(out, 'v1')))
+
     def test_step_is_used(self):
         with tempfile.TemporaryDirectory() as out:
             core.build(Synth(self.BB, ppd=120), out, self.BB, maxzoom=2, step=0.5)

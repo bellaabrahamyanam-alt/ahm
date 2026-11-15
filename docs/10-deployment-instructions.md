@@ -59,8 +59,74 @@ Copy the whole **`store/ahm_map/`** folder. It holds the places, the notes, the 
 | `center`, `zoom`, `bbox` | `app/js/config.js`    | Start view, and the area used to bias place search.           |
 | `basemap.style`          | `app/js/config.js`    | Style address of the vector base map.                         |
 | `basemap.satellites[]`   | `app/js/config.js`    | Satellite sources (each is an entry in the base-map list).    |
+| `basemap.terrain`        | `app/js/config.js`    | Optional relief (hillshade): `tiles` (address of your own terrain tiles; empty = no entry), `encoding`, `tileSize`, `maxzoom`, `attribution` (licence wording, do not change), `paint` (hillshade look). Area = `bbox`. See "Relief layer (optional)". |
 | `geocodeUrl`, `routeUrl` | `app/js/config.js`    | Place search and directions servers.                          |
 | `features`               | `app/js/config.js`    | Optional features (`app/features/<name>/`) that are switched on: in development the list in the file (`?features=` in the URL hides all); in the forum only what the controller sends (nothing today, so they are hidden). See `DOMAINS.md`, "Features". |
+
+### Relief layer (optional)
+
+An extra entry **Map + relief** in the base-map list: shaded relief (hillshade) over the normal vector map, labels and markers stay on top. It is **off until you build elevation tiles and put their address in `config.js`**; without that nothing changes and nothing is requested. Everything is yours: free data (Copernicus DEM), tiles you build once on your own computer, served from your own forum domain. No new outside service.
+
+**What was and was not checked** (so you know how far to trust this guide):
+
+- Checked in the development sandbox: the tile maths, Terrarium encoding, resampling, the pyramid, WebP writing, resuming, `NOTICE.txt`, `.htaccess` text, the zip, the preview, and the dropdown entry, the source and layer settings of the map (with a stand-in for MapLibre).
+- **Not checked** (no network, no real data, no browser map there): reading the real GeoTIFF files (`tools/terrain/geotiff_source.py`, the first real run is its test), the real file names in the AWS buckets, the real size of the tiles, the Apache directives, the Cloudflare dashboard wording, how the relief looks on a real map, speed on weak phones.
+
+#### What you need
+
+- A computer (not the forum server) with about 10 GB free for the downloaded squares and the tiles (a guess: the real sizes are unknown; the tool prints them) and a good connection. The tile build takes a while (the estimate was about 30 minutes; it is resumable).
+- Access to the forum's files by SFTP or the hosting file manager. Nothing goes through the forum, the administration panel or PHP, so PHP upload limits do not matter for these static files.
+
+#### Steps
+
+1. **Install Python 3.10 or newer and the packages.** Windows: install from python.org (tick "Add Python to PATH"), then in a terminal (PowerShell). macOS: `brew install python`. Linux: your package manager (`python3`, `python3-pip`). Then:
+   `pip install numpy pillow rasterio`
+   (On Windows, macOS and Linux `rasterio` normally installs as a ready-made wheel. If it fails, use conda: `conda install -c conda-forge rasterio numpy pillow`.) Use `python3` instead of `python` on macOS and Linux below.
+2. **Get the code.** `git clone https://github.com/bellaabrahamyanam-alt/ahm.git` and `cd ahm`. (Or download the repository as a zip.) The tool is in `tools/terrain/`.
+3. **Check the list of squares.** `python tools/terrain/terrain.py squares | head -3` prints the first download addresses (for the area `bbox` in `app/js/config.js`; today 72 squares of 1 by 1 degree). The file names are written from memory and are **unverified**: open one printed address in the browser; it should start a download. If it says "Not Found", list the bucket and tell the developer the real names:
+   `curl "https://copernicus-dem-30m.s3.eu-central-1.amazonaws.com/?list-type=2&prefix=Copernicus_DSM_COG_10_N40_00_E044&max-keys=5"` (or, with the AWS command line, `aws s3 ls --no-sign-request s3://copernicus-dem-30m/ | head`). The buckets are public, no account needed.
+4. **Download.** `python tools/terrain/terrain.py download --dem dem`
+   It prints each address it tries. For a square that does not exist in GLO-30 (30 m) it tries GLO-90 (90 m). A square missing in both is treated as sea (0 m); the tool lists them: that is fine for sea, wrong for land. Interrupted? Run the same command again; finished files are skipped.
+5. **Check the files (dry run, writes nothing).** `python tools/terrain/terrain.py check --dem dem`
+   It opens every square and stops with a clear message for a wrong coordinate system, wrong data type, wrong bounds or missing rasterio.
+6. **Try a small build first** (a minute or two): `python tools/terrain/terrain.py build --dem dem --out try --maxzoom 7`, then `python tools/terrain/terrain.py preview --out try --zoom 7 --png try.png` and open `try.png`. **Look for:** mountains and valleys lit from the top left, flat grey for the sea, no seams between the nine tiles, no stripes or blocks. Fix problems here, not after the long run. Then delete the folder `try`.
+7. **Build.** `python tools/terrain/terrain.py build --dem dem --out ahm-terrain`
+   Zooms 0 to 11 (about 3,900 tiles for the current area). Elevation is rounded to 1 m. For very flat land (the Araks valley) a finer step helps the shading: add `--step 0.5` (bigger files). At the end it prints the number of tiles and the **real total size**; if it is more than your web space allows, build with `--maxzoom 10`, which is about a quarter of the files, and set the same number in `basemap.terrain.maxzoom`. Interrupted? Run the same command again: only missing tiles are made (`--force` rewrites everything; `--version v2` writes into another version folder).
+8. **Preview the real result.** `python tools/terrain/terrain.py preview --out ahm-terrain --zoom 8 --png preview.png` and look at it as in step 6.
+9. **Pack for upload.** `python tools/terrain/terrain.py pack --out ahm-terrain --archive terrain.zip` (one file; thousands of small files are very slow over FTP).
+10. **Upload outside `ext/`.** Extension updates replace the whole `ext/ahm/map/` folder, so the tiles live in `<forum>/ahm-terrain/`, next to `config.php` and `viewtopic.php`. Never use `files/`, `store/` or `cache/`: phpBB blocks them. Upload `terrain.zip` to the forum folder with SFTP or the file manager, and unpack it there (file manager "Extract", or `unzip terrain.zip` over SSH). It creates `ahm-terrain/` with `.htaccess`, `NOTICE.txt` and `v1/`. Delete `terrain.zip` from the server afterwards. The file `.htaccess` starts with a dot: switch on "show hidden files" in your FTP client and check that it is there. It is generated by the tool and **not tested on a real server**: it turns phpBB's rewrite rules off in this folder (so a missing tile can never start the whole forum through `app.php`), forbids folder listings and sets a one-year cache.
+11. **Test the address in the browser.** `https://<your-forum-domain>/ahm-terrain/v1/0/0/0.webp` shows an image; `https://<your-forum-domain>/ahm-terrain/NOTICE.txt` shows text. A tile that does not exist, such as `/ahm-terrain/v1/5/1/1.webp`, must give a plain "Not Found" page, **not** a page in the forum's design (that would mean PHP is answering, see the troubleshooting table).
+12. **Cloudflare cache rule** (only if the forum is behind Cloudflare; the wording of the dashboard is from general knowledge and **untested**). Dashboard, your domain, Caching, Cache Rules, Create rule:
+    - If: URI Path, *starts with*, `/ahm-terrain/`
+    - Then: Cache eligibility = **Eligible for cache**; Edge TTL = **respect origin** (use the `Cache-Control` header of the `.htaccess`; the alternative "override: 1 month" also works and does not depend on the `.htaccess` headers; tiles never change inside a version folder, so a long time is harmless); Browser TTL = **respect origin**.
+    - Verify: open the map, choose Map + relief, open the browser developer tools, tab Network, click a `.webp` request, look at the response headers. After a reload the same tile shows `cf-cache-status: HIT` (the first request is MISS or similar). `DYNAMIC` means the rule does not match.
+    - Facts: `immutable` has no effect on Cloudflare's own cache, only on browsers. A change of tiles is done with a new version folder (`v2`), never by overwriting `v1`.
+    - **Terms caveat.** Cloudflare's Service-Specific Terms for the CDN say that without paid services you must not use it "to serve video or a disproportionate percentage of pictures, audio files, or other large files". Tiles are small images, the term "disproportionate" is not defined, and the risk is judged small but not zero. If you want no risk: serve the tiles from a separate sub-domain (for example `tiles.<your-domain>`) whose DNS records are **DNS only** (grey cloud, not proxied) and change only `basemap.terrain.tiles`. A second fallback is Cloudflare R2 (not verified here: pricing and sign-up requirements).
+13. **Switch it on in `config.js`.** In `app/js/config.js` set
+    `tiles: ["https://<your-forum-domain>/ahm-terrain/v1/{z}/{x}/{y}.webp"],` in `basemap.terrain` (a full address; a relative one is untested). If you built with `--maxzoom 10`, set `maxzoom: 10`. The forum serves a minified bundle, which contains `config.js`, so there are two ways: (a) on your computer run `bun tools/build.js` (needs [Bun](https://bun.sh)) and upload `app/js/config.js` and the folder `app/dist/` to `ext/ahm/map/app/`; or (b) on the server edit `ext/ahm/map/app/js/config.js` and delete `ext/ahm/map/app/dist/` (the forum then loads the plain files, a little slower). An extension update overwrites `config.js`: repeat this step after each update.
+14. **Purge the forum cache** (administration panel, General, "Purge the cache"), then reload the map with Ctrl+F5.
+15. **Verify.** The base-map list has **Map + relief**. Choose it: the shading appears and the text "produced using Copernicus WorldDEM-30 ..." is in the attribution. Network tab: requests go to `.../ahm-terrain/v1/z/x/y.webp`, status 200 (or 304), nothing outside the area; no request returns forum HTML. Zoom in beyond the last built zoom: the relief gets softer, that is expected.
+
+#### Troubleshooting
+
+| Symptom | Likely cause and remedy |
+| --- | --- |
+| No "Map + relief" entry | `tiles` is empty, or the old bundle is served (step 13, purge the cache, hard reload). |
+| Status line "Relief tiles failed to load" | Wrong `tiles` address, or the folder is not uploaded; open one tile address in the browser. |
+| A missing tile returns a page in the forum's design | `.htaccess` missing or not read: show hidden files, check that the host allows `AllowOverride` for `FileInfo` and `Options`. If the host forbids it, ask the host or put the tiles on a sub-domain with its own document root. |
+| Error 500 for every tile | A directive of `.htaccess` is not allowed (often `Options -Indexes`): delete that line. |
+| Tiles load but nothing is shaded | Terrarium encoding is wrong or the tiles are all 0: look at `preview.png`; check `encoding` is `terrarium`. |
+| `cf-cache-status` is always `DYNAMIC` or `MISS` | The cache rule does not match (path) or the response has cookies; check step 12. |
+| Tiles do not change after a rebuild | They are cached for a year: build into a new version folder (`v2`) and change `tiles`. |
+
+#### Later changes
+
+- **More detail (zoom 12), or new data or a different step:** build into a **new version folder** next to the old one: `python tools/terrain/terrain.py build --dem dem --out ahm-terrain --maxzoom 12 --version v2` (about 15,400 tiles, four times the files and size; the whole build is made again, it does not extend `v1`). Upload and unpack it (`terrain.zip` from `pack` holds both versions; pack a folder that has only `v2` to upload less), set `tiles` to `.../v2/...` and `maxzoom: 12`, and delete `v1` when nothing uses it. Never overwrite a version: browsers and Cloudflare keep tiles for a year.
+- **Backup:** keep `terrain.zip` (or the `ahm-terrain` folder) on your computer; the whole thing can be rebuilt from the downloaded squares in `dem`.
+
+#### Licence and duty
+
+The elevation data is Copernicus DEM GLO-30 (GLO-90 for missing squares). Our tiles are **adapted** data (resampled and encoded), so the licence requires this wording, which the map shows and `NOTICE.txt` repeats: "produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved". Also: the licence says the providers do not incur any liability for any use of the Copernicus WorldDEM-30; never suggest that the European Union or ESA endorse your forum or map; and pass these obligations on to anyone you give the tiles to, which is why `NOTICE.txt` must stay next to the tiles. Do not change the attribution text. The licence link in `NOTICE.txt` and the wording above come from the project notes and were **not re-read against the original licence** in this environment: read it once before a public launch.
 
 ### Troubleshooting
 

@@ -96,15 +96,15 @@ def cmd_build(a):
     total = sum(core.tile_count(bb, z) for z in range(a.maxzoom + 1))
     print('Building %d tiles (zoom 0..%d, step %g m) into %s' % (total, a.maxzoom, a.step, a.out))
     try:
-        st = core.build(m, a.out, bb, a.maxzoom, a.step, a.force, progress=lambda s: print('  %d / %d tiles' % (s['written'], total), flush=True))
+        st = core.build(m, a.out, bb, a.maxzoom, a.step, a.force, a.version, progress=lambda s: print('  %d / %d tiles' % (s['written'], total), flush=True))
     except geotiff_source.SourceError as e:
         sys.exit('error: %s\nTiles already written are kept; run the same command again to continue.' % e)
-    files, size = core.disk_totals(a.out)
+    files, size = core.disk_totals(a.out, a.version)
     print('Done: written %d, skipped (already there) %d. On disk: %d tiles, %s.' % (st['written'], st['skipped'], files, core.human(size)))
 
 
 def cmd_preview(a):
-    z, lo, hi = core.preview(a.out, a.png, a.zoom)
+    z, lo, hi = core.preview(a.out, a.png, a.zoom, a.version)
     print('Wrote %s (zoom %d, elevations %.0f to %.0f m). Look for: mountains lit from the top left, no seams between tiles, '
           'flat sea at 0 m, no stripes or blocks.' % (a.png, z, lo, hi))
 
@@ -135,10 +135,12 @@ def main(argv=None):
     b = add('build', cmd_build, 'build the tiles (resumable)', dem=True, out=True)
     b.add_argument('--maxzoom', type=int, default=11)
     b.add_argument('--step', type=float, default=1.0, help='elevation rounding in metres (1, or 0.5 for flat plains)')
+    b.add_argument('--version', default=core.VERSION, help='version folder of the tiles (v1; a new build for users gets v2)')
     b.add_argument('--force', action='store_true', help='rewrite tiles that exist')
     v = add('preview', cmd_preview, 'write a hillshade contact sheet PNG of 3x3 tiles', out=True)
     v.add_argument('--zoom', type=int)
     v.add_argument('--png', default='preview.png')
+    v.add_argument('--version', default=core.VERSION)
     k = add('pack', cmd_pack, 'one .zip (or .tar) of the output for upload', out=True)
     k.add_argument('--archive', default='terrain.zip')
     a = p.parse_args(argv)

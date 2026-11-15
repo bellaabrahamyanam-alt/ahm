@@ -89,6 +89,25 @@ const AHM_CONFIG = {
           '<a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless</a> by <a href="https://eox.at" target="_blank" rel="noopener">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data 2020)',
       },
     ],
+    // Relief: hillshade over the vector map from terrain tiles you build and host yourself (docs/10, "Relief layer (optional)").
+    // With empty `tiles` the entry "Map + relief" is not shown and nothing is requested. The area is `bbox` above (the tiles are built for it).
+    terrain: {
+      tiles: [], // e.g. ["https://your-forum.example/ahm-terrain/v1/{z}/{x}/{y}.webp"] (a version folder: a new build goes to v2)
+      encoding: "terrarium",
+      tileSize: 256,
+      maxzoom: 11, // the zoom the tiles were built to; beyond it the map enlarges the last level
+      // Required wording of the licence for adapted data; the same text is in the NOTICE.txt that the build tool writes. Do not change it.
+      attribution:
+        "produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved",
+      paint: {
+        // MapLibre hillshade paint properties
+        "hillshade-exaggeration": 0.5,
+        "hillshade-shadow-color": "#4a4a4a",
+        "hillshade-highlight-color": "#ffffff",
+        "hillshade-accent-color": "#7a7a7a",
+        "hillshade-illumination-direction": 335,
+      },
+    },
   },
   geocodeUrl: "https://nominatim.openstreetmap.org/search",
   routeUrl: "https://router.project-osrm.org/route/v1/driving",

@@ -51,3 +51,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `app/js/map/shapes.js`.
 - **How to verify:** the map library comes from a CDN, so only by eye: Routes tab, add a route, click place markers and free points, drag a handle, save.
 - **Follow-ups:** the map canvas is not covered by any automatic test.
+
+## 2026-11-15 — Relief (hillshade) base-map entry (T-037)
+
+- **What:** `basemap.terrain` in `app/js/config.js` (tiles, encoding, tileSize, maxzoom, attribution, hillshade paint). With non-empty `tiles` the base-map list gets "Map + relief" (value `@relief`); choosing it adds, once, a `raster-dem` source `ahm-terrain` (Terrarium, `bounds` = `bbox`, attribution) and a `hillshade` layer `ahm-relief` below the first non-`ahm-` symbol layer. Map and satellite hide it. A tile error shows "Relief tiles failed to load: ..." in `#status`. Labels keep the dark text (`view.sat` is not used for relief).
+- **Why:** shaded relief from tiles the owner hosts himself (no new outside service). Lazy add: no tile request until chosen. `bounds`: a missing file under phpBB's rewrite rules would reach PHP.
+- **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/dist/`, `tests/js/map.test.js` (stand-in: base symbol layer, `rec.before`, `rec.sources[id].def`).
+- **How to verify:** `node tests/js/run.js map:`. By hand (not done: MapLibre is not reachable from the sandbox): build tiles (docs/10), set `tiles`, choose "Map + relief".
+- **Follow-ups:** T-038 (CI needs numpy and Pillow for the terrain tests).

@@ -5,6 +5,7 @@
 ### Map
 
 - Vector base map (OpenFreeMap "Liberty", data from OpenStreetMap) and a Sentinel-2 satellite option.
+- Optional **Map + relief** entry: hillshade from elevation tiles the owner builds and hosts (Copernicus DEM; docs/10 "Relief layer"). Hidden until `basemap.terrain.tiles` is set.
 - Layer toggles for **Water, Roads, Places, Boundaries** of the base map.
 - **One symbol per place type**, different in shape and colour, also shown in the list and on the filter chips. The types are a dictionary (13 at the start): administrators add markers such as iron mine, cedar forest or sword artefact in More → Types (names, colour, symbol, size, live preview); see [Types](#types-places-lines-and-areas). The same dictionary holds the **line types** (routes) and **area types** (borders): pattern, width, opacity, one-way arrows, fill.
 - Permanent **name labels** next to the symbols. They use a font the base map already provides and have their own data source, so a font problem can never hide the symbols.
