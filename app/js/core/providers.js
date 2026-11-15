@@ -46,15 +46,17 @@ const route = (a, b) =>
 // Borders of places, countries and regions from OpenStreetMap (same service, same policy: user-started, 1 request per second, cached).
 // Not limited to the study area. Returns [{ name, osm, kind, rank, addresstype, names: { code: name }, geometry }] for results that have an outline.
 const geoShapeCache = new Map();
-const geocodeShapes = async (q, lang) => {
-  const key = lang + '|' + q.toLowerCase();
+const geocodeShapes = async (q, lang, threshold = 0.004) => {
+  const key = lang + '|' + threshold + '|' + q.toLowerCase();
   if (geoShapeCache.has(key)) return geoShapeCache.get(key);
   const wait = geoLast + 1100 - Date.now();
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
   geoLast = Date.now();
   const r = await fetch(
     AHM_CONFIG.geocodeUrl +
-      '?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=0.004&namedetails=1&accept-language=' +
+      '?format=jsonv2&limit=8&polygon_geojson=1&polygon_threshold=' +
+      threshold +
+      '&namedetails=1&accept-language=' +
       encodeURIComponent(lang || 'en') +
       '&q=' +
       encodeURIComponent(q)

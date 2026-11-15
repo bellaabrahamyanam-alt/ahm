@@ -17,6 +17,30 @@
 - **How to verify:** By hand (not checked in a browser here): add a type, pick Custom, paste an icon path, check the preview and the marker on the map.
 - **Follow-ups:** `style.path` and `style.box` are an addition to `interfaces/I-8` (see `TODO.md` T-026).
 
+## 2026-11-15 — Rivers tab (T-038)
+
+- **What:** Rivers tab (same panel as Borders in a second mode: `shSetMode`), river search without records, "Follow a river" in the line tool, Width slider, river geometry in the Types admin.
+- **Why:** owner, in the chat: rivers as their own entity with a tab, notes, a name search that saves nothing, and a section of a river by two clicks.
+- **Files:** `app/js/sidebar/shapes.js`, `app/js/sidebar/layout.js`, `app/js/sidebar/admin.js`, `app/index.html`, `tests/js/browser.test.js`
+- **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (browser test "the Rivers tab ...", `riverSection` tests, `shape:` and `type:` river rows of `tests/fixtures/rules.json`).
+- **Follow-ups:** the OpenStreetMap search and a click on a river of the real base map were not tried with live data.
+
+## 2026-11-15 — Rivers tab fix: a dictionary without a river type (T-038)
+
+- **What:** the shape form says "Choose a type" instead of failing when no type chip is selected; river search keeps only waterway results (not villages or boundaries with the same name).
+- **Why:** owner's screenshot: "can't access property dataset" on Save in the Rivers tab, because the live types.json had no river type and the type chips were empty.
+- **Files:** `app/js/sidebar/shapes.js`
+- **How to verify:** `php tests/php/run.php`, `node tests/js/run.js`.
+- **Follow-ups:** none.
+
+## 2026-11-15 — Rivers tab: critic fixes (T-038)
+
+- **What:** a click is recorded as dropped from the line only when it got a river section; the section message names the river; leaving the tab while drawing cancels the drawing; the follow option defaults on only the first time.
+- **Why:** critic review of the PR: the fallback straight line lost the clicks; a near river could be taken for the wrong one; the tab could show the wrong list while drawing.
+- **Files:** `app/js/sidebar/shapes.js`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (browser test: a leg with no river keeps its clicks).
+- **Follow-ups:** none.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the sidebar domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ---

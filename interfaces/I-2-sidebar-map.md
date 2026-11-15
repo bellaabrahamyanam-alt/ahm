@@ -31,6 +31,7 @@ The sidebar and the map talk only through this object. Neither side may touch th
 | `showFound(geometry \| null)` **[1.6]** | draw the path found between two places (a MultiLineString) as a highlighted line; `null` clears it. Added after the fact: the Routes tab used it before it was in this file (2026-11-12, `TODO.md` T-020) |
 | `showPreview(geometry \| null)` **[1.5]** | a blue draft outline of a search result, shown before it is added |
 | `isDrawing()` **[1.5]** | `true` while the drawing tool is active; read only |
+| `riverNameAt([lon, lat])` **[1.7]** | the name of the river of the base map under a point (the nearest named waterway within 10 px), or `''`; read only. Added 2026-11-15 for the Rivers tab (T-038) |
 
 ### Events, emitted by the map (`AHM.on(name, handler)`), handled by the sidebar
 | Event | Payload | When |

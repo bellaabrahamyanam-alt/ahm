@@ -20,13 +20,14 @@ function tab(n) {
     .forEach((b) => b.classList.toggle("on", b.dataset.tab === top));
   document
     .querySelectorAll("#side section")
-    .forEach((s) => (s.hidden = s.id !== "tab-" + top));
+    .forEach((s) => (s.hidden = s.id !== "tab-" + (top === "rivers" ? "shapes" : top))); // the Rivers tab shows the panel of the Borders tab, in its own mode
   if (FOLDS.includes(n)) {
     FOLDS.forEach((f) => ($("#more-" + f).open = f === n));
     $("#more-" + n).scrollIntoView({ block: "nearest" });
   }
   if (cur && !editMk) closeDetail(); // a tab is navigation: leave the place sheet (but never in the middle of editing)
   lyRenderDetail(); // the layer sheet belongs to the Layers tab
+  shSetMode(top === "rivers" ? "rivers" : "borders");
   shRenderView(); // and the border card to the Borders tab
   rtRenderView(); // and the route card to the Routes tab
 }

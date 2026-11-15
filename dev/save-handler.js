@@ -180,14 +180,19 @@ const BUILTIN_SHAPE_TYPES = [
   ['migration', 'Migration', 'line', '#6a1b9a', 'dotted', 2.8, true],
   ['journey', 'Journey or embassy', 'line', '#00796b', 'dashdot', 2.4, true],
   ['road', 'Road', 'line', '#5d4037', 'solid', 2, false],
+  ['waterway', 'River', 'river', '#1e88e5', 'solid', 3, false],
 ].map(([code, name, geometry, color, pattern, width, x]) => ({
   code,
   geometry,
   names: [{ lang: 'en', name }],
   color,
-  style: geometry === 'area' ? { fill_opacity: x, outline: { width, pattern, opacity: 1 } } : { width, pattern, opacity: 1, arrow: x },
+  style: geometry === 'area' ? { fill_opacity: x, outline: { width, pattern, opacity: 1 } } : geometry === 'river' ? { width, pattern, opacity: 1 } : { width, pattern, opacity: 1, arrow: x },
 }));
-const withShapeTypes = (list) => (list.some((t) => t.geometry === 'line' || t.geometry === 'area') ? list : list.concat(BUILTIN_SHAPE_TYPES));
+const withShapeTypes = (list) => {
+  if (!list.some((t) => t.geometry === 'line' || t.geometry === 'area' || t.geometry === 'river')) return list.concat(BUILTIN_SHAPE_TYPES);
+  // a dictionary made before rivers existed: the built-in river type is offered, so the Rivers tab works at once
+  return list.some((t) => t.geometry === 'river') ? list : list.concat(BUILTIN_SHAPE_TYPES.filter((t) => t.geometry === 'river'));
+};
 // Reads types.json; when it does not exist yet, creates it from the seed (the types that existed before).
 function typeLoad() {
   if (fs.existsSync(TYPE_FILE)) {
@@ -249,12 +254,13 @@ function cleanShapeStyle(geometry, st) {
     const o = st.outline && typeof st.outline === 'object' ? st.outline : {};
     return { fill_opacity: num(st.fill_opacity == null ? 0.15 : st.fill_opacity, 0, 0.8, 'fill opacity'), outline: stroke(o) };
   }
+  if (geometry === 'river') return stroke(st); // a river has no direction: width, pattern, opacity only
   if (st.arrow != null && typeof st.arrow !== 'boolean') throw bad('arrow must be true or false');
   return { ...stroke(st), arrow: st.arrow === true };
 }
 function saveType(inp) {
   const geometry = inp.geometry;
-  if (!['point', 'line', 'area'].includes(geometry)) throw bad('the geometry must be "point", "line" or "area"');
+  if (!['point', 'line', 'area', 'river'].includes(geometry)) throw bad('the geometry must be "point", "line", "area" or "river"');
   const names = cleanNames(inp.names, langLoad().map((l) => l.code), 'a type needs at least one name');
   const color = String(inp.color === undefined ? '' : inp.color);
   if (!TYPE_COLOR.test(color)) throw bad('the colour must look like #1a2b3c');
@@ -841,7 +847,7 @@ function layerSave(inp) {
 // ---------------- shapes: borders and routes (same rules as service/store.php) ----------------
 // data/shapes.geojson: one feature per shape. Geometry: Polygon, MultiPolygon, LineString or MultiLineString. Properties: id, names, type,
 // color, opacity (the fill of an area, the line of a line), label (draw the name on the map), date_from, date_to, source, created, updated.
-// Shape types are the line and area types of the types dictionary (data/types.json): kinds = { code: 'line' | 'area' }.
+// Shape types are the line and area types of the types dictionary (data/types.json): kinds = { code: 'line' | 'area' | 'river' }.
 const shapeKinds = () => Object.fromEntries(typeLoad().filter((t) => t.geometry !== 'point').map((t) => [t.code, t.geometry]));
 const SHAPE_GEOMS = ['Polygon', 'MultiPolygon', 'LineString', 'MultiLineString'];
 const MAX_SHAPE_POINTS = 20000,
@@ -902,6 +908,11 @@ function cleanShape(inp, codes, places, kinds) {
     to = D.dateClean(inp.date_to === undefined ? null : inp.date_to, 'end date');
   D.dateOrderCheck(from, to);
   const out = { names, type: inp.type, color: inp.color.toLowerCase(), opacity: Math.round(opacity * 100) / 100, label: inp.label, date_from: from, date_to: to, source };
+  // width: the line width in pixels, 0.5 to 12. Absent = unchanged (a new shape then uses the width of its type).
+  if ('width' in inp) {
+    if (typeof inp.width === 'boolean' || inp.width === null || inp.width === '' || !(Number(inp.width) >= 0.5 && Number(inp.width) <= 12)) throw bad('the width must be between 0.5 and 12');
+    out.width = Math.round(Number(inp.width) * 10) / 10;
+  }
   if (kinds[inp.type] === 'line') {
     // stops: the places the route passes, in order (ids of existing places; at most 60). twoway: usable both ways. Absent = unchanged.
     if (inp.stops !== undefined) {
@@ -917,7 +928,7 @@ function cleanShape(inp, codes, places, kinds) {
 }
 // A route is a line: refuses an area for a route type.
 const routeGeomCheck = (type, g, kinds) => {
-  if (kinds[type] === 'line' && !/^(Multi)?LineString$/.test(g.type)) throw bad('a route must be a line');
+  if ((kinds[type] === 'line' || kinds[type] === 'river') && !/^(Multi)?LineString$/.test(g.type)) throw bad(kinds[type] === 'river' ? 'a river must be a line' : 'a route must be a line');
 };
 // Creates a shape (no id; geometry required) or changes one (geometry only when given). Returns the id.
 function saveShape(inp) {
