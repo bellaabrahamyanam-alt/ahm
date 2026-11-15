@@ -1,3 +1,5 @@
 node_modules/
 *.tar.gz
 *.bundle
+__pycache__/
+*.pyc

@@ -89,16 +89,17 @@ const AHM_CONFIG = {
           '<a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless</a> by <a href="https://eox.at" target="_blank" rel="noopener">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data 2020)',
       },
     ],
-    // Relief: hillshade over the vector map from terrain tiles you build and host yourself (docs/10, "Relief layer (optional)").
-    // With empty `tiles` the entry "Map + relief" is not shown and nothing is requested. The area is `bbox` above (the tiles are built for it).
+    // Relief: hillshade over the vector map. Default: the free AWS terrain tiles (Terrarium, zoom 0-15, worldwide, no hosting by you).
+    // The tiles are requested only when "Map + relief" is chosen. Empty `tiles` hides the entry.
+    // Own tiles instead (Copernicus GLO-30, docs/10, "Relief layer (optional)"): tiles [".../ahm-terrain/v1/{z}/{x}/{y}.webp"], maxzoom 11 and the attribution
+    // "produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved"
     terrain: {
-      tiles: [], // e.g. ["https://your-forum.example/ahm-terrain/v1/{z}/{x}/{y}.webp"] (a version folder: a new build goes to v2)
+      tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
       encoding: "terrarium",
       tileSize: 256,
-      maxzoom: 11, // the zoom the tiles were built to; beyond it the map enlarges the last level
-      // Required wording of the licence for adapted data; the same text is in the NOTICE.txt that the build tool writes. Do not change it.
+      maxzoom: 15, // the highest zoom of the AWS tiles; beyond it the map enlarges the last level
       attribution:
-        "produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved",
+        "Terrain tiles: Mapzen/Tilezen on AWS; contain 3DEP, SRTM and GMTED2010 content courtesy of USGS, other sources at github.com/tilezen/joerd/blob/master/docs/attribution.md",
       paint: {
         // MapLibre hillshade paint properties
         "hillshade-exaggeration": 0.5,

@@ -17,3 +17,4 @@ This is a summary for planning and **not legal advice**. Terms change; check eac
 If you import OpenStreetMap data into your own place data in bulk, the ODbL share-alike rule applies to that database. The sample places were typed by hand and contain no OSM import.
 
 ---
+| AWS Terrain Tiles (Mapzen/Tilezen) | Relief tiles (default, from the browser) | Public dataset; attribution shown on the map (`basemap.terrain.attribution`). Wording and terms taken from memory, NOT checked against the dataset page. | https://github.com/tilezen/joerd/blob/master/docs/attribution.md |

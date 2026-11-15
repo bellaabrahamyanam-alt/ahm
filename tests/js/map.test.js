@@ -1184,3 +1184,17 @@ test('map: relief: a tile error shows a message in #status', () => {
   ml.fire('error', { sourceId: 'ahm-terrain', error: { message: 'Failed to fetch' } });
   ok(/Relief tiles failed to load: Failed to fetch/.test(p.el('#status').textContent), p.el('#status').textContent);
 });
+
+test('map: relief: the shipped config uses the AWS terrarium tiles (no own hosting needed)', () => {
+  const t = load(['config.js']).X('AHM_CONFIG.basemap.terrain');
+  eq(['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], t.tiles);
+  eq('terrarium', t.encoding);
+  eq(256, t.tileSize);
+  eq(15, t.maxzoom, 'the AWS tiles go up to zoom 15');
+  ok(/Mapzen|Tilezen/.test(t.attribution) && /USGS/.test(t.attribution), t.attribution);
+  const { p, switchBasemap, ml } = boot({ before: withTerrain(t) });
+  ok(p.el('#basemap').innerHTML.includes('Map + relief'), 'the entry is there by default');
+  ok(!ml.rec.sources['ahm-terrain'], 'but nothing is requested before it is chosen');
+  switchBasemap('@relief');
+  eq(t.tiles, ml.rec.sources['ahm-terrain'].def.tiles);
+});

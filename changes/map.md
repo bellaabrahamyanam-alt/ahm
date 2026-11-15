@@ -59,3 +59,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/dist/`, `tests/js/map.test.js` (stand-in: base symbol layer, `rec.before`, `rec.sources[id].def`).
 - **How to verify:** `node tests/js/run.js map:`. By hand (not done: MapLibre is not reachable from the sandbox): build tiles (docs/10), set `tiles`, choose "Map + relief".
 - **Follow-ups:** T-038 (CI needs numpy and Pillow for the terrain tests).
+
+## 2026-11-15 — Relief default: free AWS terrain tiles
+
+- **What:** `basemap.terrain` in `app/js/config.js` now points at the AWS Terrain Tiles (`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png`, Terrarium, 256 px, maxzoom 15, Mapzen/Tilezen attribution). "Map + relief" is shown by default. No code change in `map.js`.
+- **Why:** nothing to build or host: the tools/terrain route (own GLO-30 tiles) stays as an alternative, described in a comment in `config.js`.
+- **Files:** `app/js/config.js`, `app/dist/`, `tests/js/map.test.js` (one test: the shipped config).
+- **How to verify:** `node tests/js/run.js "shipped config"`. By eye (not done: no browser in the sandbox): choose "Map + relief".
+- **Follow-ups:** the AWS endpoint, its CORS headers, the attribution wording and the licence were not checked from the sandbox (S3 is blocked).
