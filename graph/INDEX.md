@@ -6,9 +6,9 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 | domain | files | lines | largest file |
 |---|---|---|---|
-| sidebar | 12 | 3338 | `app/js/sidebar/layers.js` (691) |
+| sidebar | 12 | 3391 | `app/js/sidebar/layers.js` (691) |
 | map | 4 | 1708 | `app/js/map/map.js` (679) |
-| core | 7 | 915 | `app/js/core/dates.js` (296) |
+| core | 7 | 1008 | `app/js/core/shapes.js` (336) |
 | state | 1 | 43 | `app/js/state/state.js` (43) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
 | data | 8 | 3638 | `service/store.php` (1750) |
@@ -19,6 +19,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - `app/js/map/map.js` has 679 lines (limit 600); owner: map
 - `app/js/sidebar/layers.js` has 691 lines (limit 600); owner: sidebar
 - `app/js/sidebar/routes.js` has 629 lines (limit 600); owner: sidebar
+- `app/js/sidebar/shapes.js` has 605 lines (limit 600); owner: sidebar
 - `dev/save-handler.js` has 1068 lines (limit 600); owner: data
 - `service/store.php` has 1750 lines (limit 600); owner: data
 
@@ -32,7 +33,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - map -> core: 5 names (label, places, route +2)
 - map -> data: 3 names (ovDelete, ovSave, path)
 - map -> sidebar: 7 names (btns, edit, focusPlace +4)
-- sidebar -> core: 69 names (BORDER_TYPES, DATE_FORMATS, MONTHS +66)
+- sidebar -> core: 70 names (BORDER_TYPES, DATE_FORMATS, MONTHS +67)
 - sidebar -> data: 3 names (layerSave, path, save)
 - sidebar -> map: 5 names (drawShape, hideMenu, showMenu +2)
 - state -> core: 1 name (state)

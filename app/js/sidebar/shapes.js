@@ -10,6 +10,7 @@ const sh = {
   adding: false, // the add panel is open
   geo: [], // results of the OpenStreetMap search
   geoQ: '',
+  river: { on: false, q: '', lines: [], clicks: [] }, // "Follow a river": the river lines found by name, and the clicks they were used for
 };
 const shCan = () => AHM_CONFIG.canEdit;
 const shBox = (s) => s._box || (s._box = geomBBox(s.geometry));
@@ -365,6 +366,7 @@ function shCancelForm() {
 
 // ---- drawing ----
 function shStartDraw(kind, existing) {
+  sh.river.clicks = [];
   shCancelForm();
   if (rts.draw) rtCancelDraw();
   if (sh.draw) sh.draw.ctl.remove();
@@ -374,7 +376,7 @@ function shStartDraw(kind, existing) {
   shRenderView();
   AHM.map.showPreview(null);
   const coords = existing ? geomToDraw(existing.geometry) : [],
-    ctl = AHM.map.drawShape({ kind, coords }, (g) => {
+    ctl = AHM.map.drawShape({ kind, coords, expand: shRiverLeg }, (g) => {
       const f = $('#shFinish');
       if (f) f.disabled = !g;
     });
@@ -383,16 +385,54 @@ function shStartDraw(kind, existing) {
   shRenderAdd();
   if (existing) AHM.map.fitTo(bboxCorners(shBox(existing)));
 }
+const shRiverMsg = (m) => ($('#shRiverMsg') ? ($('#shRiverMsg').textContent = m) : 0);
+/** Finds the river by name on OpenStreetMap (the lines are only used for the drawing, they are not saved). */
+async function shRiverFind() {
+  const q = ($('#shRiverQ').value || '').trim(),
+    rv = sh.river;
+  if (!q) return;
+  rv.q = q;
+  shRiverMsg('Searching…');
+  try {
+    const rs = await geocodeShapes(q, $('#lang').value, 0.0005);
+    rv.lines = rs.map((r) => r.geometry).filter((g) => /LineString$/.test(g.type));
+    AHM.map.showPreview(rv.lines.length ? { type: 'MultiLineString', coordinates: rv.lines.flatMap(geomLines) } : null);
+    shRiverMsg(rv.lines.length ? 'River found (blue). Click near the start, then near the end.' : 'No river line found. Try another spelling.');
+  } catch (e) {
+    shRiverMsg(e.message);
+  }
+}
+/** Like the road of a route: the points of the river between two clicks (called by the drawing tool for every click after the first). */
+async function shRiverLeg(a, b) {
+  const rv = sh.river;
+  if (!rv.on || !rv.lines.length || !sh.draw || sh.draw.kind !== 'line' || sh.draw.mode !== 'new') return null;
+  rv.clicks.push(a, b);
+  const best = rv.lines
+    .map((g) => riverSection(g, a, b))
+    .filter((r) => r.coords)
+    .sort((x, y) => x.offKm - y.offKm)[0];
+  if (!best) return shRiverMsg('No river between these two points: a straight line was used. Click closer to the river.'), null;
+  shRiverMsg(`River section of ${best.km.toFixed(1)} km. Click again to continue along it, or Finish.`);
+  return best.coords;
+}
 async function shFinishDraw() {
-  const d = sh.draw,
-    g = d.ctl.getGeometry();
+  const d = sh.draw;
+  let g = d.ctl.getGeometry();
   if (!g) return ($('#shAddMsg').textContent = d.kind === 'area' ? 'An area needs at least 3 points.' : 'A line needs at least 2 points.');
+  const rv = sh.river,
+    viaRiver = d.mode === 'new' && d.kind === 'line' && rv.on && rv.clicks.length > 0;
+  if (viaRiver) {
+    // the clicks only told where on the river to start and stop: the line keeps the points of the river itself
+    const raw = new Set(rv.clicks.map((c) => c.join())),
+      kept = d.ctl.points().filter((p) => !raw.has(p.join()));
+    if (kept.length >= 2) g = { type: 'LineString', coordinates: kept };
+  }
   d.ctl.remove();
   sh.draw = null;
   if (d.mode === 'new') {
     shRenderAdd();
     AHM.map.showPreview(g);
-    return shOpenForm({ id: null, kind: d.kind, geometry: g });
+    return shOpenForm({ id: null, kind: d.kind, geometry: g, ...(viaRiver ? { type: 'river' } : {}) });
   }
   try {
     await postJSON(shUrl().shapeSave, shBody(shapeById(d.id), { geometry: g }));
@@ -428,6 +468,13 @@ function shRenderAdd() {
     box.innerHTML =
       `<div class="sh-banner"><b>${d.mode === 'edit' ? 'Editing the shape' : d.kind === 'area' ? 'Drawing an area' : 'Drawing a line'}</b>` +
       `<div class="sn">Click the map to add points. Drag a point to move it, right-click to remove it, Backspace undoes. Enter or a double click finishes, Esc cancels.</div>` +
+      (d.kind === 'line' && d.mode === 'new'
+        ? `<label class="sh-check"><input type="checkbox" id="shRiverOn"${sh.river.on ? ' checked' : ''}> Follow a river between the points I click</label>` +
+          (sh.river.on
+            ? `<div class="row"><input type="text" id="shRiverQ" placeholder="River name, e.g. Araks" value="${esc(sh.river.q)}"><button type="button" data-shadd="riverfind">Find</button></div>` +
+              `<div class="sn" id="shRiverMsg">${sh.river.lines.length ? 'River loaded. Click near the start, then near the end.' : 'Type the river name and press Find.'}</div>`
+            : '')
+        : '') +
       `<div class="row"><button type="button" data-shadd="undo">Undo</button><button type="button" class="primary" id="shFinish" data-shadd="finish"${d.ctl.getGeometry() ? '' : ' disabled'}>${d.mode === 'edit' ? 'Save shape' : 'Finish'}</button>` +
       `<button type="button" data-shadd="canceldraw">Cancel</button></div><div class="err-line" id="shAddMsg"></div></div>`;
   } else if (sh.adding) {
@@ -531,6 +578,7 @@ $('#shAdd').addEventListener('click', (e) => {
   if (a === 'open') (sh.adding = true), shRenderAdd();
   else if (a === 'closeadd') (sh.adding = false), AHM.map.showPreview(null), shRenderAdd();
   else if (a === 'search') shSearch();
+  else if (a === 'riverfind') shRiverFind();
   else if (a === 'geoadd') shAddOsm(+b.dataset.i);
   else if (a === 'drawarea') shStartDraw('area');
   else if (a === 'drawline') shStartDraw('line');
@@ -539,8 +587,13 @@ $('#shAdd').addEventListener('click', (e) => {
   else if (a === 'finish') shFinishDraw();
   else if (a === 'canceldraw') shCancelDraw();
 });
-$('#shAdd').addEventListener('keydown', (e) => e.target.id === 'shGeoQ' && e.key === 'Enter' && shSearch());
+$('#shAdd').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  if (e.target.id === 'shGeoQ') shSearch();
+  else if (e.target.id === 'shRiverQ') e.stopPropagation(), shRiverFind();
+});
 $('#shAdd').addEventListener('change', (e) => {
+  if (e.target.id === 'shRiverOn') (sh.river.on = e.target.checked), shRenderAdd();
   if (e.target.id === 'shFile' && e.target.files[0]) shImport(e.target.files[0]);
   if (e.target.id === 'shFile') e.target.value = '';
 });

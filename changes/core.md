@@ -16,6 +16,14 @@
 - **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (parity rows `shape: ...` in `tests/fixtures/rules.json`).
 - **Follow-ups:** none.
 
+## 2026-11-15 — Follow a river between two clicks (T-037)
+
+- **What:** `riverSection(g, a, b)`: the shortest way along a river line (pieces may touch, any order or direction) between the points nearest to two clicks; `geocodeShapes` takes an optional simplification threshold (0.004 as before).
+- **Why:** owner, in the chat: click near Ani and near Megri on the Araks and get that section of the river, the way routes follow roads, without clicking every point.
+- **Files:** `app/js/core/shapes.js`, `app/js/core/providers.js`, `tests/js/routes.test.js`
+- **How to verify:** `node --test tests/js/routes.test.js` (river section tests); in the app: Borders > Add border > Draw a line > tick "Follow a river", type the name, Find, click twice.
+- **Follow-ups:** none.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the core domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ---

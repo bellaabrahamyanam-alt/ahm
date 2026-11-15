@@ -187,6 +187,97 @@ function guessShapeType(x) {
   if (['county', 'district', 'municipality', 'city', 'town', 'village', 'suburb', 'borough', 'city_district'].includes(t)) return 'district';
   return 'territory';
 }
+// ---- a section of a river between two clicks (the river twin of "follow modern roads" for routes) ----
+const RIVER_JOIN_KM = 0.3; // pieces of a river whose ends are closer than this count as joined
+const riverGraphs = new WeakMap(); // geometry -> { pts, adj }, built once per geometry
+function riverGraph(g) {
+  let r = riverGraphs.get(g);
+  if (r) return r;
+  const pts = [],
+    adj = [],
+    ends = [];
+  geomLines(g).forEach((l) => {
+    if (l.length < 2) return;
+    ends.push(pts.length);
+    l.forEach((p, i) => {
+      pts.push(p), adj.push([]);
+      if (!i) return;
+      const k = pts.length - 1,
+        w = lineKm([pts[k - 1], p]);
+      adj[k - 1].push([k, w]), adj[k].push([k - 1, w]);
+    });
+    ends.push(pts.length - 1);
+  });
+  for (let i = 0; i < ends.length; i++)
+    for (let j = i + 1; j < ends.length; j++) {
+      const w = lineKm([pts[ends[i]], pts[ends[j]]]);
+      if (w <= RIVER_JOIN_KM) adj[ends[i]].push([ends[j], w]), adj[ends[j]].push([ends[i], w]);
+    }
+  riverGraphs.set(g, (r = { pts, adj }));
+  return r;
+}
+/** The way along the river `g` (LineString or MultiLineString, pieces may touch) from the point nearest to `a` to the point nearest to `b`.
+ *  Returns { coords, km, offKm } (offKm: how far the clicks were from the river) or { error: 'far' | 'apart' }: a click more than
+ *  `maxKm` from the river, or the two points are on pieces that do not join. */
+function riverSection(g, a, b, maxKm = 5) {
+  const { pts, adj } = riverGraph(g),
+    near = (p) => {
+      const c = Math.cos((p[1] * Math.PI) / 180);
+      let best = -1,
+        d = Infinity;
+      pts.forEach((q, i) => {
+        const e = ((q[0] - p[0]) * c) ** 2 + (q[1] - p[1]) ** 2;
+        if (e < d) (d = e), (best = i);
+      });
+      return best;
+    },
+    s = near(a),
+    t = near(b);
+  if (s < 0 || t < 0) return { error: 'far' };
+  const offKm = Math.max(lineKm([a, pts[s]]), lineKm([b, pts[t]]));
+  if (offKm > maxKm) return { error: 'far', offKm };
+  const dist = new Float64Array(pts.length).fill(Infinity),
+    prev = new Int32Array(pts.length).fill(-1),
+    heap = [[0, s]];
+  dist[s] = 0;
+  const push = (x) => {
+      heap.push(x);
+      for (let i = heap.length - 1, p; i > 0 && heap[(p = (i - 1) >> 1)][0] > heap[i][0]; i = p) [heap[p], heap[i]] = [heap[i], heap[p]];
+    },
+    pop = () => {
+      const top = heap[0],
+        last = heap.pop();
+      if (heap.length) {
+        heap[0] = last;
+        for (let i = 0; ; ) {
+          let m = i;
+          const l = 2 * i + 1,
+            r = l + 1;
+          if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+          if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+          if (m === i) break;
+          [heap[m], heap[i]] = [heap[i], heap[m]];
+          i = m;
+        }
+      }
+      return top;
+    };
+  while (heap.length) {
+    const [d, u] = pop();
+    if (d > dist[u]) continue;
+    if (u === t) break;
+    for (const [v, w] of adj[u])
+      if (d + w < dist[v]) (dist[v] = d + w), (prev[v] = u), push([d + w, v]);
+  }
+  if (dist[t] === Infinity) return { error: 'apart' };
+  const coords = [];
+  for (let v = t; v !== -1; v = prev[v]) {
+    const q = pts[v],
+      l = coords[coords.length - 1];
+    if (!l || l[0] !== q[0] || l[1] !== q[1]) coords.push(q.slice()); // two pieces that meet share a point
+  }
+  return { coords: coords.reverse(), km: dist[t], offKm };
+}
 /** The colour of the name drawn on the map: the shape colour, darkened so it reads on the white halo. */
 function shapeInk(hex) {
   const n = parseInt(hex.slice(1), 16);

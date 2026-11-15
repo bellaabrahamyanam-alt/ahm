@@ -73,6 +73,8 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 ## Done
 
+- [x] T-037 Follow a river between two clicks (2026-11-15, branch `feat/rivers`)
+  Owner, in the chat. Needs the river line from OpenStreetMap by name; not tested with live data.
 - [x] T-036 Rivers: a `river` line type and a width per line (2026-11-14, branch `feat/rivers`)
   Owner, in the chat: draw rivers and set their style. No protected file changed.
 - [x] T-035 Split `sidebar/ui.js` into five files, no change of behaviour (2026-11-14, branch `refactor/sidebar-ui`)
