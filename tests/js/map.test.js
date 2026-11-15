@@ -37,10 +37,11 @@ const fc = (...places) => ({
 /** A recording stand-in for the parts of MapLibre that map.js uses. Like the real one it refuses sources and layers
  *  before the style has loaded. `fire('load')` plays the map's load event. */
 function makeMapLibre() {
-  const rec = { loaded: false, layers: [], sources: {}, handlers: {} };
+  const rec = { loaded: false, layers: [], sources: {}, handlers: {}, before: {} };
   const base = [
     { id: 'base-bg', type: 'background' },
     { id: 'base-water', type: 'fill', 'source-layer': 'water' },
+    { id: 'base-label', type: 'symbol', 'source-layer': 'place' },
   ];
   const own = (id) => rec.layers.find((l) => l.id === id);
   const any = (id) => own(id) || base.find((l) => l.id === id);
@@ -56,6 +57,7 @@ function makeMapLibre() {
     addSource(id, def) {
       needStyle();
       rec.sources[id] = {
+        def,
         type: def.type,
         data: def.data,
         setData(d) {
@@ -67,8 +69,9 @@ function makeMapLibre() {
     removeSource(id) {
       delete rec.sources[id];
     },
-    addLayer(def) {
+    addLayer(def, beforeId) {
       needStyle();
+      rec.before[def.id] = beforeId;
       rec.layers.push({ ...def });
     },
     getLayer: any,
@@ -1110,4 +1113,74 @@ test('map: AHM.map.setTypes before the map is ready only updates the table; the 
   ok(p.X('"cedar" in TYPE_STYLE'));
   ml.fire('load');
   eq(1, calls.length, 'on load, from the new table');
+});
+
+// ---- relief layer (T-037): hillshade from self-hosted terrain tiles, optional entry of the base-map dropdown ----
+const TERRAIN = {
+  tiles: ['https://forum.example/ahm-terrain/v1/{z}/{x}/{y}.webp'],
+  encoding: 'terrarium',
+  tileSize: 256,
+  maxzoom: 11,
+  attribution: 'produced using Copernicus WorldDEM-30 test',
+  paint: { 'hillshade-exaggeration': 0.5 },
+};
+const withTerrain = (terrain) => (p) => {
+  p.ctx.AHM_CONFIG = { ...CONFIG, bbox: [37, 37, 49, 42.5], basemap: { ...CONFIG.basemap, terrain } };
+};
+
+test('map: relief: without terrain tiles in the config there is no relief entry and nothing is added', () => {
+  for (const terrain of [undefined, { ...TERRAIN, tiles: [] }]) {
+    const { p, ml, switchBasemap } = boot({ before: withTerrain(terrain) });
+    ok(!/relief/i.test(p.el('#basemap').innerHTML), 'no entry in the dropdown');
+    switchBasemap('@relief');
+    ok(!ml.rec.sources['ahm-terrain'] && !ml.rec.layers.some((l) => l.id === 'ahm-relief'), 'no source, no layer');
+  }
+});
+
+test('map: relief: with tiles the dropdown has "Map + relief"; the source and layer appear only when chosen', () => {
+  const { p, ml, switchBasemap } = boot({ before: withTerrain(TERRAIN) });
+  ok(p.el('#basemap').innerHTML.includes('<option value="@relief">Map + relief</option>'), p.el('#basemap').innerHTML);
+  ok(p.el('#basemap').innerHTML.includes('value="sat1"'), 'the satellite entry stays');
+  ok(!ml.rec.sources['ahm-terrain'], 'no source before the choice (no tile request)');
+  switchBasemap('@relief');
+  const src = ml.rec.sources['ahm-terrain'].def;
+  eq('raster-dem', src.type);
+  eq('terrarium', src.encoding);
+  eq(256, src.tileSize);
+  eq(11, src.maxzoom);
+  eq(TERRAIN.tiles, src.tiles);
+  eq([37, 37, 49, 42.5], src.bounds, 'bounds = bbox of the config: no requests outside the built area');
+  ok(src.attribution.includes('produced using Copernicus WorldDEM-30'), 'attribution');
+  const l = ml.rec.layers.find((x) => x.id === 'ahm-relief');
+  eq('hillshade', l.type);
+  eq('ahm-terrain', l.source);
+  eq('base-label', ml.rec.before['ahm-relief'], 'below the first base symbol layer');
+  eq(0.5, l.paint['hillshade-exaggeration']);
+  eq('visible', l.layout.visibility);
+});
+
+test('map: relief: Map and satellite hide it, labels keep dark text, and the source is added once', () => {
+  const { p, ml, switchBasemap } = boot({ before: withTerrain(TERRAIN) });
+  const labels = { id: 'ahm-labels', type: 'symbol', paint: {} }; // the real one needs the glyphs of a real style
+  ml.rec.layers.push(labels);
+  switchBasemap('sat1');
+  eq('#ffffff', labels.paint['text-color'], 'satellite: light text');
+  switchBasemap('@relief');
+  eq('#333C43', labels.paint['text-color'], 'relief is not the satellite look: dark text');
+  const l = () => ml.rec.layers.find((x) => x.id === 'ahm-relief');
+  switchBasemap('@relief');
+  eq(1, ml.rec.layers.filter((x) => x.id === 'ahm-relief').length, 'one layer');
+  switchBasemap('');
+  eq('none', l().layout.visibility);
+  switchBasemap('sat1');
+  eq('none', l().layout.visibility);
+  switchBasemap('@relief');
+  eq('visible', l().layout.visibility);
+});
+
+test('map: relief: a tile error shows a message in #status', () => {
+  const { p, ml, switchBasemap } = boot({ before: withTerrain(TERRAIN) });
+  switchBasemap('@relief');
+  ml.fire('error', { sourceId: 'ahm-terrain', error: { message: 'Failed to fetch' } });
+  ok(/Relief tiles failed to load: Failed to fetch/.test(p.el('#status').textContent), p.el('#status').textContent);
 });
