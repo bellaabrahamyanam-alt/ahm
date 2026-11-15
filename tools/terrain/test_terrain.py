@@ -25,8 +25,8 @@ class Synth(core.Mosaic):
     """A synthetic DEM: elevation = 1000 + 100 * (lon - west) + 50 * (lat - south), linear, so bilinear sampling is exact."""
 
     def __init__(self, bbox, ppd=60, fail_after=None):
-        super().__init__(math.floor(bbox[0]), math.ceil(bbox[3]), math.ceil(bbox[2]) - math.floor(bbox[0]),
-                         math.ceil(bbox[3]) - math.floor(bbox[1]), ppd)
+        super().__init__(math.floor(bbox[0]), math.ceil(bbox[3]), (math.ceil(bbox[2]) - math.floor(bbox[0])) * ppd,
+                         (math.ceil(bbox[3]) - math.floor(bbox[1])) * ppd, ppd)
         self.south = math.floor(bbox[1])
         self.reads = 0
         self.fail_after = fail_after
@@ -128,10 +128,11 @@ class Sampling(unittest.TestCase):
         self.assertEqual(4, core.supersample(1, 1000))  # capped
 
     def test_tile_follows_web_mercator(self):
-        src = Synth([44, 40, 45, 41], ppd=240)
-        z, x, y = 9, 313, 193  # inside lon 44..45, lat 40..41 (checked below)
+        src = Synth([43, 39, 46, 42], ppd=120)
+        z = 9
+        x, y = core.lonlat_to_tile(44.5, 40.5, z)
         w, s, e, n = core.tile_bounds(z, x, y)
-        self.assertTrue(44 < w and e < 45 and 40 < s and n < 41, (w, s, e, n))
+        self.assertTrue(43 < w and e < 46 and 39 < s and n < 42, (w, s, e, n))
         t = core.sample_tile(src, z, x, y, supersample=1)
         self.assertEqual((256, 256), t.shape)
         for i, j in ((0, 0), (100, 30), (255, 255), (7, 200)):
@@ -200,13 +201,13 @@ class Build(unittest.TestCase):
 
     def test_interrupted_run_is_resumed(self):
         with tempfile.TemporaryDirectory() as out:
-            n = self.expected(5)
+            n = self.expected(10)
             with self.assertRaises(RuntimeError):
-                core.build(Synth(self.BB, ppd=120, fail_after=3), out, self.BB, maxzoom=5)
+                core.build(Synth(self.BB, ppd=120, fail_after=3), out, self.BB, maxzoom=10)
             first = len(self.files(out))
             self.assertTrue(0 < first < n, first)
             self.assertEqual([], [f for d, _, fs in os.walk(out) for f in fs if f.endswith('.tmp')])  # no half-written file
-            st = core.build(Synth(self.BB, ppd=120), out, self.BB, maxzoom=5)
+            st = core.build(Synth(self.BB, ppd=120), out, self.BB, maxzoom=10)
             self.assertEqual(n, len(self.files(out)))
             self.assertEqual(n - first, st['written'])
 
