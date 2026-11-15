@@ -218,6 +218,7 @@ function guessShapeType(x) {
   return pick('territory');
 }
 // ---- a section of a river between two clicks (the river twin of "follow modern roads" for routes) ----
+const RIVER_CLICK_KM = 1; // a click farther than this from the river is not on it (two rivers closer than that cannot be told apart by clicks)
 const RIVER_JOIN_KM = 0.3; // pieces of a river whose ends are closer than this count as joined
 const riverGraphs = new WeakMap(); // geometry -> { pts, adj }, built once per geometry
 function riverGraph(g) {
@@ -248,8 +249,8 @@ function riverGraph(g) {
 }
 /** The way along the river `g` (LineString or MultiLineString, pieces may touch) from the point nearest to `a` to the point nearest to `b`.
  *  Returns { coords, km, offKm } (offKm: how far the clicks were from the river) or { error: 'far' | 'apart' }: a click more than
- *  `maxKm` from the river, or the two points are on pieces that do not join. */
-function riverSection(g, a, b, maxKm = 5) {
+ *  `maxKm` (1 km) from the river, or the two points are on pieces that do not join. */
+function riverSection(g, a, b, maxKm = RIVER_CLICK_KM) {
   const { pts, adj } = riverGraph(g),
     near = (p) => {
       const c = Math.cos((p[1] * Math.PI) / 180);

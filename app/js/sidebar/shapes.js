@@ -14,7 +14,7 @@ const sh = {
   adding: false, // the add panel is open
   geo: [], // results of the OpenStreetMap search
   geoQ: '',
-  river: { on: false, q: '', lines: [], clicks: [], res: [] }, // rivers: the river lines found by name (only used for drawing and looking, never saved) and the clicks they were used for
+  river: { on: false, seen: false, q: '', lines: [], clicks: [], res: [] }, // rivers: the river lines found by name (only used for drawing and looking, never saved) and the clicks they were used for
 };
 const shCan = () => AHM_CONFIG.canEdit;
 const shBox = (s) => s._box || (s._box = geomBBox(s.geometry));
@@ -65,12 +65,12 @@ const SH_TEXT = {
 /** Called by tab(): the Borders and the Rivers tab show the same panel with their own list, filters, types and add panel. */
 function shSetMode(m) {
   if (m === sh.mode) return;
-  if (sh.draw) return; // never swap the lists in the middle of a drawing
+  if (sh.draw) shCancelDraw(); // a drawing belongs to its tab: leaving the tab cancels it
   sh.modes[sh.mode].q = $('#shQ').value;
   sh.mode = m;
   sh.open = null;
   sh.adding = false;
-  if (m === 'rivers') sh.river.on = true; // in the Rivers tab the drawing tool follows a river by default
+  if (m === 'rivers' && !sh.river.seen) (sh.river.on = true), (sh.river.seen = true); // the first time, the Rivers tab follows a river by default; after that the choice is kept
   const t = SH_TEXT[m];
   $('#shQ').value = sh.modes[m].q;
   $('#shQ').placeholder = t.ph;
@@ -458,10 +458,10 @@ function shRenderRivers() {
 async function shRiverLeg(a, b) {
   const rv = sh.river;
   if (!rv.on || !sh.draw || sh.draw.kind !== 'line' || sh.draw.mode !== 'new') return null;
-  rv.clicks.push(a, b);
+  // the river whose line passes nearest to both clicks (within RIVER_CLICK_KM); its name is told, so a wrong river is seen at once
   const cut = () =>
-    rv.lines
-      .map((g) => riverSection(g, a, b))
+    rv.res
+      .map((r) => ({ ...riverSection(r.geometry, a, b), name: r.name.split(',').slice(0, 2).join(',') }))
       .filter((r) => r.coords)
       .sort((x, y) => x.offKm - y.offKm)[0];
   let best = cut();
@@ -475,7 +475,8 @@ async function shRiverLeg(a, b) {
     }
   }
   if (!best) return shRiverMsg('No river found at these two points: a straight line was used. Click right on the river, or type its name above.'), null;
-  shRiverMsg(`River section of ${best.km.toFixed(1)} km. Click again to continue along it, or Finish.`);
+  rv.clicks.push(a, b); // only a click that got a section is dropped from the line at the end (the section starts and ends on the river)
+  shRiverMsg(`River section of ${best.km.toFixed(1)} km (${best.name}). Click again to continue along it, or Finish.`);
   return best.coords;
 }
 async function shFinishDraw() {

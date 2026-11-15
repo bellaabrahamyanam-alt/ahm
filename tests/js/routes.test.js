@@ -149,6 +149,8 @@ test('river section: a click far from the river, or a piece that does not join, 
     var r2 = { type: 'MultiLineString', coordinates: [[[44, 40], [44.1, 40]], [[45, 40], [45.1, 40]]] };
   `);
   assert.strictEqual(run('riverSection(r1, [44.1, 40], [44.1, 41]).error'), 'far');
+  assert.strictEqual(run('riverSection(r1, [44.1, 40.02], [44.2, 40]).error'), 'far', 'a click 2 km from the river is not on it');
+  assert.ok(run('riverSection(r1, [44.1, 40.005], [44.2, 40]).coords.length') >= 2, 'a click 0.5 km from the river is');
   assert.strictEqual(run('riverSection(r2, [44, 40], [45.1, 40]).error'), 'apart');
 });
 

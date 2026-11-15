@@ -33,6 +33,14 @@
 - **How to verify:** `php tests/php/run.php`, `node tests/js/run.js`.
 - **Follow-ups:** none.
 
+## 2026-11-15 — Rivers tab: critic fixes (T-038)
+
+- **What:** a click is recorded as dropped from the line only when it got a river section; the section message names the river; leaving the tab while drawing cancels the drawing; the follow option defaults on only the first time.
+- **Why:** critic review of the PR: the fallback straight line lost the clicks; a near river could be taken for the wrong one; the tab could show the wrong list while drawing.
+- **Files:** `app/js/sidebar/shapes.js`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (browser test: a leg with no river keeps its clicks).
+- **Follow-ups:** none.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the sidebar domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ---
