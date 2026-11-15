@@ -1389,12 +1389,20 @@ class store
     }
     private static function with_shape_types(array $list)
     {
+        $has = [];
         foreach ($list as $t) {
-            if (in_array($t['geometry'] ?? 'point', ['line', 'area', 'river'], true)) {
-                return $list;
-            }
+            $has[$t['geometry'] ?? 'point'] = true;
         }
-        return array_merge($list, self::builtin_shape_types());
+        if (!isset($has['line']) && !isset($has['area']) && !isset($has['river'])) {
+            return array_merge($list, self::builtin_shape_types());
+        }
+        if (!isset($has['river'])) {
+            // a dictionary made before rivers existed: the built-in river type is offered, so the Rivers tab works at once
+            return array_merge($list, array_values(array_filter(self::builtin_shape_types(), function ($t) {
+                return $t['geometry'] === 'river';
+            })));
+        }
+        return $list;
     }
     /** { code => 'line' | 'area' | 'river' } of the shape types. Caller holds the lock. */
     private function shape_kinds()

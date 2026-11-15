@@ -6,12 +6,12 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 | domain | files | lines | largest file |
 |---|---|---|---|
-| sidebar | 12 | 3511 | `app/js/sidebar/layers.js` (691) |
+| sidebar | 12 | 3513 | `app/js/sidebar/layers.js` (691) |
 | map | 4 | 1717 | `app/js/map/map.js` (679) |
 | core | 7 | 1038 | `app/js/core/shapes.js` (366) |
 | state | 1 | 43 | `app/js/state/state.js` (43) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
-| data | 8 | 3829 | `service/store.php` (1876) |
+| data | 8 | 3841 | `service/store.php` (1884) |
 | shared | 5 | 202 | `app/js/config.js` (95) |
 
 ## Flags
@@ -19,9 +19,9 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - `app/js/map/map.js` has 679 lines (limit 600); owner: map
 - `app/js/sidebar/layers.js` has 691 lines (limit 600); owner: sidebar
 - `app/js/sidebar/routes.js` has 629 lines (limit 600); owner: sidebar
-- `app/js/sidebar/shapes.js` has 680 lines (limit 600); owner: sidebar
-- `dev/save-handler.js` has 1133 lines (limit 600); owner: data
-- `service/store.php` has 1876 lines (limit 600); owner: data
+- `app/js/sidebar/shapes.js` has 682 lines (limit 600); owner: sidebar
+- `dev/save-handler.js` has 1137 lines (limit 600); owner: data
+- `service/store.php` has 1884 lines (limit 600); owner: data
 
 ## Cross-domain uses of top-level names (not through `AHM.*`; compare with the contract)
 

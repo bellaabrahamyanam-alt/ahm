@@ -25,6 +25,14 @@
 - **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (browser test "the Rivers tab ...", `riverSection` tests, `shape:` and `type:` river rows of `tests/fixtures/rules.json`).
 - **Follow-ups:** the OpenStreetMap search and a click on a river of the real base map were not tried with live data.
 
+## 2026-11-15 — Rivers tab fix: a dictionary without a river type (T-038)
+
+- **What:** the shape form says "Choose a type" instead of failing when no type chip is selected; river search keeps only waterway results (not villages or boundaries with the same name).
+- **Why:** owner's screenshot: "can't access property dataset" on Save in the Rivers tab, because the live types.json had no river type and the type chips were empty.
+- **Files:** `app/js/sidebar/shapes.js`
+- **How to verify:** `php tests/php/run.php`, `node tests/js/run.js`.
+- **Follow-ups:** none.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the sidebar domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ---

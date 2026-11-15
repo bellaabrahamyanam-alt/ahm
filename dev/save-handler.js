@@ -188,7 +188,11 @@ const BUILTIN_SHAPE_TYPES = [
   color,
   style: geometry === 'area' ? { fill_opacity: x, outline: { width, pattern, opacity: 1 } } : geometry === 'river' ? { width, pattern, opacity: 1 } : { width, pattern, opacity: 1, arrow: x },
 }));
-const withShapeTypes = (list) => (list.some((t) => t.geometry === 'line' || t.geometry === 'area' || t.geometry === 'river') ? list : list.concat(BUILTIN_SHAPE_TYPES));
+const withShapeTypes = (list) => {
+  if (!list.some((t) => t.geometry === 'line' || t.geometry === 'area' || t.geometry === 'river')) return list.concat(BUILTIN_SHAPE_TYPES);
+  // a dictionary made before rivers existed: the built-in river type is offered, so the Rivers tab works at once
+  return list.some((t) => t.geometry === 'river') ? list : list.concat(BUILTIN_SHAPE_TYPES.filter((t) => t.geometry === 'river'));
+};
 // Reads types.json; when it does not exist yet, creates it from the seed (the types that existed before).
 function typeLoad() {
   if (fs.existsSync(TYPE_FILE)) {

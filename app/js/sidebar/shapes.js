@@ -365,7 +365,9 @@ function shReadForm() {
   names.forEach((n) => {
     if (!languages.some((l) => l.code === n.lang)) throw Error(`The language “${n.lang || '?'}” is not in the list. Ask an administrator to add it.`);
   });
-  const type = root.querySelector('.sh-typepick .chip.on').dataset.t,
+  const chip = root.querySelector('.sh-typepick .chip.on');
+  if (!chip) throw Error('Choose a type. If there is none, an administrator adds one in More > Types.');
+  const type = chip.dataset.t,
     from = dfRead(root.querySelector('.pf-from'), 'Began'),
     to = dfRead(root.querySelector('.pf-to'), 'Ended');
   dateOrderCheck(from, to);
@@ -429,7 +431,7 @@ async function shRiverFind(q) {
   shRiverMsg('Searching…');
   try {
     const rs = await geocodeShapes(q, $('#lang').value, 0.0005);
-    rv.res = rs.filter((r) => /LineString$/.test(r.geometry.type));
+    rv.res = rs.filter((r) => /LineString$/.test(r.geometry.type) && (!r.kind || ['river', 'stream', 'canal', 'drain', 'ditch', 'brook', 'waterway'].includes(r.kind))); // only waterways, not villages or boundaries of the same name
     rv.lines = rv.res.map((r) => r.geometry);
     shRiverShow(null);
     shRiverMsg(rv.lines.length ? '' : 'No river line found. Try another spelling.');
