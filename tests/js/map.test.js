@@ -1126,7 +1126,7 @@ const TERRAIN = {
   paint: { 'hillshade-exaggeration': 0.5 },
 };
 const withTerrain = (terrain) => (p) => {
-  p.ctx.AHM_CONFIG = { ...CONFIG, bbox: [37, 37, 49, 42.5], basemap: { ...CONFIG.basemap, terrain } };
+  p.ctx.AHM_CONFIG = { ...CONFIG, bbox: [32, 29, 51, 44], basemap: { ...CONFIG.basemap, terrain } };
 };
 
 test('map: relief: without terrain tiles in the config there is no relief entry and nothing is added', () => {
@@ -1150,7 +1150,7 @@ test('map: relief: with tiles the dropdown has "Map + relief"; the source and la
   eq(256, src.tileSize);
   eq(11, src.maxzoom);
   eq(TERRAIN.tiles, src.tiles);
-  eq([37, 37, 49, 42.5], src.bounds, 'bounds = bbox of the config: no requests outside the built area');
+  eq([32, 29, 51, 44], src.bounds, 'bounds = bbox of the config: no requests outside the built area');
   ok(src.attribution.includes('produced using Copernicus WorldDEM-30'), 'attribution');
   const l = ml.rec.layers.find((x) => x.id === 'ahm-relief');
   eq('hillshade', l.type);
@@ -1553,4 +1553,31 @@ test('map: relief colours: "Smooth colours" slides the range to the new one in 4
   eq(0, frames.length);
   p.X('relief.smooth = true; relief.range = null; setRange([10, 30])');
   eq([10, 30], range(), 'the first range is set at once');
+});
+
+// T-055: the area of the map (config `bbox`) is Mesopotamia from the Persian Gulf to the Caucasus, Ankara to Baku. It feeds the search
+// bias (providers.js), the relief source bounds (map.js) and the terrain build tool (tools/terrain reads the same line).
+test('config: bbox is [32, 29, 51, 44] and the place search is biased to exactly that box', async () => {
+  const vm = require('vm');
+  const fs = require('fs');
+  const path = require('path');
+  const read = (f) => fs.readFileSync(path.join(__dirname, '..', '..', 'app', 'js', f), 'utf8');
+  let url = '';
+  const ctx = vm.createContext({
+    window: {},
+    location: { search: '' },
+    Date,
+    setTimeout,
+    Promise,
+    encodeURIComponent,
+    fetch: (u) => ((url = u), Promise.resolve({ json: () => Promise.resolve([]) })),
+  });
+  vm.runInContext(read('config.js') + '\n;this.AHM_CONFIG = AHM_CONFIG;', ctx);
+  eq([32, 29, 51, 44], ctx.AHM_CONFIG.bbox, 'the area of the map');
+  const b = ctx.AHM_CONFIG.bbox;
+  ok(b[0] < 32.86 && b[2] > 49.87 && b[1] < 29.4 && b[3] > 43.35, 'Ankara, Baku, Kuwait and Elbrus are inside');
+  vm.runInContext(read('core/providers.js') + '\n;this.geocode = geocode;', ctx);
+  await ctx.geocode('Baghdad', 'en');
+  ok(url.includes('&bounded=1&'), 'the search stays bounded');
+  ok(url.includes('&viewbox=32,44,51,29&'), 'viewbox = west,north,east,south of the config: ' + url);
 });

@@ -99,7 +99,7 @@ class Status(unittest.TestCase):
             for lat, lon, res in ((40, 43, 30), (40, 44, 90), (41, 43, 30)):
                 open(os.path.join(d, core.square_name(lat, lon, res) + '.tif'), 'wb').close()
             open(core.no_tile_marker(d, 41, 44), 'w').close()
-            st = core.dem_status(d, [43, 40, 45, 42])
+            st = core.dem_status(d, [43, 40, 46, 42])
             self.assertEqual({(40, 43): 30, (40, 44): 90, (40, 45): None, (41, 43): 30, (41, 44): 'none', (41, 45): None}, st)
             self.assertEqual([(44.0, 40.5)], core.seam_edges(st))  # only 30|90 neighbours count; 'none' and None do not
 
@@ -124,7 +124,7 @@ class Cli(unittest.TestCase):
         by = {re.search(r'(N\d+_00_E\d+)', l).group(1): l for l in lines}
         self.assertIn('GLO-90', by['N40_00_E044'])
         self.assertIn('Armenia/Azerbaijan', by['N40_00_E044'])
-        self.assertNotIn('GLO-90', by['N33_00_E044'])
+        self.assertNotIn('Armenia', by['N33_00_E044'])
         self.assertTrue(by['N33_00_E044'].startswith('https://copernicus-dem-30m'))
         self.assertRegex(r.stderr, r'285 squares')
         self.assertRegex(r.stderr, r'GLO-90')

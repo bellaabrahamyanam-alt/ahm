@@ -22,48 +22,98 @@ def bbox_of(a):
 def cmd_squares(a):
     bb = bbox_of(a)
     sq = core.squares_for_bbox(bb)
-    print('# bbox %s: %d squares. URLs are from memory, UNVERIFIED: see docs/10 to list the bucket.' % (bb, len(sq)), file=sys.stderr)
+    n90 = 0
     for lat, lon in sq:
-        print(core.square_url(lat, lon, 30))
+        if core.expected_dataset(lat, lon) == 90:
+            n90 += 1
+            note = 'GLO-30 first; Armenia/Azerbaijan are not in GLO-30, expect the GLO-90 fallback'
+        else:
+            note = 'GLO-30 first, GLO-90 if there is no GLO-30 file'
+        print('%s  # %s %s' % (core.square_url(lat, lon, 30), core.square_id(lat, lon), note))
+    print('# bbox %s: %d squares; the first word of a line is the address. About %d are expected from GLO-90 (Armenia/Azerbaijan, approximate boxes); '
+          'the rest from GLO-30. Which squares are sea (no file in either dataset) cannot be known before the download. '
+          'Addresses are from memory, UNVERIFIED: see docs/10.' % (bb, len(sq), n90), file=sys.stderr)
+
+
+class DownloadStop(Exception):
+    """The download cannot go on and must NOT be read as "no tile": the run stops and can be repeated."""
 
 
 def fetch(url, dest):
     tmp = dest + '.part'
     req = urllib.request.Request(url, headers={'User-Agent': 'ahm-terrain/1'})
-    with urllib.request.urlopen(req, timeout=60) as r, open(tmp, 'wb') as f:
-        while True:
-            chunk = r.read(1 << 20)
-            if not chunk:
-                break
-            f.write(chunk)
-    os.replace(tmp, dest)
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r, open(tmp, 'wb') as f:
+            while True:
+                chunk = r.read(1 << 20)
+                if not chunk:
+                    break
+                f.write(chunk)
+        os.replace(tmp, dest)
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+
+def fetch_square(dem, lat, lon, fetch=fetch, log=print):
+    """Gets the square: GLO-30, else GLO-90. Returns 30, 90, or 'none' (404 in BOTH: sea or no data, 0 m; remembered in a marker file).
+    ONLY an HTTP 404 means "no tile". 403, 5xx, network errors and timeouts raise DownloadStop (a flattened mountain would look like sea)."""
+    for res in (30, 90):
+        path = os.path.join(dem, core.square_name(lat, lon, res) + '.tif')
+        if os.path.isfile(path):
+            return res
+    if os.path.isfile(core.no_tile_marker(dem, lat, lon)):
+        return 'none'
+    for res in (30, 90):
+        url = core.square_url(lat, lon, res)
+        log('        trying %s' % url)
+        try:
+            fetch(url, os.path.join(dem, core.square_name(lat, lon, res) + '.tif'))
+            return res
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                log('        404: not in GLO-%d' % res)
+                continue
+            raise DownloadStop(
+                'HTTP %s for %s: not treated as sea. %sNothing is lost: fix the cause and run the same command again, finished files are skipped.'
+                % (e.code, url, 'S3 answers 403 for a missing file when it forbids listing: open the address in the browser; if the file exists the '
+                   'server refuses you, if it is missing see docs/10. ' if e.code == 403 else ''))
+        except (urllib.error.URLError, OSError) as e:  # a timeout and a reset connection are OSError
+            raise DownloadStop('network error for %s: %s. Not treated as sea. Nothing is lost: run the same command again, finished files are '
+                               'skipped.' % (url, e))
+    open(core.no_tile_marker(dem, lat, lon), 'w').close()
+    log('        no tile in GLO-30 or GLO-90 (HTTP 404 on both): taken as sea / no data, elevation 0 m (noted in %s)'
+        % os.path.basename(core.no_tile_marker(dem, lat, lon)))
+    return 'none'
 
 
 def cmd_download(a):
     os.makedirs(a.dem, exist_ok=True)
-    bb = bbox_of(a)
-    missing = []
-    sq = core.squares_for_bbox(bb)
+    sq = core.squares_for_bbox(bbox_of(a))
+    none = []
+    got = {30: 0, 90: 0}
     for i, (lat, lon) in enumerate(sq, 1):
-        have = [r for r in (30, 90) if os.path.isfile(os.path.join(a.dem, core.square_name(lat, lon, r) + '.tif'))]
-        if have:
-            print('[%d/%d] have GLO-%d %s/%s' % (i, len(sq), have[0], lat, lon))
-            continue
-        for res in (30, 90):
-            url = core.square_url(lat, lon, res)
-            print('[%d/%d] trying %s' % (i, len(sq), url))
-            try:
-                fetch(url, os.path.join(a.dem, core.square_name(lat, lon, res) + '.tif'))
-                break
-            except urllib.error.HTTPError as e:
-                print('        HTTP %s' % e.code)
-            except (urllib.error.URLError, OSError) as e:
-                sys.exit('network error: %s\nNothing is lost: run the same command again, finished files are skipped.' % e)
+        print('[%d/%d] %s' % (i, len(sq), core.square_id(lat, lon)))
+        try:
+            r = fetch_square(a.dem, lat, lon)
+        except DownloadStop as e:
+            sys.exit('stopped: %s' % e)
+        if r == 'none':
+            none.append((lat, lon))
         else:
-            missing.append((lat, lon))
-    if missing:
-        print('\nNo file in GLO-30 or GLO-90 for %d square(s): %s\nIf they are sea this is fine (0 m). If they are land, the file names '
-              'are probably wrong: list the bucket (docs/10).' % (len(missing), ', '.join('%s/%s' % m for m in missing)))
+            got[r] += 1
+    print('\nDone: %d squares from GLO-30, %d from GLO-90, %d without a tile.' % (got[30], got[90], len(none)))
+    if none:
+        print('Without a tile (HTTP 404 in both datasets, taken as 0 m): %s\nFine for sea (Persian Gulf, Black Sea, Caspian). If one of them is land, '
+              'the file names are probably wrong: list the bucket (docs/10).' % ', '.join('%s/%s' % m for m in none))
+
+
+def need_downloaded(a):
+    """Stops when a square was neither downloaded nor confirmed absent: building from it would flatten real mountains to 0 m."""
+    todo = [k for k, v in core.dem_status(a.dem, bbox_of(a)).items() if v is None]
+    if todo:
+        sys.exit('error: %d square(s) not downloaded yet (first: %s/%s). Run  python terrain.py download --dem %s  again; it continues where it stopped.'
+                 % (len(todo), todo[0][0], todo[0][1], a.dem))
 
 
 def mosaic(a):
@@ -84,13 +134,22 @@ def cmd_check(a):
     for lat, lon, res, text in rows:
         print('%4s %5s  %s' % (lat, lon, text))
     miss = sum(1 for r in rows if r[2] is None)
-    print('%d squares, %d missing. Mosaic %d x %d px.' % (len(rows), miss, m.width, m.height))
+    n90 = sum(1 for r in rows if r[2] == 90)
+    print('%d squares: %d GLO-30, %d GLO-90, %d without a tile (0 m). Mosaic %d x %d px (virtual, nothing of that size is held in memory).'
+          % (len(rows), len(rows) - miss - n90, n90, miss, m.width, m.height))
+    seams = core.seam_edges(core.dem_status(a.dem, bbox_of(a)))
+    if seams:
+        print('%d borders between a GLO-30 square and a GLO-90 square (different products: a seam is possible there). Look at some after the '
+              'build, for example:' % len(seams))
+        for lon, lat in seams[:3]:
+            print('  python terrain.py preview --out ahm-terrain --zoom 10 --at %g %g --png seam.png' % (lon, lat))
     bb = bbox_of(a)
     print('Tiles for zoom 0..%d: %d' % (a.maxzoom, sum(core.tile_count(bb, z) for z in range(a.maxzoom + 1))))
 
 
 def cmd_build(a):
     import geotiff_source
+    need_downloaded(a)
     m = mosaic(a)
     bb = bbox_of(a)
     total = sum(core.tile_count(bb, z) for z in range(a.maxzoom + 1))
@@ -104,9 +163,10 @@ def cmd_build(a):
 
 
 def cmd_preview(a):
-    z, lo, hi = core.preview(a.out, a.png, a.zoom, a.version)
+    z, lo, hi = core.preview(a.out, a.png, a.zoom, a.version, tuple(a.at) if a.at else None)
     print('Wrote %s (zoom %d, elevations %.0f to %.0f m). Look for: mountains lit from the top left, no seams between tiles, '
-          'flat sea at 0 m, no stripes or blocks.' % (a.png, z, lo, hi))
+          'flat sea at 0 m, no stripes or blocks. Near a border of Armenia or Azerbaijan (GLO-90 next to GLO-30) also look for a straight line '
+          'where the sharpness or the height changes: use --at LON LAT.' % (a.png, z, lo, hi))
 
 
 def cmd_pack(a):
@@ -128,7 +188,7 @@ def main(argv=None):
             s.add_argument('--out', required=True, help='output folder (becomes <forum>/ahm-terrain/)')
         return s
 
-    add('squares', cmd_squares, 'print the GLO-30 URLs of the squares')
+    add('squares', cmd_squares, 'print the GLO-30 URL of every square and the dataset expected for it')
     add('download', cmd_download, 'download the squares (GLO-90 for a square missing in GLO-30)', dem=True)
     c = add('check', cmd_check, 'open every square, report problems (dry run, writes nothing)', dem=True)
     c.add_argument('--maxzoom', type=int, default=11)
@@ -139,6 +199,7 @@ def main(argv=None):
     b.add_argument('--force', action='store_true', help='rewrite tiles that exist')
     v = add('preview', cmd_preview, 'write a hillshade contact sheet PNG of 3x3 tiles', out=True)
     v.add_argument('--zoom', type=int)
+    v.add_argument('--at', nargs=2, type=float, metavar=('LON', 'LAT'), help='centre the sheet on this place (default: the middle of the tiles)')
     v.add_argument('--png', default='preview.png')
     v.add_argument('--version', default=core.VERSION)
     k = add('pack', cmd_pack, 'one .zip (or .tar) of the output for upload', out=True)

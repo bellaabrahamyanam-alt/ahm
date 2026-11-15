@@ -107,3 +107,10 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (3 tests).
 - **How to verify:** `node tests/js/run.js "map"`. By eye: contour lines at several zooms; zoom in and out and watch the colours slide; open More > Maps & base map and choose "Map + relief".
 - **Follow-ups:** the grid is 12288 heights per move end; on a slow phone this may need a coarser grid (not measured).
+
+## 2026-11-15 — T-055: relief source bounds follow the larger `bbox`
+
+- **What:** no code change in `map.js`: the raster-dem source `bounds` default is `AHM_CONFIG.bbox`, now `[32, 29, 51, 44]`, so relief tiles are requested in that box (was `[37, 37, 49, 42.5]`). `tests/js/map.test.js`: the stand-in config uses the new box; new test "config: bbox is [32, 29, 51, 44] ..." evaluates the real `config.js` and `providers.js`.
+- **Why:** owner enlarged the area (see `changes/shared.md`, T-055).
+- **How to verify:** `node tests/js/run.js map`. NOT verified: relief over the real canvas (MapLibre cannot be loaded in the sandbox).
+- **Follow-ups:** T-057 (colour ramps 350-4100 m vs the new height range).

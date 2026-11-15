@@ -39,6 +39,13 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 ## Next (builder)
 
+- [ ] T-056 Terrain: void parts of GLO-30 squares that straddle Armenia or Azerbaijan, and the 30/90 seam (follow-up of T-055)
+  Done when: after the first real `terrain.py check` the owner knows whether such squares have void parts; if yes, `geotiff_source.py` fills the void from the GLO-90 square (downloaded as well) and the border seam is judged in `preview`. Needs real files, so it waits for the owner's first run.
+  Contract: no.
+- [ ] T-057 Relief colour ramps for the larger area (follow-up of T-055)
+  Done when: the default ramp `armenia` (350-4100 m, white top) and the fixed range suit 0 m (Gulf, Mesopotamia) to 5,600 m (Elbrus); with "Adapt colours to the view" on nothing breaks, with it off the Caucasus peaks are not all white. The owner chooses the ramp stops.
+  Contract: no.
+
 - [ ] T-036 Line and area types in the types dictionary — branch `feat/line-area-types`
   Owner, in the chat: "build it" (decision of T-034: dictionary types, like point types). Done when: `type-save` takes `geometry` `point`, `line` or `area` with the styles of `interfaces/I-8-types-dictionary.md`; a shape's type must be a line or area type of the dictionary (no fixed lists in `store.php`, `save-handler.js`); a line type needs a line; a place takes point types only; `type-delete` counts places and shapes; the 11 built-in types are in `data/types.json`; the Types editor adds line and area types; the Borders and Routes tabs follow; PHP, Node and `rules.json` agree.
   Contract: no (no protected file changes).
@@ -145,6 +152,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 ## Done
 
+- [x] T-055 Map area enlarged to Mesopotamia + Anatolia edge + Caucasus, relief tool and guide made correct for it (2026-11-15, branch `feat/bbox-mesopotamia-caucasus`; owner, in the chat). `bbox` [32, 29, 51, 44]; 285 squares, 15,812 tiles at zoom 0-11; only HTTP 404 means "no tile"; `squares` shows the expected dataset; `check` shows void shares and 30/90 borders; `preview --at`; docs/10 numbers and the Armenia/Azerbaijan 90 m caveat.
 - [x] T-048 Relief polish: rounder contour lines, "Smooth colours" checkbox, controls back in the sidebar (2026-11-15, branch `feat/relief-aws`; owner, in the chat).
 - [x] T-039 Relief colours by height, controls and height readout (2026-11-15, branch `feat/relief-aws`; owner, in the chat: "elevation styles, customize, see meters and colour difference"). MapLibre 4.7.1 -> 5.24.1 (needed for `color-relief`, since 5.6.0). `basemap.terrain.color` (ramps in metres), controls under the base-map list, legend, height readout from the Terrarium tile. Colours adapt to the view (`color.adapt`, checkbox "Adapt colours to the view"). Relief panel on the map, ramp editor, contour lines, height profile, saved settings (owner, in the chat). Not verified: the real map (no browser here), the MapLibre 5 upgrade against the other map code, AWS CORS.
 - [x] T-053 Relief (hillshade) base-map entry from self-hosted Copernicus GLO-30 terrain tiles (2026-11-15, branch `feat/relief-layer`). `basemap.terrain`, "Map + relief", `tools/terrain/`, docs/10 guide. Real GeoTIFF reading, AWS names, Apache, Cloudflare, real tile sizes and the look on a real map are unverified.

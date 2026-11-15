@@ -17,7 +17,7 @@ const AHM_CONFIG = {
     : /[?&]features=/.test(location.search)
       ? decodeURIComponent(/[?&]features=([^&]*)/.exec(location.search)[1]).split(",").filter(Boolean)
       : ["campaigns"],
-  bbox: [37, 37, 49, 42.5], // Armenian Highlands (W, S, E, N), biases search
+  bbox: [32, 29, 51, 44], // Mesopotamia from the Persian Gulf to the Caucasus, Ankara to Baku (W, S, E, N): biases search, limits relief tiles, sets the terrain build
   // The forum page (controller) sets window.AHM_BACKEND with ready-made URLs; under browser-sync it is undefined.
   url: window.AHM_BACKEND
     ? {

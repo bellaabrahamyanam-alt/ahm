@@ -72,6 +72,55 @@ def squares_for_bbox(bbox):
     return [(la, lo) for la in range(math.floor(s), math.ceil(n)) for lo in range(math.floor(w), math.ceil(e))]
 
 
+# Armenia and Azerbaijan are NOT in the free Copernicus GLO-30 (Public) dataset; the 90 m dataset (GLO-90) covers them. Approximate boxes
+# (W, S, E, N), only to PREDICT in `squares`; they overlap the neighbours, so a square may turn out to have GLO-30 after all. The download
+# decides by the real answer of the server, never by these boxes.
+NO_GLO30_BOXES = [(43.4, 38.8, 46.7, 41.3), (44.7, 38.3, 50.9, 41.95)]  # Armenia with Nakhchivan, Azerbaijan
+
+
+def expected_dataset(lat, lon):
+    """30 or 90: the dataset the tool expects to end up with for the 1x1 degree square whose south-west corner is (lat, lon)."""
+    for w, s, e, n in NO_GLO30_BOXES:
+        if lon < e and lon + 1 > w and lat < n and lat + 1 > s:
+            return 90
+    return 30
+
+
+def square_id(lat, lon):
+    return '%s%02d_%s%03d' % ('N' if lat >= 0 else 'S', abs(lat), 'E' if lon >= 0 else 'W', abs(lon))
+
+
+def no_tile_marker(dem_dir, lat, lon):
+    """Empty file that says: the server answered 404 for this square in GLO-30 AND GLO-90 (sea or no data: elevation 0)."""
+    return os.path.join(dem_dir, 'NO_TILE_%s.txt' % square_id(lat, lon))
+
+
+def dem_status(dem_dir, bbox):
+    """{(lat, lon): 30 | 90 | 'none' | None}: GLO-30 file, GLO-90 file, confirmed no tile (marker), or not downloaded yet (None)."""
+    out = {}
+    for lat, lon in squares_for_bbox(bbox):
+        out[(lat, lon)] = None
+        for res in (30, 90):
+            if os.path.isfile(os.path.join(dem_dir, square_name(lat, lon, res) + '.tif')):
+                out[(lat, lon)] = res
+                break
+        else:
+            if os.path.isfile(no_tile_marker(dem_dir, lat, lon)):
+                out[(lat, lon)] = 'none'
+    return out
+
+
+def seam_edges(status):
+    """[(lon, lat)] of the middle of every border between a GLO-30 square and a GLO-90 square (east or north neighbour)."""
+    r = []
+    for (lat, lon), v in sorted(status.items()):
+        for dlat, dlon in ((0, 1), (1, 0)):
+            w = status.get((lat + dlat, lon + dlon))
+            if v in (30, 90) and w in (30, 90) and v != w:
+                r.append((lon + 1.0, lat + 0.5) if dlon else (lon + 0.5, lat + 1.0))
+    return r
+
+
 def square_name(lat, lon, res=30):
     code = {30: '10', 90: '30'}[res]
     return 'Copernicus_DSM_COG_%s_%s%02d_00_%s%03d_00_DEM' % (code, 'N' if lat >= 0 else 'S', abs(lat), 'E' if lon >= 0 else 'W', abs(lon))
@@ -169,7 +218,7 @@ def notice_text(step, maxzoom):
         'Subsequent users: whoever receives these tiles must receive this notice and is bound by the same obligations.',
         '',
         'Licence: ' + LICENCE_URL,
-        'Processing: Copernicus DEM GLO-30 (GLO-90 for squares missing from GLO-30; sea and missing squares = 0 m) resampled to Web Mercator,',
+        'Processing: Copernicus DEM GLO-30 (GLO-90 for squares missing from GLO-30, e.g. Armenia and Azerbaijan; sea and squares with no tile = 0 m) resampled to Web Mercator,',
         'zoom 0 to %d, 256 px, Terrarium encoding, lossless WebP, elevation rounded to %g m.' % (maxzoom, step),
         '',
     ])
@@ -317,17 +366,26 @@ def hillshade(elev, cell_m, azimuth=315.0, altitude=45.0, exaggeration=1.0):
     return np.clip(s * 255.0, 0, 255).astype(np.uint8)
 
 
-def preview(out, png, zoom=None, version=VERSION):
-    """A contact sheet (up to 3x3 tiles around the middle of what exists at `zoom`) of hillshaded tiles. Returns (zoom, min m, max m)."""
+def preview_centre(out, z, at=None, version=VERSION):
+    """(x, y) of the middle tile of the contact sheet: the tile of `at` = (lon, lat), else the middle of what exists at zoom z."""
+    if at:
+        return lonlat_to_tile(at[0], at[1], z)
+    root = os.path.join(out, version)
+    xs = sorted(int(d) for d in os.listdir(os.path.join(root, str(z))))
+    xm = xs[len(xs) // 2]
+    ys = sorted(int(f[:-5]) for f in os.listdir(os.path.join(root, str(z), str(xm))) if f.endswith('.webp'))
+    return xm, ys[len(ys) // 2]
+
+
+def preview(out, png, zoom=None, version=VERSION, at=None):
+    """A contact sheet (up to 3x3 tiles around `at` = (lon, lat), default the middle of what exists at `zoom`) of hillshaded tiles.
+    Returns (zoom, min m, max m)."""
     root = os.path.join(out, version)
     zooms = sorted(int(d) for d in os.listdir(root) if d.isdigit())
     if not zooms:
         raise ValueError('no tiles in ' + root)
     z = zoom if zoom is not None else min(max(zooms), 8)
-    xs = sorted(int(d) for d in os.listdir(os.path.join(root, str(z))))
-    xm = xs[len(xs) // 2]
-    ys = sorted(int(f[:-5]) for f in os.listdir(os.path.join(root, str(z), str(xm))) if f.endswith('.webp'))
-    ym = ys[len(ys) // 2]
+    xm, ym = preview_centre(out, z, at, version)
     sheet = Image.new('L', (3 * TILE, 3 * TILE), 40)
     lo, hi = 1e9, -1e9
     for j in range(3):
