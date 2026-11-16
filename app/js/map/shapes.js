@@ -1,7 +1,7 @@
 // Shapes on the map (map domain): borders (areas) and lines, drawn exactly as the sidebar describes them. The map knows nothing about
 // border types: every feature arrives with its look (colour, opacity, width, dash) already resolved. Also the drawing tool.
 // Commands (AHM.map.*, INTERFACES.md I-2): setShapes(fc), highlightShape(id|null), previewShape(id, {color, opacity}|null),
-//   showPreview(geometry|null) (a blue draft outline), drawShape({ kind: 'area'|'line', coords?, ids?, snap? }, onChange), isDrawing(), riverNameAt([lon, lat]).
+//   showPreview(geometry|null) (a blue draft outline), profile(id, { from?, to?, samples? }), profileMark([lon, lat]|null), drawShape({ kind: 'area'|'line', coords?, ids?, snap? }, onChange), isDrawing(), riverNameAt([lon, lat]).
 // Events: shape:click { id } (a click on a line or an outline, 6 px tolerance), map:click now carries shapes: [{ id }] (areas under the
 //   cursor), draw:finish (Enter or double click while drawing), draw:cancel (Esc).
 // Feature properties: kind ('area' | 'line' | 'label'), id, name, type (text), dates (text), color, ink (label colour), opacity, width,
@@ -439,6 +439,38 @@ Object.assign(AHM.map, {
         .queryRenderedFeatures([[pt.x - 10, pt.y - 10], [pt.x + 10, pt.y + 10]])
         .find((x) => x.sourceLayer === 'waterway' && x.properties && (x.properties.name || x.properties['name:latin']));
     return f ? f.properties.name || f.properties['name:latin'] : '';
+  },
+  /** The height profile of a shape: a route, a river or the outline of an area (a section of it between the points `from` and `to`
+   *  [lon, lat] when both are given). Resolves to { length (km), dist[] (km), pts[] ([lon, lat] of each sample), h[] (m, NaN where
+   *  unknown), min, max, up, down, fall, slope } or null: no such shape, or no heights (tiles not available). */
+  async profile(id, opts = {}) {
+    const lines = [];
+    ((shapesNow && shapesNow.features) || []).forEach((f) => {
+      const g = f.properties.id === id && (f.properties.kind === 'line' || f.properties.kind === 'area') ? f.geometry : null;
+      if (!g) return;
+      if (g.type === 'LineString') lines.push(g.coordinates);
+      else if (g.type === 'MultiLineString') lines.push(...g.coordinates);
+      else if (g.type === 'Polygon') lines.push(g.coordinates[0]);
+      else if (g.type === 'MultiPolygon') lines.push(...g.coordinates.map((p) => p[0]));
+    });
+    if (!lines.length) return null;
+    const len = (l) => l.reduce((s, p, i) => (i ? s + terrainKm(l[i - 1], p) : 0), 0);
+    const near = (l) => Math.min(...l.map((p) => terrainKm(opts.from, p)));
+    let line = opts.from ? lines.reduce((a, b) => (near(b) < near(a) ? b : a)) : lines.reduce((a, b) => (len(b) > len(a) ? b : a));
+    if (opts.from && opts.to) line = lineSection(line, opts.from, opts.to);
+    if (!line || line.length < 2) return null;
+    return profileOf(line, undefined, opts.samples > 1 ? Math.min(1000, opts.samples) : 120).catch(() => null);
+  },
+  /** A white ring with a red edge at [lon, lat] (the point of the height chart under the cursor); null removes it. */
+  profileMark(p) {
+    if (!mapReady) return;
+    let src = map.getSource('ahm-profile-mark');
+    if (!src) {
+      map.addSource('ahm-profile-mark', { type: 'geojson', data: EMPTY });
+      map.addLayer({ id: 'ahm-profile-mark', type: 'circle', source: 'ahm-profile-mark', paint: { 'circle-radius': 6, 'circle-color': '#ffffff', 'circle-stroke-color': '#d7191c', 'circle-stroke-width': 3 } });
+      src = map.getSource('ahm-profile-mark');
+    }
+    if (src) src.setData(p ? { type: 'Feature', geometry: { type: 'Point', coordinates: p }, properties: {} } : EMPTY);
   },
   drawShape,
   isDrawing: () => !!shapeDrawing,

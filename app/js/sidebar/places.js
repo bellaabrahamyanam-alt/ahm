@@ -299,6 +299,7 @@ async function show(id) {
     "</p>" +
     lyPlaceHTML(p) +
     rtPlaceHTML(p) +
+    tvHostHTML("place", p.id) +
     lyScopeHTML(scope, ns.length, inLang.length) +
     (ns.length > 1
       ? `<div class="note-tools" hidden><span class="sn">${ns.length} notes</span><button type="button" class="note-all" data-note-all></button></div>`

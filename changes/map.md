@@ -50,6 +50,22 @@
 - **How to verify:** `php tests/php/run.php`, `node tests/js/run.js` (browser test "the Rivers tab ...", `riverSection` tests, `shape:` and `type:` river rows of `tests/fixtures/rules.json`).
 - **Follow-ups:** the OpenStreetMap search and a click on a river of the real base map were not tried with live data.
 
+## 2026-11-15 — Height profile of routes, rivers and borders (T-044)
+
+- **What:** new `app/js/map/terrain.js`: the tile reader (`terrainLocate`, `terrainTile`, `terrainDecode`, `terrainSample`) moved out of `map.js`, plus `resampleLine`, `profileStats`, `lineSection`, `profileLevel`, `profileOf`; `map.js` uses them (the relief panel profile too); commands `AHM.map.profile(id, { from, to })` and `profileMark(lonlat | null)` (I-2 [1.8]).
+- **Why:** TODO T-044 (owner, in the chat).
+- **Files:** `app/js/map/terrain.js`, `app/js/map/map.js`, `app/js/map/shapes.js`, `interfaces/I-2-sidebar-map.md`, `tests/js/map.test.js`, `tests/js/contract.test.js`
+- **How to verify:** `node tests/js/run.js` (terrain tests in `map.test.js`; the Chromium test "the height profile of a river and of a route" reads a PNG tile).
+- **Follow-ups:** T-045 uses `terrain.js` for the cost grid.
+
+## 2026-11-15 — Travel time and least-cost path from the terrain (T-045)
+
+- **What:** new `app/js/map/travel.js`: Tobler hiking speed (slope capped at 45 degrees), a cost grid of 250 m to 1 km cells read from the Terrarium tiles, Dijkstra over 8 neighbours in a Web Worker (inline when there is none), the lines of 1, 2, 3 ... days (marching squares and smoothing of `map.js`), the least-cost path, hours to given places, and the walking time along a shape; commands `AHM.map.travel(...)` and `travelClear()` (I-2 [1.9]); `profile` takes `samples`.
+- **Why:** TODO T-045 (owner, in the chat).
+- **Files:** `app/js/map/travel.js`, `app/js/map/shapes.js`, `app/js/config.js`, `interfaces/I-2-sidebar-map.md`, `tests/js/map.test.js`, `tests/js/contract.test.js`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (unit tests of `travel.js` in `map.test.js`; the Chromium test "travel time" runs the real worker on a PNG tile).
+- **Follow-ups:** the speeds per mode in `AHM_CONFIG.travel` are rough starting values, not measured.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the map domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ## 2026-11-14 — T-021: routes on the map (written afterwards; commits `b0b76d2`, `571630d`, `2f38036`)

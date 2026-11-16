@@ -1217,3 +1217,30 @@ select {
   color: var(--error-color);
 }
 
+
+/* height profile of a shape (T-044) */
+.pr-box {
+  margin: 8px 0;
+}
+.pr-box canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  margin: 4px 0;
+  background: var(--panel, transparent);
+}
+
+/* travel time (T-045) */
+.tv-box {
+  margin: 8px 0;
+}
+.tv-box .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0;
+  align-items: center;
+}
+.tv-box input[type="number"] {
+  width: 4em;
+}

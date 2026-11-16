@@ -177,6 +177,87 @@ scenario('browser: the Rivers tab lists only rivers, has its own add panel and f
   ok(/Test river/.test(await pg.locator('#shDetail').innerText()) && (await pg.locator('#shWidth').count()) === 1, 'the river card opens with a Width slider');
 });
 
+// A 256 x 256 Terrarium tile as a PNG: the height of a pixel is 1000 + 2 * its column (1000 m in the west edge, 1510 m in the east edge).
+const terrainPng = () => {
+  const zlib = require('zlib'), crc = (b) => { let c, t = []; for (let n = 0; n < 256; n++) { c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } let x = 0xffffffff; for (const v of b) x = t[(x ^ v) & 255] ^ (x >>> 8); return (x ^ 0xffffffff) >>> 0; };
+  const chunk = (type, data) => { const l = Buffer.alloc(4); l.writeUInt32BE(data.length); const td = Buffer.concat([Buffer.from(type), data]), c = Buffer.alloc(4); c.writeUInt32BE(crc(td)); return Buffer.concat([l, td, c]); };
+  const raw = Buffer.alloc(256 * (1 + 256 * 3));
+  for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) { const v = Math.round((1000 + 2 * x + 32768) * 256), o = y * 769 + 1 + x * 3; raw[o] = Math.floor(v / 65536); raw[o + 1] = Math.floor(v / 256) % 256; raw[o + 2] = v % 256; }
+  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(256, 0); ihdr.writeUInt32BE(256, 4); ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+};
+scenario('browser: the height profile of a river and of a route (T-044): numbers, chart, stops, hover point', null, async (pg, S) => {
+  const png = terrainPng();
+  await pg.route('**/elevation-tiles-prod/**', (r) => r.fulfill({ contentType: 'image/png', body: png, headers: { 'access-control-allow-origin': '*' } }));
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
+  const ids = await pg.evaluate(async () => {
+    const save = async (b) => (await (await fetch('/api/shape/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) })).json()).id;
+    const base = { color: '#1e88e5', opacity: 1, label: true, source: '', date_from: null, date_to: null };
+    const river = await save({ ...base, names: [{ lang: 'en', name: 'Profile river' }], type: 'waterway', geometry: { type: 'LineString', coordinates: [[44.1, 40.0], [44.25, 40.05], [44.4, 40.1]] } });
+    const [a, b] = places;
+    const route = await save({ ...base, names: [{ lang: 'en', name: 'Profile route' }], type: 'road', stops: [a.id, b.id], geometry: { type: 'LineString', coordinates: [[a.lon, a.lat], [b.lon, b.lat]] } });
+    await shReload();
+    return { river, route };
+  });
+  ok(ids.river && ids.route, 'a river and a route are saved: ' + JSON.stringify(ids));
+  const d = await pg.evaluate((id) => AHM.map.profile(id).then((r) => r && { len: r.length, n: r.h.length, min: r.min, max: r.max, mark: typeof AHM.map.profileMark }), ids.river);
+  ok(d && d.n === 120 && d.len > 20 && d.len < 35 && d.min >= 1000 && d.max <= 1510 && d.max > d.min && d.mark === 'function', 'AHM.map.profile of the river reads the tile: ' + JSON.stringify(d));
+  const sec = await pg.evaluate((id) => AHM.map.profile(id, { from: [44.1, 40.0], to: [44.25, 40.05] }).then((r) => r && r.length), ids.river);
+  ok(sec > 10 && sec < 18, 'a section between two points is about half of the river: ' + sec);
+  ok((await pg.evaluate(() => AHM.map.profile('no-such-shape'))) === null, 'an unknown shape gives null');
+  await pg.evaluate((id) => shOpen(id), ids.river);
+  await pg.click('[data-shact="profile"]'); await pg.waitForSelector('#prChart:not([hidden])');
+  const info = await pg.locator('#prInfo').innerText();
+  ok(/\d+\.\d km · min \d[\d,]* m · max \d[\d,]* m/.test(info) && /mean slope/.test(info) && /fall|rise/.test(info), 'a river shows length, min, max, fall and mean slope: ' + info);
+  await pg.locator('#prChart').scrollIntoViewIfNeeded();
+  const box = await pg.locator('#prChart').boundingBox();
+  await pg.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  ok(/km · [\d,]+ m/.test(await pg.locator('#prHover').innerText()), 'moving over the chart shows distance and height');
+  await pg.evaluate((id) => rtOpen(id), ids.route);
+  await pg.click('[data-rtact="profile"]'); await pg.waitForSelector('#prChart:not([hidden])');
+  const stops = await pg.locator('#prStops').innerText();
+  ok(/1\./.test(stops) && /2\./.test(stops), 'a route marks its stops on the chart: ' + stops);
+});
+
+scenario('browser: travel time (T-045): bands, hours to places, a least-cost path and the time along a route, with the real worker', null, async (pg, S) => {
+  const png = terrainPng();
+  await pg.route('**/elevation-tiles-prod/**', (r) => r.fulfill({ contentType: 'image/png', body: png, headers: { 'access-control-allow-origin': '*' } }));
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
+  const r = await pg.evaluate(async () => {
+    const a = places[0], far = places.find((p) => p !== a);
+    const near = { id: 'near-test', lon: a.lon + 0.1, lat: a.lat };
+    const area = await AHM.map.travel({ from: [a.lon, a.lat], places: [near, { id: 'far-test', lon: a.lon + 3, lat: a.lat }], days: 2 });
+    const path = await AHM.map.travel({ from: [a.lon, a.lat], to: [a.lon + 0.2, a.lat] });
+    const bad = await AHM.map.travel({ from: [a.lon, a.lat], to: [a.lon + 9, a.lat] });
+    AHM.map.travelClear();
+    return { area, path, bad, w: typeof Worker };
+  });
+  ok(r.w === 'function', 'this browser has Web Workers');
+  ok(!r.area.error && r.area.bands.length === 2 && r.area.bands[0].hours === 8, 'bands of 8 h: ' + JSON.stringify(r.area));
+  const nearHours = (r.area.reach.find((x) => x.id === 'near-test') || {}).hours;
+  ok(nearHours > 0.5 && nearHours < 6, 'a place 8 km away is reached in a few hours on a gentle slope: ' + nearHours);
+  ok(!r.area.reach.some((x) => x.id === 'far-test') || r.area.reach.find((x) => x.id === 'far-test').hours > 16, 'a place 250 km away is not reached in 2 days (or beyond the bands)');
+  ok(r.path.path && r.path.path.km > 15 && r.path.path.km < 25 && r.path.path.hours > 2, 'the path of 17 km takes hours: ' + JSON.stringify(r.path.path && [r.path.path.km, r.path.path.hours]));
+  ok(/too large/.test(r.bad.error), 'a target 700 km away is refused: ' + r.bad.error);
+  // the panel in the card of a place: open, choose "Area reached in days", the list of places inside a day
+  await pg.click('#list li[data-id] >> nth=0'); await pg.waitForTimeout(300);
+  await pg.waitForSelector('#detail [data-tvact="open"]'); await pg.click('#detail [data-tvact="open"]');
+  ok((await pg.locator('.tv-mode:visible option').count()) >= 2 && (await pg.locator('[data-tvact="area"]').count()) === 1, 'the panel has the modes and the actions');
+  await pg.click('[data-tvact="area"]'); await pg.waitForFunction(() => /Reached in/.test([...document.querySelectorAll('.tv-info')].map((x) => x.textContent).join(' ')), null, { timeout: 15000 });
+  ok(/1 day: \d+ places/.test(await pg.locator('.tv-info:visible').innerText()), 'the area line counts places per day: ' + (await pg.locator('.tv-info:visible').innerText()));
+  // a route: the time along its own line
+  const rid = await pg.evaluate(async () => {
+    const [a, b] = places, g = { type: 'LineString', coordinates: [[a.lon, a.lat], [a.lon + 0.2, a.lat]] };
+    const id = (await (await fetch('/api/shape/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: [{ lang: 'en', name: 'Travel route' }], type: 'road', color: '#5d4037', opacity: 1, label: true, source: '', date_from: null, date_to: null, stops: [a.id, b.id], geometry: g }) })).json()).id;
+    await shReload(); rtOpen(id); return id;
+  });
+  await pg.waitForSelector('[data-rtact="profile"]');
+  await pg.locator('.tv-host[data-kind="shape"] [data-tvact="open"]').first().click();
+  await pg.locator('[data-tvact="along"]').click(); await pg.waitForFunction(() => /Along the line/.test([...document.querySelectorAll('.tv-info')].map((x) => x.textContent).join(' ')), null, { timeout: 15000 });
+  ok(/Along the line \(\d+\.\d km\): .* one way .* the other way/.test(await pg.locator('.tv-info:visible').innerText()), 'the time along a route, there and back: ' + (await pg.locator('.tv-info:visible').innerText()));
+  ok(rid, 'route saved');
+});
+
 scenario('browser: tabs, sheets, filters, layers (only / hide / search / create / choose places / notes / delete), categories', null, async (pg, S) => {
   await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
     ok(await pg.locator('.tabs button').count()===6 && await pg.locator('#more-maps #basemap').count()===1, 'six tabs (Explore, Borders, Routes, Rivers, Layers, More); Maps is a fold in More');

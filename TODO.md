@@ -156,12 +156,12 @@ Owner, in the chat, 2026-11-15. The date model already exists (`core/dates.js`: 
 
 Owner, in the chat, 2026-11-15. T-044 can start now (the relief code is merged); T-045 needs the terrain reader that T-044 moves into `app/js/map/terrain.js`.
 
-- [ ] T-044 Height profile for routes, rivers and borders (the relief code is merged: `sampleAt` and the profile are in `app/js/map/map.js`)
+- [x] T-044 Height profile for routes, rivers and borders (the relief code is merged: `sampleAt` and the profile are in `app/js/map/map.js`) (2026-11-15, branch `feat/profile-time`)
   What: the action "Height profile" in the sheet of a route, river or border. It uses the object's own line, not clicked points. A route marks its stops on the chart; a river shows start, end, total fall and mean slope; a border uses its outline or a section between two clicks (the Rivers tab already has "a section between two clicks"). Hover on the chart shows distance and height and moves a point on the map.
   Logic: the relief code (branch `feat/relief-aws`) already samples 120 points along a line from the Terrarium tiles (`sampleAt`) and draws a chart. Make that a function of any line (`profileOf(coordinates)`), move the tile reader (`locate`, `tileOf`, `sampleAt`, `decodeAt`) into its own file `app/js/map/terrain.js` (T-045 needs it too), and add the command `AHM.map.profile(shapeId, { from, to })`.
   Done when: tests (stand-in with a mocked tile) show a route, a river and a border section give the expected length, min, max, ascent and descent, the route stops are marked, and the sidebar action calls the command.
   Contract: yes (I-2 command).
-- [ ] T-045 Travel time and least-cost path from the terrain
+- [x] T-045 Travel time and least-cost path from the terrain (2026-11-15, branch `feat/profile-time`)
   What: (a) from a place or click: the area reachable in 1, 2, 3 ... days (rounded bands); (b) the least-cost path between two places with its time; (c) the places inside the one-day area, and "places within one day of this route" (a route as the start). A route can show its computed time next to the time a source gives.
   Logic: a cost grid from the Terrarium tiles (cell 250 m to 1 km by the size of the area); slope from the 8 neighbours; speed by Tobler's hiking function v = 6 * exp(-3.5 * |tan(slope) + 0.05|) km/h; a mode multiplier (foot 1.0, loaded animals, cart or army: values in `config.js`, editable, hours of walking per day default 8). Dijkstra with a binary heap in a Web Worker (so the page does not freeze); for a route as the start all its cells are sources at cost 0. Bands from the existing marching squares (`contourLines`) smoothed like the contour lines of T-048. Needs `terrain.js` from T-044.
   Limits (go to docs/14): modern terrain only; no rivers, lakes, snow, seasons, roads or borders as obstacles; the result is an estimate, and the panel says so.

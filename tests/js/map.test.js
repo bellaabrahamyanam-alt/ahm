@@ -129,7 +129,7 @@ function makeMapLibre() {
 /** map.js in a page of its own. `ready: false` leaves the map before its load event; `before(p)` runs before initMap().
  *  Handler errors of AHM.emit are only logged, so they are collected in `errors`. */
 function boot({ ready = true, before } = {}) {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const ml = makeMapLibre();
   const errors = [];
   Object.assign(p.ctx, {
@@ -463,7 +463,7 @@ function makeUx(glyphs) {
 
 /** map.js (with typeicons.js, for TYPE_STYLE) in a page of its own, on the richer stand-in and a fake clock. */
 function bootUx({ ready = true, glyphs = true } = {}) {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const ml = makeUx(glyphs);
   const clock = makeClock();
   const errors = [];
@@ -965,7 +965,7 @@ test('types: setTypeStyles rebuilds the table from point types; bad symbol, colo
 });
 
 test('types: getSymbols lists the symbols the map can draw, every one has a shape', () => {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const syms = J(p.X('AHM.map.getSymbols()'));
   const names = syms.map((s) => s.name);
   for (const n of ['circle', 'tree', 'sword', 'pickaxe', 'flag', 'star']) ok(names.includes(n), n);
@@ -973,7 +973,7 @@ test('types: getSymbols lists the symbols the map can draw, every one has a shap
 });
 
 test('types: AHM.map.setTypes before the map is ready only updates the table (icons are made on load)', () => {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   p.X('AHM.map.setTypes(__0)', TYPES_DICT);
   ok(p.X('"iron-mine" in TYPE_STYLE'));
 });
@@ -1488,7 +1488,7 @@ test('map: relief colours: the saved "adapt" is read as it always was', () => {
 });
 
 test('map: contours: marching squares gives one closed line around a cone, and nothing for a flat or missing grid', () => {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const n = 21;
   const cone = Array.from({ length: n * n }, (_, k) => 100 - Math.hypot((k % n) - 10, Math.floor(k / n) - 10));
   const lines = p.X('contourLines(__0, 21, 21, 95)', cone);
@@ -1572,7 +1572,7 @@ const turnDeg = (l) => {
 };
 
 test('map: contours: cutting the corners (Chaikin) makes a ring rounder and keeps it closed; an open line keeps its ends', () => {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const n = 21;
   const cone = Array.from({ length: n * n }, (_, k) => 100 - Math.hypot((k % n) - 10, Math.floor(k / n) - 10) + 0.3 * Math.sin(k));
   const raw = p.X('contourLines(__0, 21, 21, 94)', cone)[0];
@@ -1588,7 +1588,7 @@ test('map: contours: cutting the corners (Chaikin) makes a ring rounder and keep
 });
 
 test('map: contours: the grid blur lowers a spike (1 2 1 / 2 4 2 / 1 2 1 over 16), renormalises at the edge and keeps missing cells missing', () => {
-  const p = load(['typeicons.js', 'map.js']);
+  const p = load(['typeicons.js', 'terrain.js', 'map.js']);
   const g = Array(25).fill(0);
   g[12] = 100;
   const b = p.X('smoothGrid(__0, 5, 5)', g);
@@ -1627,4 +1627,160 @@ test('map: relief colours: "Smooth colours" slides the range to the new one in 4
   eq(0, frames.length);
   p.X('relief.smooth = true; relief.range = null; setRange([10, 30])');
   eq([10, 30], range(), 'the first range is set at once');
+});
+
+// ---- terrain.js: height profiles of lines (T-044) ----
+const terrainPage = () => {
+  const p = load(['terrain.js']);
+  Object.assign(p.ctx, { AHM_CONFIG: { basemap: { terrain: { encoding: 'terrarium', maxzoom: 12, tiles: ['t/{z}/{x}/{y}'] } } } });
+  return p;
+};
+/** A tile stand-in of 256 x 1 pixels: the height of pixel x is f(x) metres (Terrarium: R*256 + G + B/256 - 32768). */
+const heightTile = (f) => ({
+  width: 256,
+  height: 1,
+  data: new Uint8ClampedArray(Array.from({ length: 256 }, (_, x) => { const v = Math.round((f(x) + 32768) * 256), r = Math.floor(v / 65536); return [r, Math.floor(v / 256) % 256, v % 256, 255]; }).flat()),
+});
+test('terrain: resampleLine spreads points evenly along a line and gives its length', () => {
+  const p = terrainPage();
+  const r = J(p.X('resampleLine(__0, 5)', [[44, 40], [44, 40.1], [44.1, 40.1]]));
+  eq(5, r.pts.length);
+  ok(Math.abs(r.total - 19.6) < 0.4, 'two legs of 11.1 and 8.5 km: ' + r.total);
+  ok(Math.abs(r.dist[4] - r.total) < 1e-9 && r.dist[0] === 0, 'from 0 to the total');
+  ok(r.dist.every((d, i) => !i || Math.abs(d - r.dist[i - 1] - r.total / 4) < 1e-9), 'equal gaps');
+  eq([44, 40], r.pts[0]);
+});
+test('terrain: profileStats: min, max, ascent, descent, fall and slope; NaN is skipped; fewer than two heights give null', () => {
+  const p = terrainPage();
+  const s = J(p.X('profileStats(__0, 10)', [100, 140, 120, NaN, 90, 60]));
+  eq(140, s.max); eq(60, s.min);
+  eq(40, s.up, 'ascent'); eq(80, s.down, 'descent: 20 + 30 + 30');
+  eq(40, s.fall, 'first 100 minus last 60'); ok(Math.abs(s.slope - 0.4) < 1e-9, '40 m over 10 km = 0.4 %');
+  eq(null, p.X('profileStats(__0, 5)', [100, NaN]));
+});
+test('terrain: lineSection: the part of a line between the vertices nearest to two points, in the direction of the points; a ring gives its shorter way', () => {
+  const p = terrainPage();
+  const line = [[0, 0], [1, 0], [2, 0], [3, 0], [4, 0]];
+  eq([[1, 0], [2, 0], [3, 0]], J(p.X('lineSection(__0, [1.1, 0.2], [2.9, -0.1])', line)));
+  eq([[3, 0], [2, 0], [1, 0]], J(p.X('lineSection(__0, [3, 0], [1, 0])', line)), 'reversed when the points come the other way');
+  const ring = [[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]];
+  eq([[0, 0], [1, 0]], J(p.X('lineSection(__0, [0, 0], [1, 0])', ring)), 'one side of a square, not the three others');
+  const diag = J(p.X('lineSection(__0, [0, 0], [1, 1])', ring));
+  ok(diag.length === 3 && J(diag[0]).toString() === '0,0' && diag[2].toString() === '1,1', 'to the opposite corner: one of the two ways round, 3 vertices');
+  eq(null, p.X('lineSection(__0, [0, 0], [1, 1])', [[0, 0]]));
+});
+test('terrain: profileLevel: a long line is read from coarse tiles, a short one from fine tiles, within 3 and 12', () => {
+  const p = terrainPage();
+  ok(p.X('profileLevel(500, 40)') < p.X('profileLevel(5, 40)'), 'coarser for 500 km than for 5 km');
+  eq(3, p.X('profileLevel(20000, 40)')); eq(12, p.X('profileLevel(0.01, 40)'));
+});
+test('terrain: profileOf reads the heights of a line from tiles (a stand-in tile) and gives the numbers of a rise of 255 m', async () => {
+  const p = terrainPage();
+  p.ctx.tile = heightTile((x) => 1000 + x); // 1000 m in the west edge of every tile, +1 m per pixel to the east
+  const d = J(await p.X('profileOf(__0, 8, 20, () => tile)', [[0, 40], [0.5, 40]]));
+  eq(20, d.h.length);
+  ok(d.min >= 1000 && d.max <= 1255 && d.max > d.min, 'heights within the tile: ' + d.min + '..' + d.max);
+  ok(d.up >= 0 && d.length > 40, 'length of 0.5 degrees at 40 N is ~42.6 km: ' + d.length);
+  p.ctx.AHM_CONFIG.basemap.terrain.encoding = 'mapbox';
+  const none = await p.X('profileOf(__0, 8, 20, () => tile)', [[0, 40], [0.5, 40]]);
+  eq(null, none, 'a tile server that is not Terrarium gives no profile');
+});
+test('terrain: a missing tile gives NaN heights and no profile', async () => {
+  const p = terrainPage();
+  const d = await p.X('terrainSample(__0, 8, () => Promise.reject(new Error("404")))', [[0, 40], [1, 41]]);
+  eq([true, true], J(d).map((x) => x === null || Number.isNaN(x)), 'NaN (null in JSON) where a tile is missing');
+  eq(null, await p.X('profileOf(__0, 8, 10, () => Promise.reject(new Error("404")))', [[0, 40], [1, 41]]));
+});
+
+// ---- travel.js: Tobler, the cost grid, the least-cost search, the whole job (T-045) ----
+const travelPage = () => {
+  const p = load(['terrain.js', 'travel.js']);
+  Object.assign(p.ctx, { AHM_CONFIG: { basemap: { terrain: { encoding: 'terrarium', maxzoom: 12, tiles: ['t/{z}/{x}/{y}'] } }, travel: { hoursPerDay: 8, modes: { foot: { label: 'On foot', mult: 1 }, army: { label: 'Army', mult: 0.5 } } } } });
+  return p;
+};
+/** A grid of nx * ny cells, 1 km each (box in degrees chosen for it), heights from f(i, j); search from the cell at column 0, row ny/2. */
+const kmGrid = (p, nx, ny, f, mult = 1, extra = {}) => {
+  const dLat = 1 / 111.32,
+    box = [0, (nx - 1) * dLat, 0, (ny - 1) * dLat],
+    h = Float32Array.from({ length: nx * ny }, (_, k) => f(k % nx, Math.floor(k / nx)));
+  const src = [Math.floor(ny / 2) * nx];
+  return p.X('leastCost(__0, __1, __2, __3, __4, __5, __6, __7, __8, __9)', nx, ny, h, 0, box[1], 0, box[3], src, mult, extra.maxHours ?? 1e9);
+};
+test('travel: Tobler: 6 km/h on a 5 % downhill, about 5 km/h flat, slower uphill and on a steep downhill', () => {
+  const p = travelPage();
+  ok(Math.abs(p.X('toblerKmh(-0.05)') - 6) < 1e-9, 'fastest at -5 %');
+  const flat = p.X('toblerKmh(0)');
+  ok(flat > 5 && flat < 5.1, 'flat: ' + flat);
+  ok(p.X('toblerKmh(0.2)') < 3 && p.X('toblerKmh(0.2)') > 2, 'uphill 20 %: ' + p.X('toblerKmh(0.2)'));
+  ok(p.X('toblerKmh(-0.4)') < p.X('toblerKmh(-0.05)'), 'a steep downhill is slower than a gentle one');
+  ok(p.X('toblerKmh(50)') > 0.1 && p.X('toblerKmh(-50)') > 0.1 && p.X('toblerKmh(50)') === p.X('toblerKmh(1)'), 'a cliff (slope beyond 45 degrees) counts as 45 degrees: never an endless time');
+  ok(p.X('toblerKmh(0.1)') < p.X('toblerKmh(0)') && p.X('toblerKmh(-0.2)') < p.X('toblerKmh(-0.1)'), 'rising either way from -5 %');
+});
+test('travel: on flat ground the cost is the distance divided by the speed; the mode multiplier scales it', () => {
+  const p = travelPage(),
+    flat = p.X('toblerKmh(0)');
+  const r = kmGrid(p, 21, 21, () => 1000),
+    row = 10 * 21;
+  ok(Math.abs(r.cost[row + 10] - 10 / flat) < 0.02, 'ten cells east: ' + r.cost[row + 10] + ' vs ' + 10 / flat);
+  ok(Math.abs(r.cost[row + 21 * 5 + 5] - (5 * Math.SQRT2) / flat) < 0.05, 'five cells on the diagonal');
+  const half = kmGrid(p, 21, 21, () => 1000, 0.5);
+  ok(Math.abs(half.cost[row + 10] - 2 * r.cost[row + 10]) < 0.03, 'half the speed, twice the time');
+  eq(0, r.cost[row]);
+  eq(-1, r.prev[row], 'the source has no way back');
+});
+test('travel: a ridge is avoided, a steeper way costs more, a cell without height is never crossed, maxHours stops the search', () => {
+  const p = travelPage();
+  // a wall of 3000 m at column 10 with a gap at row 18: from (0, 10) to (20, 10) the way goes round through the gap
+  const wall = kmGrid(p, 21, 21, (i, j) => (i === 10 && j !== 18 ? 3000 : 1000));
+  const g = { w: 0, e: 20 / 111.32, s: 0, n: 20 / 111.32, nx: 21, ny: 21 };
+  const target = 10 * 21 + 20;
+  const way = p.X('pathTo(__0, __1, __2)', g, wall.prev, target);
+  ok(way.some((q) => Math.abs(q[1] - 18 / 111.32) < 1e-9 && Math.abs(q[0] - 10 / 111.32) < 1e-9), 'through the gap (column 10, row 18)');
+  const open = kmGrid(p, 21, 21, () => 1000);
+  ok(wall.cost[target] > open.cost[target] * 1.3, 'longer than the open way: ' + wall.cost[target] + ' vs ' + open.cost[target]);
+  // a hill in the middle row costs more than the flat ground (the search goes round it where that is cheaper)
+  const hill = kmGrid(p, 21, 21, (i, j) => (Math.abs(j - 10) < 3 ? 1000 + 150 * Math.max(0, 5 - Math.abs(i - 10)) : 1000));
+  ok(hill.cost[target] > open.cost[target], 'a hill in the way costs time');
+  // a hole in the data (NaN column) cannot be crossed
+  const hole = kmGrid(p, 21, 21, (i) => (i === 10 ? NaN : 1000));
+  ok(hole.cost[target] === Infinity || hole.cost[target] == null, 'a column with no heights cuts the grid');
+  const near = kmGrid(p, 21, 21, () => 1000, 1, { maxHours: 1 });
+  ok(near.cost[10 * 21 + 3] < Infinity && near.cost[10 * 21 + 20] === Infinity, 'cells beyond maxHours are not reached');
+});
+test('travel: travelGrid and cellAt: cells of about the size asked for, and a point finds its cell', () => {
+  const p = travelPage();
+  const g = J(p.X('travelGrid(__0, 1)', [44, 44.5, 40, 40.3]));
+  ok(Math.abs(g.nx - 43) <= 2 && Math.abs(g.ny - 34) <= 2, 'about 42 x 33 km: ' + g.nx + ' x ' + g.ny);
+  eq(0, p.X('cellAt(__0, 44, 40)', g));
+  eq(g.nx * g.ny - 1, p.X('cellAt(__0, 44.5, 40.3)', g));
+  eq(-1, p.X('cellAt(__0, 45, 40)', g), 'outside');
+});
+test('travel: travelTimeOf: the walking time along a height profile; uphill takes longer than the way back', () => {
+  const p = travelPage(),
+    flat = p.X('toblerKmh(0)');
+  const prof = { dist: [0, 5, 10], h: [1000, 1000, 1000] };
+  ok(Math.abs(p.X('travelTimeOf(__0)', prof) - 10 / flat) < 1e-9, 'flat: distance / speed');
+  const rise = { dist: [0, 5, 10], h: [1000, 1400, 1800] };
+  ok(p.X('travelTimeOf(__0)', rise) > p.X('travelTimeOf(__0, 1, true)', rise), 'going up (8 %) takes longer than coming down');
+  ok(Math.abs(p.X('travelTimeOf(__0, 0.5)', prof) - 20 / flat) < 1e-9, 'the multiplier');
+  ok(p.X('travelTimeOf(__0)', { dist: [0, 5, 10], h: [1000, NaN, 1000] }) > 0, 'a missing height is skipped');
+});
+test('travel: the whole job on a flat stand-in tile: bands, hours to places, a path with its km and hours, and the errors', async () => {
+  const p = travelPage();
+  p.ctx.tile = heightTile(() => 1000);
+  const flat = p.X('toblerKmh(0)');
+  const places = [{ id: 'near', lon: 44.1, lat: 40.0 }, { id: 'far', lon: 45.4, lat: 40.0 }, { id: 'north', lon: 44.0, lat: 40.1 }];
+  const r = J(await p.X('travelRun(Object.assign(__0, { read: () => tile }), false)', { from: [44.0, 40.0], to: [44.2, 40.0], places, days: 2 }));
+  eq(undefined, r.error);
+  eq([8, 16], r.bands.map((b) => b.hours), 'bands of 8 h: 1 day and 2 days');
+  eq(['near', 'north', 'far'].filter((id) => r.reach.some((x) => x.id === id)), r.reach.map((x) => x.id), 'sorted by the hours');
+  const near = r.reach.find((x) => x.id === 'near').hours;
+  ok(Math.abs(near - (8.5 / flat)) < 0.4, '8.5 km east at about 5 km/h: ' + near);
+  ok(r.path && Math.abs(r.path.km - 17) < 1.5 && Math.abs(r.path.hours - r.path.km / flat) < 0.4, 'path of 17 km: ' + JSON.stringify(r.path && [r.path.km, r.path.hours]));
+  ok(r.cellKm >= 0.25 && r.cellKm <= 1, 'cell size between 250 m and 1 km');
+  const slow = J(await p.X('travelRun(Object.assign(__0, { read: () => tile }), false)', { from: [44.0, 40.0], to: [44.2, 40.0], mode: 'army' }));
+  ok(Math.abs(slow.path.hours / r.path.hours - 2) < 0.1, 'the army column takes twice as long: ' + slow.path.hours + ' vs ' + r.path.hours);
+  eq('There is no start: choose a place, a route or a point.', J(await p.X('travelRun(Object.assign(__0, { read: () => tile }), false)', {})).error);
+  ok(/too large/.test(J(await p.X('travelRun(Object.assign(__0, { read: () => tile }), false)', { from: [40, 40], to: [48, 40] })).error), 'a path of 600 km is refused');
+  ok(/No heights/.test(J(await p.X('travelRun(Object.assign(__0, { read: () => Promise.reject(new Error("404")) }), false)', { from: [44, 40], days: 1 })).error), 'no tiles, no answer');
 });

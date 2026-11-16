@@ -41,6 +41,22 @@
 - **How to verify:** `node tests/js/run.js` (browser test: a leg with no river keeps its clicks).
 - **Follow-ups:** none.
 
+## 2026-11-15 — Height profile of routes, rivers and borders (T-044)
+
+- **What:** `app/js/sidebar/profile.js`: the button "Height profile" in the card of a route, a river or a border: numbers, chart, stops of a route marked, fall and mean slope of a river or border, a section between two clicks, a point on the map that follows the cursor over the chart. Also fixes the card of a shape that was lost when `tab()` switched to the Rivers tab for it (`shSetMode` kept `sh.open` empty).
+- **Why:** TODO T-044 (owner, in the chat).
+- **Files:** `app/js/sidebar/profile.js`, `app/js/sidebar/shapes.js`, `app/js/sidebar/routes.js`, `app/css/sidebar.css`, `app/index.html`
+- **How to verify:** `node tests/js/run.js` (terrain tests in `map.test.js`; the Chromium test "the height profile of a river and of a route" reads a PNG tile).
+- **Follow-ups:** T-045 uses `terrain.js` for the cost grid.
+
+## 2026-11-15 — Travel time and least-cost path from the terrain (T-045)
+
+- **What:** `app/js/sidebar/travelpanel.js`: the button "Travel time…" in the card of a place, route, river or border opens a panel: mode, days, "Area reached in days" (places per day and those within one day), "Path to…" (click a place or a point), "Time along it" (there and back). Hosts are scoped per card so the ids inside stay unique.
+- **Why:** TODO T-045 (owner, in the chat).
+- **Files:** `app/js/sidebar/travelpanel.js`, `app/js/sidebar/places.js`, `app/js/sidebar/shapes.js`, `app/js/sidebar/routes.js`, `app/css/sidebar.css`, `app/index.html`, `tests/js/layers.test.js`
+- **How to verify:** `node tests/js/run.js` (unit tests of `travel.js` in `map.test.js`; the Chromium test "travel time" runs the real worker on a PNG tile).
+- **Follow-ups:** the speeds per mode in `AHM_CONFIG.travel` are rough starting values, not measured.
+
 One entry per change, newest last: date, what, why, files, how to verify, open follow-ups. Only the sidebar domain appends here (DOMAINS.md, rule 7). The history before 2026-11-06 is in the legacy `AGENT_CHANGES.md` (entries #1-#26), which is now read-only.
 
 ---
