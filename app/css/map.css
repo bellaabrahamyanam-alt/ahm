@@ -154,6 +154,7 @@ body:not(.collapsed) .maplibregl-ctrl-bottom-left {
 }
 
 /* Relief controls in the sidebar, More > Maps & base map (js/map/map.js) */
+#base-credit { margin-top: 4px; font-size: 11px; line-height: 1.35; opacity: 0.8; overflow-wrap: anywhere; }
 #relief-opts { margin-top: 6px; font-size: 12px; }
 #relief-opts summary { cursor: pointer; font-weight: 600; }
 #relief-opts label { display: flex; align-items: center; gap: 6px; margin: 2px 0; }

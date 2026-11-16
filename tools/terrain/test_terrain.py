@@ -240,6 +240,155 @@ class Build(unittest.TestCase):
             self.assertGreater(im.size[0], 100)
 
 
+class Datasets(unittest.TestCase):
+    """--dataset (auto, glo30, glo90): selection, credit, download rules, the config block (docs/10)."""
+
+    def http(self, code):
+        import urllib.error
+        return urllib.error.HTTPError('u', code, 'x', None, None)
+
+    def fake(self, answers):
+        calls = []
+
+        def fetch(url, dest):
+            calls.append(url)
+            a = answers.get('30' if 'dem-30m' in url else '90')
+            if isinstance(a, Exception):
+                raise a
+            open(dest, 'wb').write(b'x')
+        return fetch, calls
+
+    def test_dataset_selection(self):
+        self.assertEqual((30, 90), core.resolutions('auto'))
+        self.assertEqual((90,), core.resolutions('glo90'))
+        self.assertEqual((30,), core.resolutions('glo30'))
+        with self.assertRaises(ValueError):
+            core.resolutions('glo60')
+        r = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'terrain.py'), 'squares', '--dataset', 'glo60'], capture_output=True, text=True)
+        self.assertNotEqual(0, r.returncode)
+
+    def test_attribution_texts_and_config(self):
+        self.assertEqual(core.ATTRIBUTION_30, core.ATTRIBUTION)
+        self.assertTrue(core.ATTRIBUTION_90.startswith('produced using Copernicus WorldDEM-90 \u00a9 DLR e.V. 2010-2014 and '))
+        self.assertTrue(core.ATTRIBUTION_90.endswith('provided under COPERNICUS by the European Union and ESA; all rights reserved'))
+        self.assertNotIn('WorldDEM-30', core.ATTRIBUTION_90)
+        self.assertEqual(core.ATTRIBUTION_30, core.attribution_for({30}))
+        self.assertEqual(core.ATTRIBUTION_90, core.attribution_for({90}))
+        mixed = core.attribution_for({30, 90})
+        self.assertIn('WorldDEM-30', mixed)
+        self.assertIn('WorldDEM-90', mixed)
+        self.assertEqual(core.ATTRIBUTION_30, core.attribution_for(set()))  # nothing downloaded (all sea): the default text
+        cfg = open(CONFIG_JS, encoding='utf-8').read()  # the three texts are in config.js, word for word, for the owner to paste
+        for t in (core.ATTRIBUTION_30, core.ATTRIBUTION_90, mixed):
+            self.assertIn(t, cfg)
+
+    def test_squares_glo90(self):
+        r = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'terrain.py'), 'squares', '--bbox', '44', '40', '46', '41', '--dataset', 'glo90'],
+                           capture_output=True, text=True)
+        self.assertEqual(0, r.returncode, r.stderr)
+        urls = re.findall(r'^(https://\S+)', r.stdout, re.M)
+        self.assertEqual(2, len(urls))
+        self.assertTrue(all('copernicus-dem-90m' in u for u in urls) and not any('dem-30m' in u for u in urls), urls)
+        self.assertIn('Copernicus_DSM_COG_30_N40_00_E044_00_DEM/Copernicus_DSM_COG_30_N40_00_E044_00_DEM.tif', urls[0])
+        self.assertNotIn('prediction', r.stdout)
+        r = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'terrain.py'), 'squares', '--bbox', '44', '40', '46', '41'], capture_output=True, text=True)
+        self.assertIn('prediction', r.stderr)  # the Armenia/Azerbaijan note is a prediction, never a fact
+        self.assertNotRegex(r.stderr + r.stdout, r'(?i)not in GLO-30\b(?!;)')
+
+    def test_download_url_and_names(self):
+        self.assertEqual('https://copernicus-dem-90m.s3.eu-central-1.amazonaws.com/Copernicus_DSM_COG_30_N40_00_E044_00_DEM/'
+                         'Copernicus_DSM_COG_30_N40_00_E044_00_DEM.tif', core.square_url(40, 44, 90))
+        self.assertEqual('Copernicus_DSM_COG_30_S01_00_W002_00_DEM', core.square_name(-1, -2, 90))
+
+    def test_glo90_downloads_only_90_and_prints_each_url(self):
+        import terrain
+        with tempfile.TemporaryDirectory() as d:
+            fetch, calls = self.fake({'90': None})
+            log = []
+            self.assertEqual(90, terrain.fetch_square(d, 40, 44, 'glo90', fetch, log.append))
+            self.assertEqual(1, len(calls))
+            self.assertIn('dem-90m', calls[0])
+            self.assertTrue(any(calls[0] in l for l in log), 'the URL it tries is printed')
+            self.assertEqual(90, terrain.fetch_square(d, 40, 44, 'glo90', fetch))  # the file is there: no second request
+            self.assertEqual(1, len(calls))
+
+    def test_auto_falls_back_per_square_and_glo30_only_does_not(self):
+        import terrain
+        with tempfile.TemporaryDirectory() as d:
+            fetch, calls = self.fake({'30': self.http(404), '90': None})
+            self.assertEqual(90, terrain.fetch_square(d, 40, 44, 'auto', fetch, lambda m: None))
+            self.assertEqual(['dem-30m' in c for c in calls], [True, False])
+        with tempfile.TemporaryDirectory() as d:
+            fetch, calls = self.fake({'30': self.http(404), '90': None})
+            self.assertEqual('none', terrain.fetch_square(d, 40, 44, 'glo30', fetch, lambda m: None))
+            self.assertEqual(1, len(calls))
+
+    def test_404_marker_covers_only_the_datasets_tried(self):
+        import terrain
+        with tempfile.TemporaryDirectory() as d:
+            fetch, calls = self.fake({'90': self.http(404)})
+            self.assertEqual('none', terrain.fetch_square(d, 38, 44, 'glo90', fetch, lambda m: None))
+            self.assertEqual({90}, core.marker_tried(d, 38, 44))
+            self.assertEqual('none', terrain.fetch_square(d, 38, 44, 'glo90', fetch, lambda m: None))
+            self.assertEqual(1, len(calls), 'known: not asked again')
+            self.assertEqual('none', core.dem_status(d, [44, 38, 45, 39], 'glo90')[(38, 44)])
+            self.assertIsNone(core.dem_status(d, [44, 38, 45, 39], 'auto')[(38, 44)], 'a 404 in GLO-90 says nothing about GLO-30')
+            fetch2, calls2 = self.fake({'30': self.http(404), '90': self.http(404)})
+            self.assertEqual('none', terrain.fetch_square(d, 38, 44, 'auto', fetch2, lambda m: None))
+            self.assertEqual(1, len(calls2), 'only GLO-30 is asked: GLO-90 is known to be missing')
+            self.assertEqual({30, 90}, core.marker_tried(d, 38, 44))
+            open(core.no_tile_marker(d, 10, 10), 'w').close()  # an old empty marker means both
+            self.assertEqual({30, 90}, core.marker_tried(d, 10, 10))
+
+    def test_only_404_is_no_tile(self):
+        import terrain
+        for err in (self.http(403), self.http(500), OSError('timed out')):
+            with tempfile.TemporaryDirectory() as d:
+                fetch, calls = self.fake({'90': err})
+                with self.assertRaises(terrain.DownloadStop):
+                    terrain.fetch_square(d, 40, 44, 'glo90', fetch, lambda m: None)
+                self.assertFalse(os.path.exists(core.no_tile_marker(d, 40, 44)), 'no marker after %r' % err)
+
+    def test_notice_names_the_products_used(self):
+        for used, need, absent in (((30,), 'WorldDEM-30', 'WorldDEM-90'), ((90,), 'WorldDEM-90', 'WorldDEM-30')):
+            n = core.notice_text(1.0, 11, used)
+            self.assertIn(core.attribution_for(used), n)
+            self.assertIn('any use of the Copernicus ' + need, n)
+            self.assertNotIn(absent, n)
+        n = core.notice_text(1.0, 11, (30, 90))
+        self.assertIn(core.attribution_for({30, 90}), n)
+        self.assertIn('GLO-30 and GLO-90', n)
+
+    def test_build_writes_the_notice_of_the_source(self):
+        class S90(Synth):
+            def datasets(self):
+                return {90}
+        bb = [44, 40, 45, 41]
+        with tempfile.TemporaryDirectory() as out:
+            core.build(S90(bb, ppd=60), out, bb, maxzoom=1)
+            n = open(os.path.join(out, 'NOTICE.txt'), encoding='utf-8').read()
+            self.assertIn(core.ATTRIBUTION_90, n)
+            self.assertNotIn('WorldDEM-30', n)
+
+    def test_config_block_and_pack_printout(self):
+        b = core.config_block(core.ATTRIBUTION_90, 11, [32, 29, 51, 44])
+        for need in ('tiles: ["https://YOUR-FORUM/ahm-terrain/v1/{z}/{x}/{y}.webp"]', 'maxzoom: 11,', 'bounds: [32, 29, 51, 44]',
+                     'attribution: "%s"' % core.ATTRIBUTION_90):
+            self.assertIn(need, b)
+        bb = [44, 40, 45, 41]
+        with tempfile.TemporaryDirectory() as out, tempfile.TemporaryDirectory() as o2:
+            class S90(Synth):
+                def datasets(self):
+                    return {90}
+            core.build(S90(bb, ppd=60), out, bb, maxzoom=2)
+            r = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'terrain.py'), 'pack', '--out', out, '--archive', os.path.join(o2, 't.zip'),
+                                '--bbox', '44', '40', '45', '41'], capture_output=True, text=True)
+            self.assertEqual(0, r.returncode, r.stderr)
+            self.assertIn('maxzoom: 2,', r.stdout)
+            self.assertIn('bounds: [44, 40, 45, 41]', r.stdout)
+            self.assertIn(core.ATTRIBUTION_90, r.stdout)
+
+
 class Cli(unittest.TestCase):
     def run_cli(self, *a):
         return subprocess.run([sys.executable, '-I', os.path.join(HERE, 'terrain.py'), *a], capture_output=True, text=True)
