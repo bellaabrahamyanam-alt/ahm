@@ -18,7 +18,7 @@
 - One search box over **all names** of every place (any language, any script, accent-insensitive) and the **full text of the notes**, with the matching part highlighted. A ✕ button (and Esc) clears it.
 - Filters: place **type** (chips with counts), **language**, and a **period** (From / To, each a date field as described under [Dates](#dates)). Places that existed in the period are shown; places with no known dates are hidden while a period is set. A counter shows how many filters are active, and **Reset** clears them all.
 - Sorting A–Z or by date, and **Fit map** to the current results.
-- Search for **other places** (towns, villages and so on that are not in our data) through Nominatim. It runs only on Enter or a button, never while typing, and results are cached and throttled (see [Licences](12-licences-of-the-data-and-services.md)).
+- Search for **other places** (towns, villages and so on that are not in our data) through Nominatim. It runs only on Enter or a button, never while typing, and results are cached and throttled (see [Licences](12-licences-of-the-data-and-services.md)). The search is limited to the map area `bbox` (Mesopotamia from the Persian Gulf to the Caucasus, Ankara to Baku: west 32, south 29, east 51, north 44); places outside it are not found. The relief tiles are requested only inside the same box.
 - Permanent link to a place: `#place-<id>` in the address.
 
 ### Places
