@@ -164,6 +164,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
   b. Rivers of an area (T-057): 1. every river that touches or crosses the area (with a switch "only fully inside"); 2. only rivers fully inside. ANSWERED: 1 (owner, in the chat, 2026-11-16).
   c. Stars (T-058): to keep only the interesting rivers the site must know which ones you find interesting, so a river can get a star. 1. the star is private: it is kept only in your browser on this computer, other people do not see it, and it is lost if you clear the browser data or use another device; no change in the data. 2. the star is saved in the site data like a river name, so everyone sees it and it stays on every device; it needs a new field and server rules. Recommendation: 1 for now; you can change to 2 later (the stars can be moved).
   Done when: you write `Approved: <date> a<1|2> c<1|2>` (b is answered).
+  Approved: 2026-11-16 a2 b1 c1 (owner, in the chat).
   Contract: no.
 
 ## Done
