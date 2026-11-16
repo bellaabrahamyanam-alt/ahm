@@ -138,5 +138,16 @@ const AHM_CONFIG = {
     },
   },
   geocodeUrl: "https://nominatim.openstreetmap.org/search",
+  // Travel time from the terrain (T-045): an estimate on the modern relief. Walking speed is Tobler's hiking function times the `mult`
+  // of the mode (1 = a person on foot). The multipliers below are rough starting values, not measured ones: change them freely.
+  travel: {
+    hoursPerDay: 8, // hours of walking in a day (the bands are 1, 2, 3 ... of these days)
+    modes: {
+      foot: { label: "On foot", mult: 1.0 },
+      pack: { label: "With pack animals", mult: 0.8 },
+      cart: { label: "Cart", mult: 0.6 },
+      army: { label: "Army column", mult: 0.5 },
+    },
+  },
   routeUrl: "https://router.project-osrm.org/route/v1/driving",
 };

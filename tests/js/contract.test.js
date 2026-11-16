@@ -54,8 +54,8 @@ test('contract I-1: the forum controller hands out every endpoint name, and the 
 const MAP_COMMANDS = ['editPin', 'fitRoute', 'fitTo', 'focusPlace', 'focusPoint', 'getZoom', 'hidePlace', 'resize', 'setFeatures', 'setPick', 'setRoute', 'setRouteMarkers'];
 const MAP_EVENTS = ['map:click', 'map:ready', 'map:show-controls', 'place:click', 'place:dblclick'];
 const SIDEBAR_EVENTS = ['sidebar:resized'];
-// Added by proposal 010 (1.5): accepted, not required yet. showFound: added after the fact for the Routes tab (TODO.md T-020). riverNameAt: the Rivers tab (T-038). profile, profileMark: the height profile of a shape (T-044).
-const NEW_MAP_COMMANDS = ['drawShape', 'getSymbols', 'hideMenu', 'hideShape', 'highlightShape', 'isDrawing', 'previewShape', 'profile', 'profileMark', 'riverNameAt', 'setShapes', 'setTypes', 'showFound', 'showMenu', 'showPreview'];
+// Added by proposal 010 (1.5): accepted, not required yet. showFound: added after the fact for the Routes tab (TODO.md T-020). riverNameAt: the Rivers tab (T-038). profile, profileMark: the height profile of a shape (T-044). travel, travelClear: travel time (T-045).
+const NEW_MAP_COMMANDS = ['drawShape', 'getSymbols', 'hideMenu', 'hideShape', 'highlightShape', 'isDrawing', 'previewShape', 'profile', 'profileMark', 'riverNameAt', 'setShapes', 'setTypes', 'showFound', 'showMenu', 'showPreview', 'travel', 'travelClear'];
 const NEW_MAP_EVENTS = ['draw:cancel', 'draw:finish', 'map:menu', 'map:menu-close', 'shape:click'];
 
 test('contract I-2: AHM.map has exactly the commands of INTERFACES.md', () => {

@@ -1617,3 +1617,96 @@ test('terrain: a missing tile gives NaN heights and no profile', async () => {
   eq([true, true], J(d).map((x) => x === null || Number.isNaN(x)), 'NaN (null in JSON) where a tile is missing');
   eq(null, await p.X('profileOf(__0, 8, 10, () => Promise.reject(new Error("404")))', [[0, 40], [1, 41]]));
 });
+
+// ---- travel.js: Tobler, the cost grid, the least-cost search, the whole job (T-045) ----
+const travelPage = () => {
+  const p = load(['terrain.js', 'travel.js']);
+  Object.assign(p.ctx, { AHM_CONFIG: { basemap: { terrain: { encoding: 'terrarium', maxzoom: 12, tiles: ['t/{z}/{x}/{y}'] } }, travel: { hoursPerDay: 8, modes: { foot: { label: 'On foot', mult: 1 }, army: { label: 'Army', mult: 0.5 } } } } });
+  return p;
+};
+/** A grid of nx * ny cells, 1 km each (box in degrees chosen for it), heights from f(i, j); search from the cell at column 0, row ny/2. */
+const kmGrid = (p, nx, ny, f, mult = 1, extra = {}) => {
+  const dLat = 1 / 111.32,
+    box = [0, (nx - 1) * dLat, 0, (ny - 1) * dLat],
+    h = Float32Array.from({ length: nx * ny }, (_, k) => f(k % nx, Math.floor(k / nx)));
+  const src = [Math.floor(ny / 2) * nx];
+  return p.X('leastCost(__0, __1, __2, __3, __4, __5, __6, __7, __8, __9)', nx, ny, h, 0, box[1], 0, box[3], src, mult, extra.maxHours ?? 1e9);
+};
+test('travel: Tobler: 6 km/h on a 5 % downhill, about 5 km/h flat, slower uphill and on a steep downhill', () => {
+  const p = travelPage();
+  ok(Math.abs(p.X('toblerKmh(-0.05)') - 6) < 1e-9, 'fastest at -5 %');
+  const flat = p.X('toblerKmh(0)');
+  ok(flat > 5 && flat < 5.1, 'flat: ' + flat);
+  ok(p.X('toblerKmh(0.2)') < 3 && p.X('toblerKmh(0.2)') > 2, 'uphill 20 %: ' + p.X('toblerKmh(0.2)'));
+  ok(p.X('toblerKmh(-0.4)') < p.X('toblerKmh(-0.05)'), 'a steep downhill is slower than a gentle one');
+  ok(p.X('toblerKmh(50)') > 0.1 && p.X('toblerKmh(-50)') > 0.1 && p.X('toblerKmh(50)') === p.X('toblerKmh(1)'), 'a cliff (slope beyond 45 degrees) counts as 45 degrees: never an endless time');
+  ok(p.X('toblerKmh(0.1)') < p.X('toblerKmh(0)') && p.X('toblerKmh(-0.2)') < p.X('toblerKmh(-0.1)'), 'rising either way from -5 %');
+});
+test('travel: on flat ground the cost is the distance divided by the speed; the mode multiplier scales it', () => {
+  const p = travelPage(),
+    flat = p.X('toblerKmh(0)');
+  const r = kmGrid(p, 21, 21, () => 1000),
+    row = 10 * 21;
+  ok(Math.abs(r.cost[row + 10] - 10 / flat) < 0.02, 'ten cells east: ' + r.cost[row + 10] + ' vs ' + 10 / flat);
+  ok(Math.abs(r.cost[row + 21 * 5 + 5] - (5 * Math.SQRT2) / flat) < 0.05, 'five cells on the diagonal');
+  const half = kmGrid(p, 21, 21, () => 1000, 0.5);
+  ok(Math.abs(half.cost[row + 10] - 2 * r.cost[row + 10]) < 0.03, 'half the speed, twice the time');
+  eq(0, r.cost[row]);
+  eq(-1, r.prev[row], 'the source has no way back');
+});
+test('travel: a ridge is avoided, a steeper way costs more, a cell without height is never crossed, maxHours stops the search', () => {
+  const p = travelPage();
+  // a wall of 3000 m at column 10 with a gap at row 18: from (0, 10) to (20, 10) the way goes round through the gap
+  const wall = kmGrid(p, 21, 21, (i, j) => (i === 10 && j !== 18 ? 3000 : 1000));
+  const g = { w: 0, e: 20 / 111.32, s: 0, n: 20 / 111.32, nx: 21, ny: 21 };
+  const target = 10 * 21 + 20;
+  const way = p.X('pathTo(__0, __1, __2)', g, wall.prev, target);
+  ok(way.some((q) => Math.abs(q[1] - 18 / 111.32) < 1e-9 && Math.abs(q[0] - 10 / 111.32) < 1e-9), 'through the gap (column 10, row 18)');
+  const open = kmGrid(p, 21, 21, () => 1000);
+  ok(wall.cost[target] > open.cost[target] * 1.3, 'longer than the open way: ' + wall.cost[target] + ' vs ' + open.cost[target]);
+  // a hill in the middle row costs more than the flat ground (the search goes round it where that is cheaper)
+  const hill = kmGrid(p, 21, 21, (i, j) => (Math.abs(j - 10) < 3 ? 1000 + 150 * Math.max(0, 5 - Math.abs(i - 10)) : 1000));
+  ok(hill.cost[target] > open.cost[target], 'a hill in the way costs time');
+  // a hole in the data (NaN column) cannot be crossed
+  const hole = kmGrid(p, 21, 21, (i) => (i === 10 ? NaN : 1000));
+  ok(hole.cost[target] === Infinity || hole.cost[target] == null, 'a column with no heights cuts the grid');
+  const near = kmGrid(p, 21, 21, () => 1000, 1, { maxHours: 1 });
+  ok(near.cost[10 * 21 + 3] < Infinity && near.cost[10 * 21 + 20] === Infinity, 'cells beyond maxHours are not reached');
+});
+test('travel: travelGrid and cellAt: cells of about the size asked for, and a point finds its cell', () => {
+  const p = travelPage();
+  const g = J(p.X('travelGrid(__0, 1)', [44, 44.5, 40, 40.3]));
+  ok(Math.abs(g.nx - 43) <= 2 && Math.abs(g.ny - 34) <= 2, 'about 42 x 33 km: ' + g.nx + ' x ' + g.ny);
+  eq(0, p.X('cellAt(__0, 44, 40)', g));
+  eq(g.nx * g.ny - 1, p.X('cellAt(__0, 44.5, 40.3)', g));
+  eq(-1, p.X('cellAt(__0, 45, 40)', g), 'outside');
+});
+test('travel: travelTimeOf: the walking time along a height profile; uphill takes longer than the way back', () => {
+  const p = travelPage(),
+    flat = p.X('toblerKmh(0)');
+  const prof = { dist: [0, 5, 10], h: [1000, 1000, 1000] };
+  ok(Math.abs(p.X('travelTimeOf(__0)', prof) - 10 / flat) < 1e-9, 'flat: distance / speed');
+  const rise = { dist: [0, 5, 10], h: [1000, 1400, 1800] };
+  ok(p.X('travelTimeOf(__0)', rise) > p.X('travelTimeOf(__0, 1, true)', rise), 'going up (8 %) takes longer than coming down');
+  ok(Math.abs(p.X('travelTimeOf(__0, 0.5)', prof) - 20 / flat) < 1e-9, 'the multiplier');
+  ok(p.X('travelTimeOf(__0)', { dist: [0, 5, 10], h: [1000, NaN, 1000] }) > 0, 'a missing height is skipped');
+});
+test('travel: the whole job on a flat stand-in tile: bands, hours to places, a path with its km and hours, and the errors', async () => {
+  const p = travelPage();
+  p.ctx.tile = heightTile(() => 1000);
+  const flat = p.X('toblerKmh(0)');
+  const places = [{ id: 'near', lon: 44.1, lat: 40.0 }, { id: 'far', lon: 45.4, lat: 40.0 }, { id: 'north', lon: 44.0, lat: 40.1 }];
+  const r = J(await p.X('travelRun(Object.assign(__0, { read: () => tile }), false)', { from: [44.0, 40.0], to: [44.2, 40.0], places, days: 2 }));
+  eq(undefined, r.error);
+  eq([8, 16], r.bands.map((b) => b.hours), 'bands of 8 h: 1 day and 2 days');
+  eq(['near', 'north', 'far'].filter((id) => r.reach.some((x) => x.id === id)), r.reach.map((x) => x.id), 'sorted by the hours');
+  const near = r.reach.find((x) => x.id === 'near').hours;
+  ok(Math.abs(near - (8.5 / flat)) < 0.4, '8.5 km east at about 5 km/h: ' + near);
+  ok(r.path && Math.abs(r.path.km - 17) < 1.5 && Math.abs(r.path.hours - r.path.km / flat) < 0.4, 'path of 17 km: ' + JSON.stringify(r.path && [r.path.km, r.path.hours]));
+  ok(r.cellKm >= 0.25 && r.cellKm <= 1, 'cell size between 250 m and 1 km');
+  const slow = J(await p.X('travelRun(Object.assign(__0, { read: () => tile }), false)', { from: [44.0, 40.0], to: [44.2, 40.0], mode: 'army' }));
+  ok(Math.abs(slow.path.hours / r.path.hours - 2) < 0.1, 'the army column takes twice as long: ' + slow.path.hours + ' vs ' + r.path.hours);
+  eq('There is no start: choose a place, a route or a point.', J(await p.X('travelRun(Object.assign(__0, { read: () => tile }), false)', {})).error);
+  ok(/too large/.test(J(await p.X('travelRun(Object.assign(__0, { read: () => tile }), false)', { from: [40, 40], to: [48, 40] })).error), 'a path of 600 km is refused');
+  ok(/No heights/.test(J(await p.X('travelRun(Object.assign(__0, { read: () => Promise.reject(new Error("404")) }), false)', { from: [44, 40], days: 1 })).error), 'no tiles, no answer');
+});

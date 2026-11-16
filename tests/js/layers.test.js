@@ -3,7 +3,7 @@ const { load, UI_STANDINS } = require('./lib/ctx');
 const L = (id, name, ...m) => ({ id, names: [{ lang: 'en', name }], descriptions: [], category: null, color: null, date_from: null, date_to: null, members: m.map((x) => ({ place: x })) });
 
 function page(layers = [L('A', 'Alpha', 'p1', 'p2'), L('B', 'Beta', 'p2')], cats = []) {
-  const p = load(['state.js', 'config.js', 'dates.js', 'data.js', 'datefield.js', 'layer-rules.js', 'shapes.js', 'routes.js', 'search.js', 'searchfield.js', 'placeform.js', 'layers.js'], UI_STANDINS);
+  const p = load(['state.js', 'config.js', 'dates.js', 'data.js', 'datefield.js', 'layer-rules.js', 'shapes.js', 'routes.js', 'travelpanel.js', 'search.js', 'searchfield.js', 'placeform.js', 'layers.js'], UI_STANDINS);
   p.X('places = __0', [{ id: 'p1', type: 'city', names: [{ lang: 'en', name: 'One' }] }, { id: 'p2', type: 'city', names: [{ lang: 'en', name: 'Two' }] }, { id: 'p3', type: 'city', names: [{ lang: 'en', name: 'Three' }] }]);
   p.X('lySet(__0, [], __1)', layers, cats);
   return p;
@@ -181,7 +181,7 @@ const gated = (isBuilt, name, fn) =>
   });
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-const UI_SCRIPTS = ['state.js', 'config.js', 'dates.js', 'data.js', 'datefield.js', 'layer-rules.js', 'shapes.js', 'routes.js', 'search.js', 'searchfield.js', 'period.js', 'placeform.js', 'layers.js', 'sidebar/shapes.js', 'sidebar/routes.js'];
+const UI_SCRIPTS = ['state.js', 'config.js', 'dates.js', 'data.js', 'datefield.js', 'layer-rules.js', 'shapes.js', 'routes.js', 'search.js', 'searchfield.js', 'period.js', 'placeform.js', 'layers.js', 'sidebar/shapes.js', 'sidebar/routes.js', 'sidebar/travelpanel.js'];
 /** The page with the sidebar files (the old ui.js) themselves running (it declares cur, tab, show, update ...), a map stand-in, and recorded event handlers. */
 function uiPage() {
   const p = load(UI_SCRIPTS);

@@ -251,7 +251,7 @@ function shRenderView() {
     (can && free.length ? `<select id="shAddLayer" aria-label="Add to a layer"><option value="">Add to a layer…</option>${free.map((ly) => `<option value="${ly.id}">${esc(lyName(ly, l))}</option>`).join('')}</select>` : '') +
     lyOwnerNotesHTML(s.id, l, 'shact') +
     (osm ? `<div class="sn">Outline © <a href="https://www.openstreetmap.org/${osm[1]}/${osm[2]}" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL).</div>` : '') +
-    `<div class="pr-host"></div><div class="err-line" id="shErr"></div></div><div class="dock-foot">` +
+    `<div class="pr-host"></div>${tvHostHTML("shape", s.id)}<div class="err-line" id="shErr"></div></div><div class="dock-foot">` +
     `<button type="button" data-shact="fit">Fit map</button><button type="button" data-shact="profile">Height profile</button>` +
     (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-shact="editshape">Edit shape</button>' : ''}<button type="button" class="danger" data-shact="delete">Delete</button>` : '') +
     `</div>`;

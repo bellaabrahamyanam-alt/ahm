@@ -280,7 +280,7 @@ function rtRenderView() {
     lyOwnerNotesHTML(s.id, l, 'rtact') +
     (/^osrm:/.test(s.source || '') ? `<div class="sn">The path follows modern roads: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL), via OSRM. Edit the path to match the historical one.</div>` : '') +
     (rts.note ? `<div class="sn">${esc(rts.note)}</div>` : '') +
-    `<div class="pr-host"></div><div class="err-line" id="rtErr"></div></div><div class="dock-foot">` +
+    `<div class="pr-host"></div>${tvHostHTML("shape", s.id)}<div class="err-line" id="rtErr"></div></div><div class="dock-foot">` +
     `<button type="button" data-rtact="fit">Fit map</button><button type="button" data-rtact="profile">Height profile</button>` +
     (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-rtact="editpath">Edit path</button>' : ''}<button type="button" data-rtact="reverse" title="Run the other way: the places and the line are reversed">Reverse</button><button type="button" class="danger" data-rtact="delete">Delete</button>` : '') +
     `</div>`;

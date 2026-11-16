@@ -1,7 +1,7 @@
 // Shapes on the map (map domain): borders (areas) and lines, drawn exactly as the sidebar describes them. The map knows nothing about
 // border types: every feature arrives with its look (colour, opacity, width, dash) already resolved. Also the drawing tool.
 // Commands (AHM.map.*, INTERFACES.md I-2): setShapes(fc), highlightShape(id|null), previewShape(id, {color, opacity}|null),
-//   showPreview(geometry|null) (a blue draft outline), profile(id, { from?, to? }), profileMark([lon, lat]|null), drawShape({ kind: 'area'|'line', coords?, ids?, snap? }, onChange), isDrawing(), riverNameAt([lon, lat]).
+//   showPreview(geometry|null) (a blue draft outline), profile(id, { from?, to?, samples? }), profileMark([lon, lat]|null), drawShape({ kind: 'area'|'line', coords?, ids?, snap? }, onChange), isDrawing(), riverNameAt([lon, lat]).
 // Events: shape:click { id } (a click on a line or an outline, 6 px tolerance), map:click now carries shapes: [{ id }] (areas under the
 //   cursor), draw:finish (Enter or double click while drawing), draw:cancel (Esc).
 // Feature properties: kind ('area' | 'line' | 'label'), id, name, type (text), dates (text), color, ink (label colour), opacity, width,
@@ -459,7 +459,7 @@ Object.assign(AHM.map, {
     let line = opts.from ? lines.reduce((a, b) => (near(b) < near(a) ? b : a)) : lines.reduce((a, b) => (len(b) > len(a) ? b : a));
     if (opts.from && opts.to) line = lineSection(line, opts.from, opts.to);
     if (!line || line.length < 2) return null;
-    return profileOf(line).catch(() => null);
+    return profileOf(line, undefined, opts.samples > 1 ? Math.min(1000, opts.samples) : 120).catch(() => null);
   },
   /** A white ring with a red edge at [lon, lat] (the point of the height chart under the cursor); null removes it. */
   profileMark(p) {

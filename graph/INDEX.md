@@ -6,13 +6,13 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 | domain | files | lines | largest file |
 |---|---|---|---|
-| sidebar | 13 | 3656 | `app/js/sidebar/layers.js` (691) |
-| map | 5 | 2397 | `app/js/map/map.js` (1203) |
+| sidebar | 14 | 3740 | `app/js/sidebar/layers.js` (691) |
+| map | 6 | 2649 | `app/js/map/map.js` (1203) |
 | core | 7 | 1039 | `app/js/core/shapes.js` (367) |
 | state | 1 | 43 | `app/js/state/state.js` (43) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
 | data | 8 | 3841 | `service/store.php` (1884) |
-| shared | 5 | 249 | `app/js/config.js` (142) |
+| shared | 5 | 260 | `app/js/config.js` (153) |
 
 ## Flags
 
@@ -40,8 +40,8 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 ## Where to look (by file name)
 
-- sidebar: app/js/sidebar/actions.js, app/js/sidebar/admin.js, app/js/sidebar/datefield.js +10
-- map: app/js/map/map.js, app/js/map/overlays.js, app/js/map/shapes.js +2
+- sidebar: app/js/sidebar/actions.js, app/js/sidebar/admin.js, app/js/sidebar/datefield.js +11
+- map: app/js/map/map.js, app/js/map/overlays.js, app/js/map/shapes.js +3
 - layer: app/js/core/layer-rules.js, app/js/sidebar/layers.js
 - search: app/js/core/search.js, app/js/sidebar/searchfield.js
 - date: app/js/core/dates.js, app/js/sidebar/datefield.js, service/dates.php

@@ -219,6 +219,45 @@ scenario('browser: the height profile of a river and of a route (T-044): numbers
   ok(/1\./.test(stops) && /2\./.test(stops), 'a route marks its stops on the chart: ' + stops);
 });
 
+scenario('browser: travel time (T-045): bands, hours to places, a least-cost path and the time along a route, with the real worker', null, async (pg, S) => {
+  const png = terrainPng();
+  await pg.route('**/elevation-tiles-prod/**', (r) => r.fulfill({ contentType: 'image/png', body: png, headers: { 'access-control-allow-origin': '*' } }));
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
+  const r = await pg.evaluate(async () => {
+    const a = places[0], far = places.find((p) => p !== a);
+    const near = { id: 'near-test', lon: a.lon + 0.1, lat: a.lat };
+    const area = await AHM.map.travel({ from: [a.lon, a.lat], places: [near, { id: 'far-test', lon: a.lon + 3, lat: a.lat }], days: 2 });
+    const path = await AHM.map.travel({ from: [a.lon, a.lat], to: [a.lon + 0.2, a.lat] });
+    const bad = await AHM.map.travel({ from: [a.lon, a.lat], to: [a.lon + 9, a.lat] });
+    AHM.map.travelClear();
+    return { area, path, bad, w: typeof Worker };
+  });
+  ok(r.w === 'function', 'this browser has Web Workers');
+  ok(!r.area.error && r.area.bands.length === 2 && r.area.bands[0].hours === 8, 'bands of 8 h: ' + JSON.stringify(r.area));
+  const nearHours = (r.area.reach.find((x) => x.id === 'near-test') || {}).hours;
+  ok(nearHours > 0.5 && nearHours < 6, 'a place 8 km away is reached in a few hours on a gentle slope: ' + nearHours);
+  ok(!r.area.reach.some((x) => x.id === 'far-test') || r.area.reach.find((x) => x.id === 'far-test').hours > 16, 'a place 250 km away is not reached in 2 days (or beyond the bands)');
+  ok(r.path.path && r.path.path.km > 15 && r.path.path.km < 25 && r.path.path.hours > 2, 'the path of 17 km takes hours: ' + JSON.stringify(r.path.path && [r.path.path.km, r.path.path.hours]));
+  ok(/too large/.test(r.bad.error), 'a target 700 km away is refused: ' + r.bad.error);
+  // the panel in the card of a place: open, choose "Area reached in days", the list of places inside a day
+  await pg.click('#list li[data-id] >> nth=0'); await pg.waitForTimeout(300);
+  await pg.waitForSelector('#detail [data-tvact="open"]'); await pg.click('#detail [data-tvact="open"]');
+  ok((await pg.locator('.tv-mode:visible option').count()) >= 2 && (await pg.locator('[data-tvact="area"]').count()) === 1, 'the panel has the modes and the actions');
+  await pg.click('[data-tvact="area"]'); await pg.waitForFunction(() => /Reached in/.test([...document.querySelectorAll('.tv-info')].map((x) => x.textContent).join(' ')), null, { timeout: 15000 });
+  ok(/1 day: \d+ places/.test(await pg.locator('.tv-info:visible').innerText()), 'the area line counts places per day: ' + (await pg.locator('.tv-info:visible').innerText()));
+  // a route: the time along its own line
+  const rid = await pg.evaluate(async () => {
+    const [a, b] = places, g = { type: 'LineString', coordinates: [[a.lon, a.lat], [a.lon + 0.2, a.lat]] };
+    const id = (await (await fetch('/api/shape/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: [{ lang: 'en', name: 'Travel route' }], type: 'road', color: '#5d4037', opacity: 1, label: true, source: '', date_from: null, date_to: null, stops: [a.id, b.id], geometry: g }) })).json()).id;
+    await shReload(); rtOpen(id); return id;
+  });
+  await pg.waitForSelector('[data-rtact="profile"]');
+  await pg.locator('.tv-host[data-kind="shape"] [data-tvact="open"]').first().click();
+  await pg.locator('[data-tvact="along"]').click(); await pg.waitForFunction(() => /Along the line/.test([...document.querySelectorAll('.tv-info')].map((x) => x.textContent).join(' ')), null, { timeout: 15000 });
+  ok(/Along the line \(\d+\.\d km\): .* one way .* the other way/.test(await pg.locator('.tv-info:visible').innerText()), 'the time along a route, there and back: ' + (await pg.locator('.tv-info:visible').innerText()));
+  ok(rid, 'route saved');
+});
+
 scenario('browser: tabs, sheets, filters, layers (only / hide / search / create / choose places / notes / delete), categories', null, async (pg, S) => {
   await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
     ok(await pg.locator('.tabs button').count()===6 && await pg.locator('#more-maps #basemap').count()===1, 'six tabs (Explore, Borders, Routes, Rivers, Layers, More); Maps is a fold in More');
