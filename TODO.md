@@ -20,7 +20,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - Project and CI: T-054, T-004
 
 **Next (builder)**, in this order (`builder: next` takes the first open item of the first group)
-- 1. Rivers and 3D: T-055, T-056, T-057, T-058, T-059
+- 1. Rivers and 3D: T-055, T-056, T-057, T-058, T-059, T-061, T-062
 - 2. History and time: T-041, T-043, T-046, T-042
 - 3. Analysis and sharing: T-044, T-045, T-047
 - 4. Data checks and server rules: T-037, T-031, T-032
@@ -122,6 +122,13 @@ View and selection tools for rivers, and the 3D map. Rivers are shapes of geomet
   Approved: 2026-11-16 a2 b1 c1 (owner, in the chat).
   Contract: no.
 
+- [ ] T-061 Terrain: void parts of GLO-30 squares that straddle Armenia or Azerbaijan, and the 30/90 seam (follow-up of T-060)
+  Done when: after the first real `terrain.py check` the owner knows whether such squares have void parts; if yes, `geotiff_source.py` fills the void from the GLO-90 square (downloaded as well) and the border seam is judged in `preview`. Needs real files, so it waits for the owner's first run.
+  Contract: no.
+- [ ] T-062 Relief colour ramps for the larger area (follow-up of T-060)
+  Done when: the default ramp `armenia` (350-4100 m, white top) and the fixed range suit 0 m (Gulf, Mesopotamia) to 5,600 m (Elbrus); with "Adapt colours to the view" on nothing breaks, with it off the Caucasus peaks are not all white. The owner chooses the ramp stops.
+  Contract: no.
+
 ### 2. History and time
 
 Owner, in the chat, 2026-11-15. The date model already exists (`core/dates.js`: exact, approximate, range; `date_from` / `date_to` on places, shapes and layers), so none of this needs old data to be changed. Order: T-040 -> T-041 -> T-043 -> T-046 -> T-042 (T-042 needs T-041 and the decision T-052). Decisions: T-049 to T-052.
@@ -217,6 +224,7 @@ Waits for T-003 and T-001.
 ## Done
 
 - [x] T-040 Time slider: the map at one moment, with play (2026-11-16, branch `feat/time-slider`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042, all in it's PR" (covers `interfaces/I-2`, `I-3`, `I-6` and `tests/js/contract.test.js`). `AHM.state` key `time`, core `visibleAt`/`timeLook`, bar in `sidebar/timebar.js`, `faded` property for the map. Undated objects: option 3 of T-049 assumed. Not seen in a browser.
+- [x] T-060 Map area enlarged to Mesopotamia + Anatolia edge + Caucasus, relief tool and guide made correct for it (2026-11-15, branch `feat/bbox-mesopotamia-caucasus`; owner, in the chat). `bbox` [32, 29, 51, 44]; 285 squares, 15,812 tiles at zoom 0-11; only HTTP 404 means "no tile"; `check` shows void shares and 30/90 borders; `preview --at`; at most 64 open files; docs/10 numbers and the Armenia/Azerbaijan 90 m caveat.
 - [x] T-058 Relief fixes (bounds, visible credit, flat bands) and a GLO-90-only option for the terrain tool (2026-11-16, branch `feat/relief-fixes-glo90`; owner, in the chat). (A1) `bounds` only when `terrain.bounds` is set; docs/10 and the tool printout tell the owner to set it for own tiles. (A2, withdrawn by the owner: `adapt` stays true by default; nothing changed there) (C) new option `color.blend` (default true = smooth blend; false = flat colour bands with sharp edges), checkbox "Smooth colour transitions", saved with the other relief settings. (A3) the terrain credit is plain text under the base-map list while relief is on. (B) `terrain.py --dataset auto|glo30|glo90`, credit per dataset (GLO-30, GLO-90, both), config block printed by `build` and `pack`, docs/10 "Which dataset" with the size table (synthetic, unmeasured).
 - [x] T-048 Relief polish: rounder contour lines, "Smooth colours" checkbox, controls back in the sidebar (2026-11-15, branch `feat/relief-aws`; owner, in the chat).
 - [x] T-039 Relief colours by height, controls and height readout (2026-11-15, branch `feat/relief-aws`; owner, in the chat: "elevation styles, customize, see meters and colour difference"). MapLibre 4.7.1 -> 5.24.1 (needed for `color-relief`, since 5.6.0). `basemap.terrain.color` (ramps in metres), controls under the base-map list, legend, height readout from the Terrarium tile. Colours adapt to the view (`color.adapt`, checkbox "Adapt colours to the view"). Relief panel on the map, ramp editor, contour lines, height profile, saved settings (owner, in the chat). Not verified: the real map (no browser here), the MapLibre 5 upgrade against the other map code, AWS CORS.

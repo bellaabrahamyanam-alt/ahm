@@ -148,6 +148,12 @@ def cmd_check(a):
     n90 = sum(1 for r in rows if r[2] == 90)
     print('%d squares: %d GLO-30, %d GLO-90, %d without a tile (0 m). Mosaic %d x %d px (virtual, nothing of that size is held in memory).'
           % (len(rows), len(rows) - miss - n90, n90, miss, m.width, m.height))
+    seams = core.seam_edges(m.status)
+    if seams:
+        print('%d borders between a GLO-30 square and a GLO-90 square (different products: a seam is possible there). Look at some after the '
+              'build, for example:' % len(seams))
+        for lon, lat in seams[:3]:
+            print('  python terrain.py preview --out ahm-terrain --zoom 10 --at %g %g --png seam.png' % (lon, lat))
     print('Credit for this data: ' + core.attribution_for(m.datasets()))
     need_downloaded(a)
     bb = bbox_of(a)
@@ -171,9 +177,10 @@ def cmd_build(a):
 
 
 def cmd_preview(a):
-    z, lo, hi = core.preview(a.out, a.png, a.zoom, a.version)
+    z, lo, hi = core.preview(a.out, a.png, a.zoom, a.version, tuple(a.at) if a.at else None)
     print('Wrote %s (zoom %d, elevations %.0f to %.0f m). Look for: mountains lit from the top left, no seams between tiles, '
-          'flat sea at 0 m, no stripes or blocks.' % (a.png, z, lo, hi))
+          'flat sea at 0 m, no stripes or blocks. Near a border of Armenia or Azerbaijan (GLO-90 next to GLO-30) also look for a straight line '
+          'where the sharpness or the height changes: use --at LON LAT.' % (a.png, z, lo, hi))
 
 
 def cmd_pack(a):
@@ -211,6 +218,7 @@ def main(argv=None):
     b.add_argument('--force', action='store_true', help='rewrite tiles that exist')
     v = add('preview', cmd_preview, 'write a hillshade contact sheet PNG of 3x3 tiles', out=True)
     v.add_argument('--zoom', type=int)
+    v.add_argument('--at', nargs=2, type=float, metavar=('LON', 'LAT'), help='centre the sheet on this place (default: the middle of the tiles)')
     v.add_argument('--png', default='preview.png')
     v.add_argument('--version', default=core.VERSION)
     k = add('pack', cmd_pack, 'one .zip (or .tar) of the output for upload', out=True)

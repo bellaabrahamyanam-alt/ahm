@@ -143,6 +143,17 @@ def dem_status(dem_dir, bbox, dataset='auto'):
     return out
 
 
+def seam_edges(status):
+    """[(lon, lat)] of the middle of every border between a GLO-30 square and a GLO-90 square (east or north neighbour)."""
+    r = []
+    for (lat, lon), v in sorted(status.items()):
+        for dlat, dlon in ((0, 1), (1, 0)):
+            w = status.get((lat + dlat, lon + dlon))
+            if v in (30, 90) and w in (30, 90) and v != w:
+                r.append((lon + 1.0, lat + 0.5) if dlon else (lon + 0.5, lat + 1.0))
+    return r
+
+
 def used_datasets(status):
     return {v for v in status.values() if v in (30, 90)}
 
@@ -419,17 +430,26 @@ def hillshade(elev, cell_m, azimuth=315.0, altitude=45.0, exaggeration=1.0):
     return np.clip(s * 255.0, 0, 255).astype(np.uint8)
 
 
-def preview(out, png, zoom=None, version=VERSION):
-    """A contact sheet (up to 3x3 tiles around the middle of what exists at `zoom`) of hillshaded tiles. Returns (zoom, min m, max m)."""
+def preview_centre(out, z, at=None, version=VERSION):
+    """(x, y) of the middle tile of the contact sheet: the tile of `at` = (lon, lat), else the middle of what exists at zoom z."""
+    if at:
+        return lonlat_to_tile(at[0], at[1], z)
+    root = os.path.join(out, version)
+    xs = sorted(int(d) for d in os.listdir(os.path.join(root, str(z))))
+    xm = xs[len(xs) // 2]
+    ys = sorted(int(f[:-5]) for f in os.listdir(os.path.join(root, str(z), str(xm))) if f.endswith('.webp'))
+    return xm, ys[len(ys) // 2]
+
+
+def preview(out, png, zoom=None, version=VERSION, at=None):
+    """A contact sheet (up to 3x3 tiles around `at` = (lon, lat), default the middle of what exists at `zoom`) of hillshaded tiles.
+    Returns (zoom, min m, max m)."""
     root = os.path.join(out, version)
     zooms = sorted(int(d) for d in os.listdir(root) if d.isdigit())
     if not zooms:
         raise ValueError('no tiles in ' + root)
     z = zoom if zoom is not None else min(max(zooms), 8)
-    xs = sorted(int(d) for d in os.listdir(os.path.join(root, str(z))))
-    xm = xs[len(xs) // 2]
-    ys = sorted(int(f[:-5]) for f in os.listdir(os.path.join(root, str(z), str(xm))) if f.endswith('.webp'))
-    ym = ys[len(ys) // 2]
+    xm, ym = preview_centre(out, z, at, version)
     sheet = Image.new('L', (3 * TILE, 3 * TILE), 40)
     lo, hi = 1e9, -1e9
     for j in range(3):
