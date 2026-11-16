@@ -86,6 +86,7 @@ const CORE = [
   'isoToSec', 'secToIso', 'dateToTs', 'dateFromTs', 'dateClean', 'dateUpgrade', 'dateBounds', 'spanBounds', 'dateKey', 'dateOrderCheck', 'dateText', 'spanText',
   'periodEndSec', 'datePeriodEnd', 'legacyToDate', 'getJSON', 'loadPlaces', 'loadNotesIndex', 'loadNoteBody', 'loadLayers', 'loadLayerNotes', 'loadCategories',
   'loadLanguages', 'esc', 'norm', 'label', 'langName', 'run', 'byDateKey', 'periodActive', 'layerAllows', 'lyScope', 'lyHalo', 'lyNoteVisible',
+  'visibleAt', 'timeSpan', 'timeAdvance', 'timeLook',
 ];
 
 test('contract I-3: the core functions of INTERFACES.md exist with the same names', () => {
@@ -109,9 +110,9 @@ test('contract I-4: typeIcon(type) and TYPE_STYLE exist (the symbols are drawn b
 });
 
 // ---- I-6 state manager ----
-const STATE_KEYS = ['layers', 'selected'];
+const STATE_KEYS = ['layers', 'selected', 'time'];
 
-test('contract I-6: AHM.state has exactly get, set, patch and exactly the keys selected and layers', () => {
+test('contract I-6: AHM.state has exactly get, set, patch and exactly the keys selected, layers and time', () => {
   const p = load(['state.js']);
   if (p.X('typeof AHM.state') !== 'object') return console.log('    (state manager not built yet: skipped)');
   eq(['get', 'patch', 'set'], p.X('Object.keys(AHM.state).sort()'));

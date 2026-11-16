@@ -131,3 +131,73 @@ test('dates: identical answers to the shared test vectors (the same file the PHP
   for (const l of fixtures.legacy) eq(l.out, D.legacyToDate(l.y, l.t, l.a), 'legacy ' + JSON.stringify(l));
   for (const u of fixtures.up) eq(u.out, D.dateUpgrade(u.in));
 });
+
+// ---- T-040: the time slider (visibleAt, timeSpan, timeAdvance) ----
+const Y = (y, mode = 'exact', yTo = null) => ({
+  fmt: 'y',
+  ts: D.dateToTs('y', { era: 'CE', y }),
+  mode,
+  ts_to: yTo === null ? null : D.dateToTs('y', { era: 'CE', y: yTo }),
+});
+const at = (iso) => D.isoToSec(iso + 'T00:00:00Z');
+const seen = (item, iso) => D.visibleAt(item, at(iso));
+
+test('time: visibleAt, exact dates: hidden before the start, shown inside, hidden at the end of date_to (end excluded)', () => {
+  const it = { date_from: Y(100), date_to: Y(300) };
+  eq('no', seen(it, '0099-12-31'));
+  eq('yes', seen(it, '0100-01-01'));
+  eq('yes', seen(it, '0200-06-01'));
+  eq('yes', seen(it, '0300-12-31'), 'the whole year 300 is inside');
+  eq('no', seen(it, '0301-01-01'), 'the end of the period of date_to is excluded');
+});
+
+test('time: visibleAt, an unknown end never hides (date_to null is not "still exists"), an unknown start does not hide either', () => {
+  eq('yes', seen({ date_from: Y(100), date_to: null }, '9000-01-01'));
+  eq('no', seen({ date_from: Y(100), date_to: null }, '0050-01-01'));
+  eq('yes', seen({ date_from: null, date_to: Y(300) }, '0001-01-01'));
+  eq('no', seen({ date_from: null, date_to: Y(300) }, '0400-01-01'));
+});
+
+test('time: visibleAt, no dates at all gives "undated" (the caller decides, T-049)', () => {
+  eq('undated', seen({ date_from: null, date_to: null }, '0200-01-01'));
+  eq('undated', seen({}, '0200-01-01'));
+});
+
+test('time: visibleAt, the part that is only possible is "faded": approximate and range dates', () => {
+  const approx = { date_from: Y(100, 'approx'), date_to: Y(300) };
+  eq('no', seen(approx, '0099-06-01'));
+  eq('faded', seen(approx, '0100-06-01'), 'inside the period of the approximate start');
+  eq('yes', seen(approx, '0101-01-01'));
+  const rng = { date_from: Y(100, 'range', 120), date_to: null };
+  eq('no', seen(rng, '0099-06-01'));
+  eq('faded', seen(rng, '0110-06-01'), 'the start is somewhere between 100 and 120');
+  eq('faded', seen(rng, '0120-06-01'), 'the end of the range is included');
+  eq('yes', seen(rng, '0121-01-01'));
+  const endRange = { date_from: Y(100), date_to: Y(280, 'range', 300) };
+  eq('yes', seen(endRange, '0270-01-01'));
+  eq('faded', seen(endRange, '0290-06-01'), 'the end is somewhere between 280 and 300');
+  eq('no', seen(endRange, '0301-01-01'));
+  const endApprox = { date_from: Y(100), date_to: Y(300, 'approx') };
+  eq('yes', seen(endApprox, '0299-06-01'));
+  eq('faded', seen(endApprox, '0300-06-01'));
+  eq('no', seen(endApprox, '0301-01-01'));
+});
+
+test('time: timeSpan gives the earliest start and the latest end of the dated items, null when nothing is dated', () => {
+  const items = [
+    { date_from: Y(100), date_to: Y(300) },
+    { date_from: Y(500), date_to: null },
+    { date_from: null, date_to: null },
+  ];
+  eq([at('0100-01-01'), at('0501-01-01')], D.timeSpan(items));
+  eq(null, D.timeSpan([{ date_from: null, date_to: null }]));
+  eq(null, D.timeSpan([]));
+});
+
+test('time: timeAdvance moves by years per second, never past the end, and says when it is done', () => {
+  const YEAR = 31556952; // 365.2425 days, seconds
+  const start = at('0100-01-01');
+  eq({ at: start + 5 * YEAR, done: false }, D.timeAdvance(start, 10, 500, start + 100 * YEAR));
+  eq({ at: start + 100 * YEAR, done: true }, D.timeAdvance(start + 99 * YEAR, 10, 500, start + 100 * YEAR));
+  eq({ at: start + 100 * YEAR, done: true }, D.timeAdvance(start + 100 * YEAR, 10, 500, start + 100 * YEAR));
+});
