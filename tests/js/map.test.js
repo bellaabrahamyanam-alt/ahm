@@ -1629,6 +1629,15 @@ test('map: relief colours: "Smooth colours" slides the range to the new one in 4
   eq([10, 30], range(), 'the first range is set at once');
 });
 
+// ---- T-040: the time bar fades the places that are only possible at the moment (feature property `faded`) ----
+test('map: places and labels with the property faded: true are drawn at a lower opacity, others at full', () => {
+  const { ml } = boot();
+  const icon = layer(ml.rec, PLACES).paint['icon-opacity'];
+  ok(JSON.stringify(icon).includes('"faded"'), 'the symbol opacity reads the property faded: ' + JSON.stringify(icon));
+  const labels = layer(ml.rec, 'ahm-labels');
+  if (labels) ok(JSON.stringify(labels.paint['text-opacity']).includes('"faded"'), 'the label opacity reads it too');
+});
+
 // T-060: the area of the map (config `bbox`) is Mesopotamia from the Persian Gulf to the Caucasus, Ankara to Baku. It feeds the search
 // bias (providers.js), the relief source bounds (map.js) and the terrain build tool (tools/terrain reads the same line).
 test('config: bbox is [32, 29, 51, 44] and the place search is biased to exactly that box', async () => {

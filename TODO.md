@@ -21,7 +21,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 **Next (builder)**, in this order (`builder: next` takes the first open item of the first group)
 - 1. Rivers and 3D: T-055, T-056, T-057, T-058, T-059, T-061, T-062
-- 2. History and time: T-040, T-041, T-043, T-046, T-042
+- 2. History and time: T-041, T-043, T-046, T-042
 - 3. Analysis and sharing: T-044, T-045, T-047
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
@@ -38,6 +38,7 @@ Decisions for the time and history block (T-040 to T-047).
 - [ ] T-049 Decide: objects with no dates when the time slider is on (T-040)
   1. always shown; 2. always hidden; 3. shown faded, with a switch "Show undated" in the slider bar. Recommendation: 3 (nothing disappears by surprise, and you can still clear the map).
   Done when: you write `Approved: <date> 1`, `2` or `3`.
+  Assumed: 2026-11-16 option 3 (the recommendation) is built in T-040, because the owner asked in the chat to build T-040 and did not answer here; say `Approved: <date> 1` or `2` to change it (one default and one test).
   Contract: no.
 - [ ] T-050 Decide: swipe compare of historical map pictures (overlays)
   What it is: a vertical curtain you drag over the map: on one side the old picture, on the other the modern map, plus a fade slider. It shows at once where the old picture matches (rivers, coasts, towns) and where it does not. It builds on the overlays you already have (`overlays.json`, a picture fitted by four corners). 1. build it after T-040; 2. skip. Recommendation: 1, it is small. True georeferencing with control points is a separate, bigger item.
@@ -132,11 +133,6 @@ View and selection tools for rivers, and the 3D map. Rivers are shapes of geomet
 
 Owner, in the chat, 2026-11-15. The date model already exists (`core/dates.js`: exact, approximate, range; `date_from` / `date_to` on places, shapes and layers), so none of this needs old data to be changed. Order: T-040 -> T-041 -> T-043 -> T-046 -> T-042 (T-042 needs T-041 and the decision T-052). Decisions: T-049 to T-052.
 
-- [ ] T-040 Time slider: the map at one moment ("year X"), with play
-  What: a bar on the map with a date field (the same `datefield.js` input), a slider over the earliest and latest date found in the data, play / pause, a speed (years per second) and "Off" (today's behaviour). Places, borders, routes and rivers outside their life are hidden, the others stay.
-  Logic: `AHM.state` gets `time: { at: <ts text> | null, playing, speed }` and the event `time:changed`. A core function `visibleAt(item, at)` uses the existing `dateBounds(d)` = [from, to): hidden when `at` is before the start of `date_from` or at or after the end of `date_to`; in the part of an approximate or range date that is only possible (not certain) the object is drawn faded. `date_to: null` means the end is unknown, not "still exists" (docs/05), so it never hides. Objects with no dates at all: see T-049. The map filters its features with that function; the sidebar lists follow it and show a chip "Time: <date>". The period filter (From / To = existed in a period) stays and is a different thing: both can be on.
-  Done when: tests show the rule for exact, approximate, range and unknown dates (table of cases, same in Node and PHP if the server needs it), the map hides and shows features when `at` changes, play moves `at` by the speed and stops at the end, "Off" brings back all objects, the chip shows and removes the filter.
-  Contract: yes (I-6 `time`, I-2 event, I-3 `visibleAt`). Needs `Approved:` before the interface files are edited.
 - [ ] T-041 Versions of one border, route or river in time (same shape, different times)
   What: a shape can have several versions, each with its own geometry and dates. In the shape editor "Add version for another time" copies the shape, asks for its `date_from` and offers to close the previous version (`date_to`). The sheet lists "Other versions" with their dates.
   Logic: no nested geometry. A version is a normal feature of `shapes.geojson`; versions of one shape share a new optional property `series` (UUID). With T-040 the slider shows the version valid at the date by itself; without a date all versions show. Absent `series` = a single shape, so no old data changes. Notes and layer membership stay with the version they were made on. Server rules (`store.php`, `save-handler.js`, row in `tests/fixtures/rules.json`): `series` is a UUID or absent, all versions of a series are of the same kind (area or line), and two versions whose dates are both known must not overlap (error `versions of one series overlap`). docs/05 gets a section.
@@ -227,6 +223,7 @@ Waits for T-003 and T-001.
 
 ## Done
 
+- [x] T-040 Time slider: the map at one moment, with play (2026-11-16, branch `feat/time-slider`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042, all in it's PR" (covers `interfaces/I-2`, `I-3`, `I-6` and `tests/js/contract.test.js`). `AHM.state` key `time`, core `visibleAt`/`timeLook`, bar in `sidebar/timebar.js`, `faded` property for the map. Undated objects: option 3 of T-049 assumed. Not seen in a browser.
 - [x] T-060 Map area enlarged to Mesopotamia + Anatolia edge + Caucasus, relief tool and guide made correct for it (2026-11-15, branch `feat/bbox-mesopotamia-caucasus`; owner, in the chat). `bbox` [32, 29, 51, 44]; 285 squares, 15,812 tiles at zoom 0-11; only HTTP 404 means "no tile"; `check` shows void shares and 30/90 borders; `preview --at`; at most 64 open files; docs/10 numbers and the Armenia/Azerbaijan 90 m caveat.
 - [x] T-058 Relief fixes (bounds, visible credit, flat bands) and a GLO-90-only option for the terrain tool (2026-11-16, branch `feat/relief-fixes-glo90`; owner, in the chat). (A1) `bounds` only when `terrain.bounds` is set; docs/10 and the tool printout tell the owner to set it for own tiles. (A2, withdrawn by the owner: `adapt` stays true by default; nothing changed there) (C) new option `color.blend` (default true = smooth blend; false = flat colour bands with sharp edges), checkbox "Smooth colour transitions", saved with the other relief settings. (A3) the terrain credit is plain text under the base-map list while relief is on. (B) `terrain.py --dataset auto|glo30|glo90`, credit per dataset (GLO-30, GLO-90, both), config block printed by `build` and `pack`, docs/10 "Which dataset" with the size table (synthetic, unmeasured).
 - [x] T-048 Relief polish: rounder contour lines, "Smooth colours" checkbox, controls back in the sidebar (2026-11-15, branch `feat/relief-aws`; owner, in the chat).

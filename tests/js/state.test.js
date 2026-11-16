@@ -6,7 +6,7 @@ const { load } = require('./lib/ctx');
 
 const page = () => {
   const p = load(['state.js']);
-  p.X('globalThis.__events = []; for (const k of ["selected", "layers"]) AHM.on("state:" + k, (e) => __events.push([k, e]));');
+  p.X('globalThis.__events = []; for (const k of ["selected", "layers", "time"]) AHM.on("state:" + k, (e) => __events.push([k, e]));');
   return p;
 };
 const built = () => load(['state.js']).X('typeof AHM.state.get') === 'function';
@@ -82,4 +82,16 @@ state('a handler that throws does not stop the change or the other handlers', ()
   const quiet = p.X("const log = console.error; console.error = () => {}; AHM.state.set('selected', 'p9'); console.error = log; AHM.state.get('selected')");
   eq('p9', quiet);
   eq(1, events(p).length);
+});
+
+state('time (T-040): default is off; patch changes a field and always emits state:time once', () => {
+  const p = page();
+  eq({ at: null, playing: false, speed: 10, undated: true }, p.X("JSON.parse(JSON.stringify(AHM.state.get('time')))"));
+  p.X("AHM.state.patch('time', { at: '0200-01-01T00:00:00Z' })");
+  const ev = events(p);
+  eq(1, ev.length);
+  eq('time', ev[0][0]);
+  eq('0200-01-01T00:00:00Z', ev[0][1].value.at);
+  eq(null, ev[0][1].old.at, 'old is a copy from before the patch');
+  throws(/object/, () => p.X("AHM.state.patch('time', 5)"));
 });

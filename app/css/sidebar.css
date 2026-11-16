@@ -1217,3 +1217,58 @@ select {
   color: var(--error-color);
 }
 
+
+/* ---- the time bar (T-040): a bar over the map at the bottom, right of the panel; on phones above the panel ---- */
+#tbOpen {
+  position: fixed;
+  left: calc(var(--side-w, 380px) + 12px);
+  bottom: 30px;
+  z-index: 5;
+}
+#timebar {
+  position: fixed;
+  left: calc(var(--side-w, 380px) + 12px);
+  right: 12px;
+  bottom: 30px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--base-bg);
+  color: var(--content-color);
+  border: 1px solid #0003;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px #0003;
+}
+#timebar[hidden],
+#tbOpen[hidden] {
+  display: none;
+}
+#tbSlider {
+  flex: 1 1 160px;
+  min-width: 120px;
+}
+#tbLabel {
+  min-width: 5.5em;
+  font-weight: bold;
+}
+#tbAt .row {
+  margin: 0;
+}
+body.collapsed #tbOpen,
+body.collapsed #timebar {
+  left: 12px;
+}
+@media (max-width: 700px) {
+  #tbOpen,
+  #timebar {
+    left: 12px;
+    bottom: calc(var(--side-h, 52vh) + 30px);
+  }
+  body.collapsed #tbOpen,
+  body.collapsed #timebar {
+    bottom: 30px;
+  }
+}

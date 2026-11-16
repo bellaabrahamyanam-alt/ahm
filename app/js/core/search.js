@@ -17,6 +17,7 @@ function run({ q: text = '', lang: l = '', sort = 'name', period: [a, b] = [null
     .map((p) => {
       if (state.types.size && !state.types.has(p.type)) return null;
       if (!layerAllows(p.id)) return null; // layer filters (layers.js)
+      if (timeLook(p) === 'no') return null; // the time slider (T-040)
       const ns = (by[p.id] || []).filter((n) => !l || n.lang === l),
         nm = p.names.filter((n) => !l || n.lang === l);
       if (l && !ns.length && !nm.length) return null;

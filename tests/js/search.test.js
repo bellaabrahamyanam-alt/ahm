@@ -6,7 +6,7 @@ const isoYear = (n) => (n >= 0 ? String(n).padStart(4, '0') : '-' + String(-n).p
 
 /** a page with places p1..p4 and some notes; the filters are driven through the stand-in form fields */
 function page() {
-  const p = load(['state.js', 'config.js', 'dates.js', 'data.js', 'datefield.js', 'layer-rules.js', 'search.js', 'searchfield.js', 'placeform.js', 'layers.js'], UI_STANDINS);
+  const p = load(['state.js', 'config.js', 'dates.js', 'data.js', 'datefield.js', 'layer-rules.js', 'shapes.js', 'search.js', 'searchfield.js', 'placeform.js', 'layers.js'], UI_STANDINS);
   const y = (n) => ({ fmt: 'y', ts: isoYear(n), mode: 'exact', ts_to: null });
   const pl = J(SAMPLE.places);
   pl[0].date_from = y(100);
@@ -112,4 +112,43 @@ test('layer rules: lyState is the "layers" object of the state manager (task 002
   p.X('AHM.state.get("layers").only.add("zz")');
   ok(p.X('lyState.only.has("zz")'));
   p.X('lyState.only.clear()');
+});
+
+// ---- T-040: the time slider filters places and shapes ----
+const timed = (patch) => {
+  const p = page();
+  p.X("AHM.state.patch('time', __0)", patch);
+  return p;
+};
+
+test('time: run keeps only the places that exist at the moment; undated places stay while "Show undated" is on', () => {
+  eq(['p1', 'p2', 'p3', 'p4'], page().ids().slice().sort(), 'time off: everything');
+  const p = timed({ at: '0200-01-01T00:00:00Z' });
+  eq(['p1', 'p3', 'p4'], p.ids().slice().sort(), 'p2 lived -800 to -600');
+  p.X("AHM.state.patch('time', { undated: false })");
+  eq(['p1'], p.ids(), 'undated hidden');
+  p.X("AHM.state.patch('time', { at: null })");
+  eq(['p1', 'p2', 'p3', 'p4'], p.ids().slice().sort(), 'Off brings every place back');
+});
+
+test('time: timeLook says yes, faded or no for one item at the moment of the slider', () => {
+  const p = timed({ at: '0200-01-01T00:00:00Z' });
+  const look = (id) => p.X('timeLook(places.find((x) => x.id === __0))', id);
+  eq('yes', look('p1'));
+  eq('no', look('p2'));
+  eq('faded', look('p3'), 'undated, shown faded');
+  p.X("AHM.state.patch('time', { undated: false })");
+  eq('no', look('p3'));
+  p.X("AHM.state.patch('time', { at: null })");
+  eq('yes', look('p2'), 'time off');
+});
+
+test('time: shapesRun follows the slider the same way (borders, rivers, routes)', () => {
+  const p = timed({ at: '0200-01-01T00:00:00Z' });
+  const y = (n) => ({ fmt: 'y', ts: isoYear(n), mode: 'exact', ts_to: null });
+  const mk = (id, a, b) => ({ id, names: [{ lang: 'en', name: id }], type: 'x', date_from: a, date_to: b, geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] } });
+  p.X('shapes = __0', [mk('s1', y(100), y(300)), mk('s2', y(-800), y(-600)), mk('s3', null, null)]);
+  eq(['s1', 's3'], p.X('shapesRun({}).map((s) => s.id)').slice().sort());
+  p.X("AHM.state.patch('time', { undated: false })");
+  eq(['s1'], p.X('shapesRun({}).map((s) => s.id)'));
 });

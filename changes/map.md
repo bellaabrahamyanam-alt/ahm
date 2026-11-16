@@ -123,3 +123,8 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `app/js/map/map.js`, `app/js/config.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js`, `docs/10`, `docs/02`.
 - **How to verify:** `node tests/js/run.js "map"` (bounds with and without config, credit shown/hidden and its source, adapt default and old saves). By eye (not done: no map here): relief outside the box (around Ankara), constant colours when zooming, the credit text under the base-map list at 390 px.
 - **Follow-ups:** none new.
+
+## 2026-11-16 — T-040: faded places
+
+- **What:** the symbols (`ahm-places`) and the labels (`ahm-labels`) are drawn at opacity 0.35 and 0.45 when the feature property `faded` is `true` (I-2 [1.10]). Shapes need no change: the sidebar lowers their `opacity`.
+- **Files:** `app/js/map/map.js`, `tests/js/map.test.js`. **Verify:** `node tests/js/run.js faded --no-browser`. Not seen on a real map.

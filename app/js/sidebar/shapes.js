@@ -118,7 +118,7 @@ function shPush() {
           dates: shapeWhen(s),
           color: s.color,
           ink: shapeInk(s.color),
-          opacity: s.opacity,
+          opacity: timeLook(s) === 'faded' ? s.opacity * 0.35 : s.opacity, // only possible at the moment of the time bar (T-040)
           width: s.width || t.width,
           dash: t.dash,
           label: s.label,

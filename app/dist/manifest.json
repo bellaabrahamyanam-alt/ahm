@@ -1,5 +1,5 @@
 {
-  "hash": "ce45495b12321686af370ed1d1bd0bf20a065c7eaabb48c6b30c5daa606b4e2b",
+  "hash": "bd0f2d9e82b826686302614dfb52c00c3eb19b9304d1df40b3f6ac14d2496631",
   "js": [
     "js/config.js",
     "js/ahm.js",
@@ -25,6 +25,7 @@
     "js/sidebar/routes.js",
     "js/sidebar/layout.js",
     "js/sidebar/places.js",
+    "js/sidebar/timebar.js",
     "js/sidebar/actions.js",
     "js/sidebar/admin.js",
     "js/sidebar/ui.js",
@@ -37,7 +38,7 @@
     "css/shapes.css"
   ],
   "bytes": {
-    "app.min.js": 221417,
-    "app.min.css": 23924
+    "app.min.js": 225082,
+    "app.min.css": 24648
   }
 }

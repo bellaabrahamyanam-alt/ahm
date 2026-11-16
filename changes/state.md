@@ -13,3 +13,8 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Verify:** `AHM_TDD=1 node tests/js/run.js --no-browser state` (8 passed); `node tests/js/run.js` (90 passed).
 - **Follow-ups:** steps 3-6 of proposal 003 (core, sidebar, map, shared) belong to other domains.
 
+## 2. 2026-11-16: key `time` (T-040)
+
+- **What:** `AHM.state` key `time` = `{ at: null, playing: false, speed: 10, undated: true }` (live object like `layers`; `set('time', x)` needs the same fields; `patch` announces `state:time`).
+- **Why:** T-040 (time slider). **Files:** `app/js/state/state.js`, `interfaces/I-6-state-manager.md`, `tests/js/state.test.js`, `tests/js/contract.test.js`.
+- **Verify:** `node tests/js/run.js state --no-browser`. Owner-approved: T-040.
