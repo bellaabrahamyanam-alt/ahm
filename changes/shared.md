@@ -127,3 +127,12 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **How to verify:** `python3 -I -m unittest discover -s tools/terrain`.
 - **Known limits:** beyond the bbox edge the lower zoom tiles are flat 0 (a child outside the area is not built); raising `--maxzoom` needs a new `--version`; the real GeoTIFF part, file names, Apache and Cloudflare are unverified (docs/10).
 - **Follow-ups:** T-038.
+
+## 2026-11-16 — terrain tool: `--dataset auto|glo30|glo90` (T-058)
+
+- **What:** `tools/terrain/terrain.py squares|download|check|build` take `--dataset` (default `auto` = GLO-30 first, GLO-90 per square, as before; `glo90` only the 90 m bucket; `glo30` only GLO-30). `core.DATASETS`, `ATTRIBUTION_30`, `ATTRIBUTION_90`, `attribution_for(used)` (a mixed build names both products), `Mosaic.datasets()`; `NOTICE.txt` and the printed credit follow the data really used. `build` and `pack` print the `basemap.terrain` block to paste (tiles, maxzoom, bounds, attribution). `download` prints how many squares came from which dataset. Ported from the open PR #22 (not in this base), kept equal in meaning: HTTP 404 only = no tile (marker `NO_TILE_<square>.txt`, here with the datasets asked inside, empty = both), `DownloadStop` for everything else, `need_downloaded` before `check`/`build`, `core.dem_status`, the Armenia/Azerbaijan boxes (`NO_GLO30_BOXES`, worded as a prediction). NOT ported: seam list, `preview --at`, void sampling, open-file limit, `test_area.py`.
+- **Why:** the owner asked for GLO-90 with zoom 12 and its size; GLO-90 is one uniform product and about 9 times less data.
+- **Wording of the GLO-90 credit:** from the Copernicus Data Space page and the ESA licence PDF through a summarising fetch tool, not raw text (the PDF may write "WorldDEM(TM)-90"). The 90 m file names are from memory, unverified. Nothing was run against AWS.
+- **Files:** `tools/terrain/{core,terrain,geotiff_source,test_terrain}.py`, `app/js/config.js` (credit variants in the comment), `docs/10`.
+- **How to verify:** `python3 -I -m unittest discover -s tools/terrain -p "test_*.py"`.
+- **Follow-ups:** the first real `download` shows which squares GLO-30 has for Armenia/Azerbaijan. Conflicts with PR #22 in `terrain.py`, `core.py`, `geotiff_source.py`, `test_terrain.py`, docs/10: the later one is rebased.

@@ -22,25 +22,25 @@ def _rasterio():
 
 
 class GeoTiffMosaic(core.Mosaic):
-    """The 1x1 degree squares of dem_dir as one virtual grid of 3600 pixels per degree. Per square: GLO-30 file if present, else GLO-90
-    (resampled bilinearly to the grid), else sea level (0 m). Files are named like core.square_name()."""
+    """The 1x1 degree squares of dem_dir as one virtual grid of 3600 pixels per degree. Per square, by `dataset` (core.DATASETS): GLO-30 file if
+    present, else GLO-90 (1200 x 1200 samples, resampled bilinearly to the grid), else sea level (0 m); 'glo90' looks only for GLO-90 files.
+    Files are named like core.square_name()."""
 
-    def __init__(self, dem_dir, bbox, ppd=3600):
+    def __init__(self, dem_dir, bbox, ppd=3600, dataset='auto'):
         self.rasterio, self.Resampling, self.Window = _rasterio()
         import math
         w, s, e, n = math.floor(bbox[0]), math.floor(bbox[1]), math.ceil(bbox[2]), math.ceil(bbox[3])
         super().__init__(w, n, (e - w) * ppd, (n - s) * ppd, ppd)
         self.south = s
         self.dem_dir = dem_dir
-        self.squares = {}  # (lat, lon) -> (path, res) or None
-        for lat, lon in core.squares_for_bbox(bbox):
-            self.squares[(lat, lon)] = None
-            for res in (30, 90):
-                p = os.path.join(dem_dir, core.square_name(lat, lon, res) + '.tif')
-                if os.path.isfile(p):
-                    self.squares[(lat, lon)] = (p, res)
-                    break
+        self.status = core.dem_status(dem_dir, bbox, dataset)
+        # (lat, lon) -> (path, res), or None: no tile (confirmed 404) or not downloaded (inspect tells which)
+        self.squares = {k: ((os.path.join(dem_dir, core.square_name(k[0], k[1], v) + '.tif'), v) if v in (30, 90) else None)
+                        for k, v in self.status.items()}
         self._open = {}
+
+    def datasets(self):
+        return core.used_datasets(self.status)
 
     def _ds(self, lat, lon):
         key = (lat, lon)
@@ -69,7 +69,11 @@ class GeoTiffMosaic(core.Mosaic):
         rows = []
         for (lat, lon), v in sorted(self.squares.items()):
             if v is None:
-                rows.append((lat, lon, None, 'MISSING in both GLO-30 and GLO-90: will be 0 m (fine for sea, wrong for land)'))
+                if self.status[(lat, lon)] == 'none':
+                    text = 'no tile (HTTP 404): 0 m (fine for sea, wrong for land)'
+                else:
+                    text = 'NOT DOWNLOADED: run download again (a build refuses this)'
+                rows.append((lat, lon, None, text))
                 continue
             ds = self._ds(lat, lon)
             rows.append((lat, lon, v[1], 'GLO-%d %dx%d nodata=%s' % (v[1], ds.width, ds.height, ds.nodata)))

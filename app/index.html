@@ -76,12 +76,14 @@
         <details class="fold" id="more-maps"><summary>Maps &amp; base map</summary><div class="fold-body">
           <div class="sn">Base map</div>
           <select id="basemap"></select>
+          <div id="base-credit" hidden></div>
           <div id="relief-opts" hidden>
           <div class="label">Relief</div>
           <label><input type="checkbox" id="relief-color" checked /> Colour by height</label>
           <label><input type="checkbox" id="relief-shade" checked /> Shading</label>
           <label><input type="checkbox" id="relief-adapt" checked /> Adapt colours to the view</label>
           <label><input type="checkbox" id="relief-smooth" checked /> Smooth colours</label>
+          <label><input type="checkbox" id="relief-blend" checked /> Smooth colour transitions</label>
           <select id="relief-ramp" aria-label="Colour ramp"></select>
           <details id="relief-edit">
             <summary>Edit colours</summary>
