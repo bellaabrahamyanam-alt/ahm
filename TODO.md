@@ -138,6 +138,34 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
   Done when: you write `Approved: <date> 1` or `2`.
   Contract: no.
 
+**Rivers and 3D block (owner, in the chat, 2026-11-16).** Order: T-055 and T-056 are independent and small; T-057 before T-058. Rivers are shapes of geometry `river` (Rivers tab: own list, filters, types, card with a width slider per river); areas (Lori, Syunik, Turkey ...) are shapes of geometry `area`. Nothing here changes saved data except where an item says so. Questions for the owner: T-059.
+- [ ] T-055 Bolder rivers: one slider for all rivers on the map
+  What: a slider "River size" (0.5x to 4x, default 1x) that makes all rivers thicker or thinner at once, to see them better. Not saved in the data: it is a view setting.
+  Logic: map domain only. The control sits in More > Maps & base map (the map-owned region, like the relief controls), so no interface changes. Rivers of the data: the width of every river layer is multiplied (`line-width` = the card width x the slider; the width of a single river on its card stays the base). Base-map waterways (the rivers of the OpenFreeMap style): one extra line layer `ahm-waterway-boost` on the style's `waterway` source layer, drawn only while the slider is above 1x, width by zoom times the slider; see T-059 a. The value is saved with the browser settings (`localStorage`, as the relief settings are).
+  Done when: tests (MapLibre stand-in) show the multiplied width follows the slider, 1x gives the old widths, the boost layer appears only above 1x and is removed at 1x, the value is saved and read again.
+  Contract: no.
+- [ ] T-056 3D map: tilt and rotate to any position
+  What: controls for the view angle: a pitch slider (0 to 85 degrees), a rotation slider (0 to 359), buttons "Flat", "Tilt 60" and "North up", a checkbox "3D terrain" with a height exaggeration slider (0.5x to 4x). Dragging the map with the mouse (right button or Ctrl) and two-finger gestures keep working, and the sliders follow them.
+  Logic: map domain only, in More > Maps & base map. MapLibre `pitch` and `bearing` (`maxPitch` raised to 85); 3D terrain = `map.setTerrain({ source, exaggeration })` with the raster-dem source of the relief (`ahm-terrain`; it is added when 3D is switched on even if the hillshade is off, so no second tile source). The values are saved with the browser settings. Markers, routes and borders are drawn on the terrain by MapLibre; check by eye that the place markers (HTML) stay at the right spot when tilted, and say in docs/14 what was not seen.
+  Done when: tests show the sliders call `setPitch` and `setBearing`, the map events move the sliders, "Flat" and "North up" reset them, `setTerrain` gets the source and the exaggeration and is cleared when switched off, the settings are saved.
+  Contract: no.
+- [ ] T-057 Select rivers: by a rectangle on the map, and by area names (Lori, Syunik, Turkey ...)
+  What: a set of selected rivers ("selection"), shown highlighted on the map and as a list in the Rivers tab with a count. Ways to add to it: (a) the button "Select by rectangle": drag a rectangle on the map, every river that touches or crosses it is added; (b) "Select by area": type an area name, choose it (several, one after another), every river that crosses it is added; the areas are the `area` shapes of the data, found by name in the chosen language, including old names (T-043 when it exists). Each addition keeps the earlier ones. Removing: a cross on a river in the list, "Clear". Actions on the selection: "Show only these" (the others are hidden on the map), "Zoom to the selection", "Add to a layer" (an existing river layer).
+  Logic: pure core functions `riversTouching(rivers, geometry, mode)` for a rectangle or a polygon (bounding box test first, then: a vertex inside, or a segment crossing an edge; mode `cross` = touches or crosses, mode `inside` = all vertices inside; see T-059 b) - testable without a map. The rectangle is drawn by the map (a mouse drag with the "Select by rectangle" tool on; Escape cancels) and reported as a box. The selection list lives in the state; the map draws the highlight (a line layer above the rivers, filter by id). Large areas (Turkey) are checked with the box test first so that hundreds of rivers stay fast.
+  Done when: tests for `riversTouching` (river crossing, fully inside, fully outside, touching a corner, a river that goes through an area without a vertex in it), the selection adds and keeps earlier results, remove and clear work, "Show only" hides the others, the map highlight follows the selection, and the area search finds a shape by name.
+  Contract: yes (a selection in `AHM.state`, a map command to start the rectangle tool and an event with the box; the builder writes the exact names in the item before the code). Needs `Approved:` before the interface files are edited.
+- [ ] T-058 River filters: keep only the interesting rivers
+  What: filters in the Rivers tab, on top of the ones it already has (name, type, period): minimum and maximum length in km; has notes; has a source; belongs to a layer; is in the selection (T-057); starred. Result: the list shows only matching rivers, and the map either hides the others or shows them faded (a switch). A river can be starred (a personal mark, kept in the browser, not in the data; see T-059 c). Filters can be combined and reset with one button.
+  Logic: a pure function `riverMatches(river, filter)` in core; the length of a line is computed from its geometry on the sphere (haversine) and cached. The map applies the same predicate to the river layers (`filter` or opacity). Stars are a list of ids in `localStorage`.
+  Done when: tests per filter and a combination, the length function against a known distance, the list and the map follow the filter, the star survives a reload.
+  Contract: yes (the filter result must reach the map; the builder writes the proposal first). Needs T-057 for the "in the selection" filter.
+- [ ] T-059 Decide: three details of the river items
+  a. Bolder rivers (T-055): 1. our rivers only; 2. our rivers and the base-map waterways with the same slider. Recommendation: 2 (the rivers you see most are the base-map ones).
+  b. Rivers of an area (T-057): 1. every river that touches or crosses the area (with a switch "only fully inside"); 2. only rivers fully inside. Recommendation: 1, because rivers often start in one area and end in another.
+  c. Stars (T-058): 1. a personal mark in the browser (no data change); 2. saved in the data, same for everyone (a `starred` property of the river, rules on the server). Recommendation: 1.
+  Done when: you write `Approved: <date> a<1|2> b<1|2> c<1|2>`.
+  Contract: no.
+
 ## Done
 
 - [x] T-048 Relief polish: rounder contour lines, "Smooth colours" checkbox, controls back in the sidebar (2026-11-15, branch `feat/relief-aws`; owner, in the chat).
