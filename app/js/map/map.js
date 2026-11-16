@@ -66,7 +66,7 @@ const terrainOn = () => {
   return !!(t && t.tiles && t.tiles.length);
 };
 // Relief settings the controls change. `color` exists only when the config has a `terrain.color` section.
-const relief = { color: true, shade: true, ramp: null, custom: null, opacity: 0.65, strength: 0.5, adapt: true, smooth: true, range: null, contours: false, interval: "auto" }; // range = [low, high] metres in view; custom = the stops edited by the user
+const relief = { color: true, shade: true, ramp: null, custom: null, opacity: 0.65, strength: 0.5, adapt: false, smooth: true, range: null, contours: false, interval: "auto" }; // range = [low, high] metres in view; custom = the stops edited by the user
 const prof = { on: false, pts: [] }; // the height profile: drawing mode and clicked points [lng, lat]
 const colorOn = () => !!(terrainOn() && AHM_CONFIG.basemap.terrain.color && AHM_CONFIG.basemap.terrain.color.ramps);
 // MapLibre needs strictly rising stops: sort by height, and nudge a repeated height up by 0.1 m.
@@ -100,7 +100,7 @@ function ensureRelief() {
     encoding: t.encoding,
     tileSize: t.tileSize,
     maxzoom: t.maxzoom,
-    bounds: t.bounds || AHM_CONFIG.bbox, // no requests outside the built area (a missing file would reach PHP)
+    ...(t.bounds ? { bounds: t.bounds } : {}), // only for OWN tiles: no requests outside the built area (a missing file would reach PHP). The AWS tiles cover the world
     attribution: t.attribution,
   });
   const layers = map.getStyle().layers;
@@ -132,6 +132,10 @@ function applyVis() {
     if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", view.relief && relief.contours ? "visible" : "none");
   });
   $("#relief-opts").hidden = !(view.relief && colorOn());
+  // the credit of the terrain data as plain text in the page: MapLibre's own control may be collapsed to "(i)" or skip a source
+  const credit = view.relief && terrainOn() ? AHM_CONFIG.basemap.terrain.attribution || "" : "";
+  $("#base-credit").textContent = credit;
+  $("#base-credit").hidden = !credit;
   map.getStyle().layers.forEach((l) => {
     if (l.id.startsWith("ahm-")) return;
     const g = Object.keys(GROUPS).find((k) =>
@@ -516,7 +520,7 @@ function loadSettings() {
 function saveSettings() {
   try {
     const { ramp, custom, opacity, strength, adapt, smooth, color, shade, contours, interval } = relief;
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ ramp, custom, opacity, strength, adapt, smooth, color, shade, contours, interval }));
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 2, ramp, custom, opacity, strength, adapt, smooth, color, shade, contours, interval }));
   } catch (e) {
     // private mode or no storage: the settings are just not kept
   }
@@ -567,7 +571,7 @@ function initReliefControls() {
   const sv = loadSettings();
   relief.ramp = c.ramps[c.ramp] ? c.ramp : Object.keys(c.ramps)[0];
   relief.opacity = c.opacity;
-  relief.adapt = c.adapt !== false;
+  relief.adapt = c.adapt === true;
   relief.smooth = c.smooth !== false;
   relief.strength = AHM_CONFIG.basemap.terrain.paint["hillshade-exaggeration"];
   // saved settings of the user win over the config, when they are still valid
@@ -576,6 +580,7 @@ function initReliefControls() {
   if (typeof sv.opacity === "number" && sv.opacity >= 0 && sv.opacity <= 1) relief.opacity = sv.opacity;
   if (typeof sv.strength === "number" && sv.strength >= 0 && sv.strength <= 1) relief.strength = sv.strength;
   ["adapt", "smooth", "color", "shade", "contours"].forEach((k) => {
+    if (k === "adapt" && !(sv.v >= 2)) return; // v1 saves were made when "adapt" defaulted to true: the new default (false) wins once
     if (typeof sv[k] === "boolean") relief[k] = sv[k];
   });
   if (sv.interval === "auto" || [10, 20, 50, 100, 200, 500, 1000].includes(Number(sv.interval))) relief.interval = String(sv.interval);

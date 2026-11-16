@@ -91,8 +91,13 @@ const AHM_CONFIG = {
     ],
     // Relief: hillshade over the vector map. Default: the free AWS terrain tiles (Terrarium, zoom 0-15, worldwide, no hosting by you).
     // The tiles are requested only when "Map + relief" is chosen. Empty `tiles` hides the entry.
-    // Own tiles instead (Copernicus GLO-30, docs/10, "Relief layer (optional)"): tiles [".../ahm-terrain/v1/{z}/{x}/{y}.webp"], maxzoom 11 and the attribution
+    // Own tiles instead (Copernicus GLO-30, docs/10, "Relief layer (optional)"): tiles [".../ahm-terrain/v1/{z}/{x}/{y}.webp"], maxzoom 11, bounds (the same numbers as `bbox`: without it the map asks for tiles you did not build and every miss boots the forum) and the attribution
+    // The credit depends on the data the tool used (`terrain.py build` prints the block to paste). GLO-30 only:
     // "produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved"
+    // GLO-90 only:
+    // "produced using Copernicus WorldDEM-90 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved"
+    // Both (a build that mixes GLO-30 and GLO-90 squares):
+    // "produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved; produced using Copernicus WorldDEM-90 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved"
     terrain: {
       tiles: ["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],
       encoding: "terrarium",
@@ -106,7 +111,7 @@ const AHM_CONFIG = {
         ramp: "armenia",
         opacity: 0.65, // 0 = no colour, 1 = fully covers the map
         smooth: true, // the colours slide to the new range (about 0.4 s) instead of jumping; false = jump
-        adapt: true, // stretch the ramp over the heights in view, so the colours change as you zoom and move; false = the fixed metres of the ramp
+        adapt: false, // false = the fixed metres of the ramp (the same colours at every zoom); true = stretch the ramp over the heights in view, so the colours change as you zoom and move
         ramps: {
           armenia: {
             label: "Armenia (350-4100 m)",
