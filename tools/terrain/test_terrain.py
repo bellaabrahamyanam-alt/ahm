@@ -18,7 +18,7 @@ from PIL import Image  # noqa: E402
 import core  # noqa: E402
 
 CONFIG_JS = os.path.join(HERE, '..', '..', 'app', 'js', 'config.js')
-BBOX = [37, 37, 49, 42.5]
+BBOX = [32, 29, 51, 44]  # Mesopotamia, the edge of Anatolia and the Caucasus (T-060)
 
 
 class Synth(core.Mosaic):
@@ -58,17 +58,18 @@ class TileMaths(unittest.TestCase):
 
     def test_tile_counts_match_the_brief(self):
         total = sum(core.tile_count(BBOX, z) for z in range(0, 12))
-        self.assertTrue(3700 < total < 4100, total)
-        self.assertTrue(14500 < core.tile_count(BBOX, 12) + total < 16500)
+        self.assertEqual(15812, total)  # zoom 0-11
+        self.assertEqual(4040, sum(core.tile_count(BBOX, z) for z in range(0, 11)))  # zoom 0-10
+        self.assertEqual(62250, core.tile_count(BBOX, 12) + total)  # zoom 0-12
 
     def test_tiles_cover_the_bbox(self):
         x0, y0, x1, y1 = core.tiles_for_bbox(BBOX, 8)
         w, s, e, n = core.tile_bounds(8, x0, y1)[0], core.tile_bounds(8, x0, y1)[1], core.tile_bounds(8, x1, y0)[2], core.tile_bounds(8, x1, y0)[3]
-        self.assertTrue(w <= 37 and s <= 37 and e >= 49 and n >= 42.5)
+        self.assertTrue(w <= 32 and s <= 29 and e >= 51 and n >= 44)
 
     def test_squares(self):
         sq = core.squares_for_bbox(BBOX)
-        self.assertEqual(72, len(sq))
+        self.assertEqual(285, len(sq))
         self.assertIn((40, 44), sq)
         self.assertEqual('Copernicus_DSM_COG_10_N40_00_E044_00_DEM', core.square_name(40, 44, 30))
         self.assertEqual('Copernicus_DSM_COG_30_N40_00_E044_00_DEM', core.square_name(40, 44, 90))
@@ -393,10 +394,10 @@ class Cli(unittest.TestCase):
     def run_cli(self, *a):
         return subprocess.run([sys.executable, '-I', os.path.join(HERE, 'terrain.py'), *a], capture_output=True, text=True)
 
-    def test_squares_lists_72_urls(self):
+    def test_squares_lists_285_urls(self):
         r = self.run_cli('squares')
         self.assertEqual(0, r.returncode, r.stderr)
-        self.assertEqual(72, len(re.findall(r'^https://copernicus-dem-30m', r.stdout, re.M)))
+        self.assertEqual(285, len(re.findall(r'^https://copernicus-dem-30m', r.stdout, re.M)))
 
     def test_attribution_matches_config_js(self):
         cfg = open(CONFIG_JS, encoding='utf-8').read()

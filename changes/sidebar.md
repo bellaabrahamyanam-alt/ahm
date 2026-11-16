@@ -115,3 +115,10 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 
 - **What:** the sheet lists "Other versions" (chips, click opens that version) and has the button "Add version for another time": the form (names, type, dates) opens with a copy of the shape; Save creates it with the same `series` (the original joins the series first when it had none) and, when ticked, ends the previous version the day before. Each version can be edited and deleted alone (the normal buttons). Routes have their own card (`routes.js`): NOT done there yet.
 - **Files:** `app/js/sidebar/shapes.js`. NOT seen in a browser.
+
+## 2026-11-16 — Fix: "Add version for another time" failed with `crypto.randomUUID is not a function`
+
+- **What:** `app/js/sidebar/shapes.js`: new `shNewUuid()` (v4 UUID from `crypto.getRandomValues` when `crypto.randomUUID` is missing); the `addversion` action uses it for a shape without a series.
+- **Why:** `crypto.randomUUID` exists only in a secure context (https or localhost). On a plain-http forum the button threw and the form did not open.
+- **Files:** `app/js/sidebar/shapes.js`, `tests/js/layers.test.js` (1 test), `app/dist/`.
+- **How to verify:** `node tests/js/run.js "shNewUuid"`. Chromium, `randomUUID` removed: the button opens the "New version" form without a page error.

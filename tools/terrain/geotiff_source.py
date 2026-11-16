@@ -26,6 +26,8 @@ class GeoTiffMosaic(core.Mosaic):
     present, else GLO-90 (1200 x 1200 samples, resampled bilinearly to the grid), else sea level (0 m); 'glo90' looks only for GLO-90 files.
     Files are named like core.square_name()."""
 
+    MAX_OPEN = 64  # a default macOS limit is 256 open files, there are 285 squares
+
     def __init__(self, dem_dir, bbox, ppd=3600, dataset='auto'):
         self.rasterio, self.Resampling, self.Window = _rasterio()
         import math
@@ -44,12 +46,16 @@ class GeoTiffMosaic(core.Mosaic):
 
     def _ds(self, lat, lon):
         key = (lat, lon)
-        if key not in self._open:
-            path, res = self.squares[key]
-            ds = self.rasterio.open(path)
-            self._check(ds, path, lat, lon)
-            self._open[key] = ds
-        return self._open[key]
+        if key in self._open:
+            self._open[key] = self._open.pop(key)  # now the most recent
+            return self._open[key]
+        path, res = self.squares[key]
+        ds = self.rasterio.open(path)
+        self._check(ds, path, lat, lon)
+        while len(self._open) >= self.MAX_OPEN:
+            self._open.pop(next(iter(self._open))).close()
+        self._open[key] = ds
+        return ds
 
     @staticmethod
     def _check(ds, path, lat, lon):
@@ -76,7 +82,15 @@ class GeoTiffMosaic(core.Mosaic):
                 rows.append((lat, lon, None, text))
                 continue
             ds = self._ds(lat, lon)
-            rows.append((lat, lon, v[1], 'GLO-%d %dx%d nodata=%s' % (v[1], ds.width, ds.height, ds.nodata)))
+            # a small sample, not the whole square: share of void (NaN or nodata) and of exact zeros. A GLO-30 square that straddles Armenia or
+            # Azerbaijan may have those parts void: they would be built as 0 m (follow-up in TODO.md)
+            smp = np.asarray(ds.read(1, out_shape=(120, 120), resampling=self.Resampling.nearest), dtype=np.float32)
+            void = ~np.isfinite(smp)
+            if ds.nodata is not None:
+                void |= smp == np.float32(ds.nodata)
+            rows.append((lat, lon, v[1], 'GLO-%d %dx%d nodata=%s void=%.1f%% zero=%.1f%%%s' % (
+                v[1], ds.width, ds.height, ds.nodata, 100.0 * void.mean(), 100.0 * (smp[~void] == 0).sum() / smp.size,
+                '  <-- VOID PART: will be 0 m' if void.mean() > 0.005 else '')))
         return rows
 
     def read(self, c0, r0, c1, r1):

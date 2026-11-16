@@ -386,3 +386,16 @@ test('shape notes: the note dialog opens for a border or a route and names what 
   p.X('lyOpenNoteDlg(__0, null)', { id: 'A', names: [{ lang: 'en', name: 'Alpha' }] });
   eq('Note about the layer', p.X('$("#dNoteHead").textContent'));
 });
+
+// ---- "Add version for another time": crypto.randomUUID is undefined on a plain-http page (not a secure context) ----
+test('shNewUuid: a valid v4 UUID with and without crypto.randomUUID (plain http has none)', () => {
+  const p = load(UI_SCRIPTS);
+  const rnd = 'new Uint8Array(16).map(() => Math.floor(Math.random() * 256))';
+  p.X(`globalThis.crypto = { getRandomValues: (a) => (a.set(${rnd}), a) }`);
+  const a = p.X('shNewUuid()'), b = p.X('shNewUuid()');
+  ok(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(a), 'v4 shape: ' + a);
+  ok(a !== b, 'two calls differ');
+  ok(/^[0-9a-f-]{36}$/.test(a), 'accepted by the server rule (store.php UUID)');
+  p.X('globalThis.crypto.randomUUID = () => "11111111-2222-4333-8444-555555555555"');
+  eq('11111111-2222-4333-8444-555555555555', p.X('shNewUuid()'), 'uses randomUUID when there is one');
+});

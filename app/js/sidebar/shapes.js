@@ -328,7 +328,7 @@ $('#shDetail').addEventListener('click', async (e) => {
   else if (act === 'version') shOpen(b.dataset.sid, true);
   else if (act === 'addversion')
     // a copy of the shape for another time (T-041): same geometry and look, its own dates, the same series (created now when the shape has none)
-    shOpenForm({ kind: shapeKind(s.geometry), names: s.names, type: s.type, geometry: s.geometry, source: s.source || '', prevId: s.id, series: s.series || crypto.randomUUID(), look: { color: s.color, opacity: s.opacity, label: s.label, ...(s.width ? { width: s.width } : {}) } });
+    shOpenForm({ kind: shapeKind(s.geometry), names: s.names, type: s.type, geometry: s.geometry, source: s.source || '', prevId: s.id, series: s.series || shNewUuid(), look: { color: s.color, opacity: s.opacity, label: s.label, ...(s.width ? { width: s.width } : {}) } });
   else if (act === 'delete') {
     if (!confirm(`Delete “${shapeName(s, $('#lang').value)}”? It also leaves its layers. A copy of the old file stays in the archive on the server.`)) return;
     try {
@@ -342,6 +342,17 @@ $('#shDetail').addEventListener('click', async (e) => {
     }
   }
 });
+
+// A new UUID (v4) for a series. crypto.randomUUID exists only in a secure context (https or localhost): on a plain-http forum it is undefined,
+// which broke "Add version for another time". crypto.getRandomValues works everywhere.
+function shNewUuid() {
+  if (globalThis.crypto.randomUUID) return globalThis.crypto.randomUUID();
+  const b = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 15) | 64;
+  b[8] = (b[8] & 63) | 128;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
 
 // ---- the form: names, type, dates (new shape or details of an existing one) ----
 const shTypeChips = (cur) =>
