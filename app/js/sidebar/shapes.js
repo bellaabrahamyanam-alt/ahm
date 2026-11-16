@@ -239,6 +239,9 @@ function shRenderView() {
     `</span></div><div class="dock-body">` +
     (others.length ? `<div class="sn">${others.map((n) => `${esc(n.name)} <span class="sn">(${esc(n.lang)})</span>`).join(' · ')}</div>` : '') +
     `<div class="sn">${esc(t.label)} · ${kind === 'area' ? 'area' : 'line'}${when ? ' · ' + esc(when) : ''}</div>` +
+    (shapeVersions(s).length
+      ? `<div class="label">Other versions</div><div class="chips">${shapeVersions(s).map((v) => `<button type="button" class="chip" data-shact="version" data-sid="${v.id}">${esc(shapeWhen(v) || 'no dates')}</button>`).join('')}</div>`
+      : '') +
     `<div class="label">Look</div><div class="sh-look">` +
     `<label>Colour <input type="color" id="shColor" value="${esc(s.color)}"${dis}></label>` +
     `<label>${kind === 'area' ? 'Fill opacity' : 'Line opacity'} <input type="range" id="shOp" min="0" max="1" step="0.05" value="${s.opacity}"${dis}> <span id="shOpVal">${Math.round(s.opacity * 100)}%</span></label>` +
@@ -252,7 +255,7 @@ function shRenderView() {
     (osm ? `<div class="sn">Outline © <a href="https://www.openstreetmap.org/${osm[1]}/${osm[2]}" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL).</div>` : '') +
     `<div class="err-line" id="shErr"></div></div><div class="dock-foot">` +
     `<button type="button" data-shact="fit">Fit map</button>` +
-    (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-shact="editshape">Edit shape</button>' : ''}<button type="button" class="danger" data-shact="delete">Delete</button>` : '') +
+    (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-shact="editshape">Edit shape</button>' : ''}<button type="button" data-shact="addversion">Add version for another time</button><button type="button" class="danger" data-shact="delete">Delete</button>` : '') +
     `</div>`;
   shShow(true);
   if (li) revealRow(li);
@@ -322,6 +325,10 @@ $('#shDetail').addEventListener('click', async (e) => {
   else if (act === 'editnote') lyOpenNoteDlg(s, layerNotes.find((n) => n.id === b.dataset.id), 'border');
   else if (act === 'edit') shOpenForm({ id: s.id, kind: shapeKind(s.geometry), ...s });
   else if (act === 'editshape') shStartDraw(shapeKind(s.geometry), s);
+  else if (act === 'version') shOpen(b.dataset.sid, true);
+  else if (act === 'addversion')
+    // a copy of the shape for another time (T-041): same geometry and look, its own dates, the same series (created now when the shape has none)
+    shOpenForm({ kind: shapeKind(s.geometry), names: s.names, type: s.type, geometry: s.geometry, source: s.source || '', prevId: s.id, series: s.series || crypto.randomUUID(), look: { color: s.color, opacity: s.opacity, label: s.label, ...(s.width ? { width: s.width } : {}) } });
   else if (act === 'delete') {
     if (!confirm(`Delete “${shapeName(s, $('#lang').value)}”? It also leaves its layers. A copy of the old file stays in the archive on the server.`)) return;
     try {
@@ -344,13 +351,13 @@ function shOpenForm(f) {
   sh.form = f;
   const names = f.names && f.names.length ? f.names : [{ lang: $('#lang').value || 'en', name: '' }];
   $('#shDetail').innerHTML =
-    `<div class="dock-head"><span class="tmark">${shIcon(f.type || shTypeList()[0] || 'territory')}</span><h3 class="dock-title">${f.id ? 'Edit details' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)'}</h3><span class="dock-btns">${shBtn('cancel', 'close', 'Cancel')}</span></div>` +
+    `<div class="dock-head"><span class="tmark">${shIcon(f.type || shTypeList()[0] || 'territory')}</span><h3 class="dock-title">${f.prevId ? 'New version' : f.id ? 'Edit details' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)'}</h3><span class="dock-btns">${shBtn('cancel', 'close', 'Cancel')}</span></div>` +
     `<div class="dock-body"><div class="pf" id="shForm"><div class="label">Names</div><div class="pf-names">${names.map(pfRow).join('')}</div>` +
     `<button type="button" class="pf-add">+ Add another name</button><div class="sn">${LANG_HINT}</div>` +
     `<div class="label">Type</div><div class="chips sh-typepick">${shTypeChips(f.type || shTypeList()[0] || 'territory')}</div>` +
     `<div class="sn">The type sets the line pattern and the first colour. You can change the colour afterwards.</div>` +
     `<div class="label">Dates (optional)</div><div class="sn">Leave “Unknown” for a modern border or when you do not know. Borders with dates follow the period filter.</div>` +
-    `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}</div>` +
+    `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}${f.prevId && !shapeById(f.prevId).date_to ? '<label class="sh-check"><input type="checkbox" id="shClosePrev" checked> End the previous version the day before</label>' : ''}</div>` +
     `<div class="err-line" id="shErr"></div></div><div class="dock-foot"><button type="button" class="primary" data-shact="save">Save</button><button type="button" data-shact="cancel">Cancel</button></div>`;
   shShow(true);
   tab(sh.mode === 'rivers' ? 'rivers' : 'shapes');
@@ -382,8 +389,12 @@ async function shSaveForm() {
       const s = shapeById(id);
       await postJSON(shUrl().shapeSave, shBody(s, v));
     } else {
-      const d = shapeDefaults(v.type, f.kind);
-      id = (await postJSON(shUrl().shapeSave, { ...v, ...d, source: f.source || '', geometry: f.geometry })).id;
+      const d = shapeDefaults(v.type, f.kind),
+        prev = f.prevId && shapeById(f.prevId);
+      if (prev && !prev.series) await postJSON(shUrl().shapeSave, shBody(prev, { series: f.series })); // the shape the copy was made from joins the series first (T-041)
+      id = (await postJSON(shUrl().shapeSave, { ...v, ...d, ...(f.look || {}), ...(f.series ? { series: f.series } : {}), source: f.source || '', geometry: f.geometry })).id;
+      const end = prev && $('#shClosePrev') && $('#shClosePrev').checked ? versionEndBefore(prev, v.date_from) : null;
+      if (end) await postJSON(shUrl().shapeSave, shBody(prev, { date_to: end }));
     }
     sh.form = null;
     AHM.map.showPreview(null);

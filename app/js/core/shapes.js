@@ -73,6 +73,18 @@ const shapeById = (id) => shapes.find((s) => s.id === id);
 const shapeKind = (g) => (/Polygon/.test(g.type) ? 'area' : 'line');
 const shapeName = (s, l) => nameIn(s.names, l);
 const shapeWhen = (s) => spanText(s.date_from, s.date_to);
+/** The other versions of the same shape in time (T-041: same `series`), oldest first; [] for a shape with no series. */
+const shapeVersions = (s) =>
+  s.series
+    ? shapes.filter((x) => x.series === s.series && x.id !== s.id).sort((a, b) => (dateKey(a.date_from) < dateKey(b.date_from) ? -1 : dateKey(a.date_from) > dateKey(b.date_from) ? 1 : 0))
+    : [];
+/** The end date that closes version `prev` the day before a new version starting at `from` begins; null when `prev` already has an end or starts at or after `from`. */
+function versionEndBefore(prev, from) {
+  if (!from || prev.date_to) return null;
+  const start = dateBounds(from)[0];
+  if (prev.date_from && dateBounds(prev.date_from)[0] >= start) return null;
+  return { fmt: 'ymd', ts: secToIso(start - 86400), mode: 'exact', ts_to: null };
+}
 /** The values a new shape of this type starts with. */
 const shapeDefaults = (type, kind) => ({
   color: shapeType(type).color,

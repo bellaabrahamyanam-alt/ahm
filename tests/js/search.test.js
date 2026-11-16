@@ -152,3 +152,26 @@ test('time: shapesRun follows the slider the same way (borders, rivers, routes)'
   p.X("AHM.state.patch('time', { undated: false })");
   eq(['s1'], p.X('shapesRun({}).map((s) => s.id)'));
 });
+
+// ---- T-041: versions of one shape in time ----
+const mkShape = (id, series, a, b) => ({ id, series, names: [{ lang: 'en', name: id }], type: 'x', date_from: a, date_to: b, geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] } });
+
+test('series: shapeVersions lists the other versions of the same series, oldest first; none for a shape without a series', () => {
+  const p = page();
+  const y = (n) => ({ fmt: 'y', ts: isoYear(n), mode: 'exact', ts_to: null });
+  p.X('shapes = __0', [mkShape('c', 'S', y(300), null), mkShape('a', 'S', y(100), y(199)), mkShape('b', 'S', y(200), y(299)), mkShape('z', null, null, null), mkShape('o', 'T', y(1), y(2))]);
+  eq(['a', 'b'], p.X("shapeVersions(shapeById('c')).map((s) => s.id)"));
+  eq(['b', 'c'], p.X("shapeVersions(shapeById('a')).map((s) => s.id)"));
+  eq([], p.X("shapeVersions(shapeById('z'))"));
+});
+
+test('series: versionEndBefore closes an open version the day before the new one starts, and leaves the other cases alone', () => {
+  const p = page();
+  const y = (n) => ({ fmt: 'y', ts: isoYear(n), mode: 'exact', ts_to: null });
+  const end = (prev, from) => J(p.X('versionEndBefore(__0, __1)', prev, from));
+  eq({ fmt: 'ymd', ts: '0199-12-31T00:00:00Z', mode: 'exact', ts_to: null }, end(mkShape('a', 'S', y(100), null), y(200)));
+  eq({ fmt: 'ymd', ts: '0199-12-31T00:00:00Z', mode: 'exact', ts_to: null }, end(mkShape('a', 'S', null, null), y(200)), 'no start is fine');
+  eq(null, end(mkShape('a', 'S', y(100), y(150)), y(200)), 'already has an end');
+  eq(null, end(mkShape('a', 'S', y(200), null), y(200)), 'starts at or after the new version');
+  eq(null, end(mkShape('a', 'S', y(100), null), null), 'the new version has no start');
+});

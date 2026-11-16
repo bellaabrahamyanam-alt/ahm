@@ -913,6 +913,11 @@ function cleanShape(inp, codes, places, kinds) {
     if (typeof inp.width === 'boolean' || inp.width === null || inp.width === '' || !(Number(inp.width) >= 0.5 && Number(inp.width) <= 12)) throw bad('the width must be between 0.5 and 12');
     out.width = Math.round(Number(inp.width) * 10) / 10;
   }
+  // series: versions of one border, route or river in time share one UUID (T-041). Absent = unchanged, a single shape has none.
+  if (inp.series !== undefined) {
+    if (typeof inp.series !== 'string' || !UUID.test(inp.series)) throw bad('the series must be a UUID');
+    out.series = inp.series;
+  }
   if (kinds[inp.type] === 'line') {
     // stops: the places the route passes, in order (ids of existing places; at most 60). twoway: usable both ways. Absent = unchanged.
     if (inp.stops !== undefined) {
@@ -925,6 +930,20 @@ function cleanShape(inp, codes, places, kinds) {
     }
   }
   return out;
+}
+// T-041: the versions of one series are all areas or all lines, and two versions whose dates are all known do not overlap.
+function seriesCheck(props, features, kinds) {
+  if (!props.series) return;
+  const group = (t) => ((kinds[t] || 'area') === 'area' ? 'area' : 'line');
+  const span = (p) => (p.date_from && p.date_to ? [D.dateBounds(p.date_from)[0], D.dateBounds(p.date_to)[1]] : null);
+  for (const f of features) {
+    const o = f.properties;
+    if (o.series !== props.series || o.id === props.id) continue;
+    if (group(o.type) !== group(props.type)) throw bad('all versions of a series must be of the same kind (area or line)');
+    const a = span(props),
+      b = span(o);
+    if (a && b && a[0] < b[1] && b[0] < a[1]) throw bad('versions of one series overlap');
+  }
 }
 // A route is a line: refuses an area for a route type.
 const routeGeomCheck = (type, g, kinds) => {
@@ -943,10 +962,12 @@ function saveShape(inp) {
     if (inp.geometry !== undefined) f.geometry = cleanGeometry(inp.geometry);
     routeGeomCheck(c.type, f.geometry, kinds);
     f.properties = Object.assign({}, f.properties, c, { updated: now });
+    seriesCheck(f.properties, d.features, kinds);
   } else {
     id = crypto.randomUUID();
     const geometry = cleanGeometry(inp.geometry);
     routeGeomCheck(c.type, geometry, kinds);
+    seriesCheck(Object.assign({ id }, c), d.features, kinds);
     d.features.push({ type: 'Feature', geometry, properties: Object.assign({ id }, c, { created: now, updated: now }) });
   }
   putShapes(d);

@@ -1565,6 +1565,13 @@ class store
             }
             $out['width'] = round((float) $in['width'], 1);
         }
+        // series: versions of one border, route or river in time share one UUID (T-041). Absent = unchanged, a single shape has none.
+        if (array_key_exists('series', $in)) {
+            if (!is_string($in['series']) || !preg_match(self::UUID, $in['series'])) {
+                throw self::bad('the series must be a UUID');
+            }
+            $out['series'] = $in['series'];
+        }
         if ($kinds[$in['type']] === 'line') {
             // stops: the places the route passes, in order (ids of existing places; at most 60). twoway: usable both ways. Absent = unchanged.
             if (array_key_exists('stops', $in)) {
@@ -1587,6 +1594,35 @@ class store
             }
         }
         return $out;
+    }
+
+    /** T-041: the versions of one series are all areas or all lines, and two versions whose dates are all known do not overlap. */
+    private static function series_check(array $props, array $features, array $kinds)
+    {
+        $series = $props['series'] ?? null;
+        if ($series === null) {
+            return;
+        }
+        $group = function ($type) use ($kinds) {
+            return ($kinds[$type] ?? 'area') === 'area' ? 'area' : 'line';
+        };
+        $span = function ($p) {
+            return !empty($p['date_from']) && !empty($p['date_to']) ? [dates::bounds($p['date_from'])[0], dates::bounds($p['date_to'])[1]] : null;
+        };
+        foreach ($features as $f) {
+            $o = $f['properties'];
+            if (($o['series'] ?? null) !== $series || $o['id'] === $props['id']) {
+                continue;
+            }
+            if ($group($o['type']) !== $group($props['type'])) {
+                throw self::bad('all versions of a series must be of the same kind (area or line)');
+            }
+            $a = $span($props);
+            $b = $span($o);
+            if ($a !== null && $b !== null && $a[0] < $b[1] && $b[0] < $a[1]) {
+                throw self::bad('versions of one series overlap');
+            }
+        }
     }
 
     /** A route or a river is a line: refuses an area for such a type. */
@@ -1624,10 +1660,12 @@ class store
                 }
                 self::route_geometry_check($c['type'], $d['features'][$at]['geometry'], $kinds);
                 $d['features'][$at]['properties'] = array_merge($d['features'][$at]['properties'], $c, ['updated' => $now]);
+                self::series_check($d['features'][$at]['properties'], $d['features'], $kinds);
             } else {
                 $id = self::uuid4();
                 $geom = self::clean_geometry($in['geometry'] ?? null);
                 self::route_geometry_check($c['type'], $geom, $kinds);
+                self::series_check(['id' => $id] + $c, $d['features'], $kinds);
                 $d['features'][] = [
                     'type' => 'Feature',
                     'geometry' => $geom,

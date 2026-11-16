@@ -110,3 +110,8 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **What:** a "Time" button and a bar over the map (play / pause, slider over the earliest and latest date of the places and shapes, date field, speed 1 to 500 years per second, "Show undated", "Off"), `app/js/sidebar/timebar.js`. A chip "Time: <year>" among the active filters. Places and shapes outside their life are not listed or drawn; the "only possible" ones get `faded`.
 - **Why:** T-040. **Files:** `timebar.js`, `places.js`, `shapes.js` (opacity x 0.35 when faded), `app/index.html`, `app/css/sidebar.css`, `tests/js/sidebar.test.js`.
 - **Verify:** `node tests/js/run.js "time bar" --no-browser`. NOT seen in a browser (see docs/14).
+
+## 2026-11-16 — T-041: versions of a border or river in the sheet
+
+- **What:** the sheet lists "Other versions" (chips, click opens that version) and has the button "Add version for another time": the form (names, type, dates) opens with a copy of the shape; Save creates it with the same `series` (the original joins the series first when it had none) and, when ticked, ends the previous version the day before. Each version can be edited and deleted alone (the normal buttons). Routes have their own card (`routes.js`): NOT done there yet.
+- **Files:** `app/js/sidebar/shapes.js`. NOT seen in a browser.
