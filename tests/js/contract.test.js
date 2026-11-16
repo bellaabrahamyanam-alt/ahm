@@ -72,7 +72,7 @@ test('contract I-2: the events emitted and handled match the lists, and each sid
     on = (s) => uniq(names(s, /AHM\.on\(\s*["']([^"']+)["']/g));
   within(MAP_EVENTS, NEW_MAP_EVENTS, emit(map), 'events emitted by the map');
   eq(SIDEBAR_EVENTS, emit(side), 'events emitted by the sidebar');
-  within(MAP_EVENTS.filter((e) => e !== 'map:ready'), NEW_MAP_EVENTS, on(side), 'events handled by the sidebar (map:ready needs no handler: features are queued)');
+  within(MAP_EVENTS.filter((e) => e !== 'map:ready'), [...NEW_MAP_EVENTS, 'state:time'], on(side), 'events handled by the sidebar (map:ready needs no handler: features are queued; state:time of I-6 refreshes the lists and the map)');
   eq([...SIDEBAR_EVENTS, 'state:selected'].sort(), on(map), 'events handled by the map: sidebar:resized, and state:selected of I-6 (the map highlights the selected place)');
   const used = uniq(names(side, /AHM\.map\.(\w+)/g));
   const known = [...MAP_COMMANDS, ...NEW_MAP_COMMANDS];

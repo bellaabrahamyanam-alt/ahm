@@ -275,6 +275,7 @@ function initMap() {
         "icon-allow-overlap": true,
         "icon-ignore-placement": true,
       },
+      paint: { "icon-opacity": ["case", ["==", ["get", "faded"], true], 0.35, 1] }, // faded: only possible at the moment of the time bar
     });
     if (map.getStyle().glyphs) {
       // name labels next to the markers, using a font the base map already provides
@@ -316,6 +317,7 @@ function initMap() {
           "text-color": "#333C43",
           "text-halo-color": "#ffffff",
           "text-halo-width": 2,
+          "text-opacity": ["case", ["==", ["get", "faded"], true], 0.45, 1],
         },
       });
       map.addLayer({

@@ -104,3 +104,9 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Files:** `app/js/sidebar/admin.js`, `app/js/sidebar/ui.js`, `app/index.html`.
 - **How to verify:** More → Types as an administrator: add a line type, then add a route of that type in the Routes tab. Not verified: the page in a browser; no test covers the editor form (T-029).
 - **Follow-ups:** none.
+
+## 2026-11-16 — T-040: the time bar
+
+- **What:** a "Time" button and a bar over the map (play / pause, slider over the earliest and latest date of the places and shapes, date field, speed 1 to 500 years per second, "Show undated", "Off"), `app/js/sidebar/timebar.js`. A chip "Time: <year>" among the active filters. Places and shapes outside their life are not listed or drawn; the "only possible" ones get `faded`.
+- **Why:** T-040. **Files:** `timebar.js`, `places.js`, `shapes.js` (opacity x 0.35 when faded), `app/index.html`, `app/css/sidebar.css`, `tests/js/sidebar.test.js`.
+- **Verify:** `node tests/js/run.js "time bar" --no-browser`. NOT seen in a browser (see docs/14).

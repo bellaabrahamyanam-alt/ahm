@@ -7,6 +7,15 @@
 // Fields (owned by AHM.state): only, hide, open (id of the layer whose details are shown), editing (id of the layer whose places
 // are being chosen), staged (while editing: Set of place ids that will be the members), noteAll ("show all notes" for the place shown now).
 const lyState = AHM.state.get('layers');
+// The time slider (T-040; AHM.state 'time': at = ISO text or null = off, playing, speed in years per second, undated = show undated objects faded).
+const timeState = AHM.state.get('time');
+const timeActive = () => timeState.at !== null; // the time slider is on
+/** 'yes', 'faded' or 'no': how one place, shape or layer looks at the moment of the slider ('yes' while the slider is off). */
+function timeLook(item) {
+  if (timeState.at === null) return 'yes';
+  const look = visibleAt(item, isoToSec(timeState.at));
+  return look === 'undated' ? (timeState.undated ? 'faded' : 'no') : look;
+}
 let lyMembers = {}; // layer id -> Set of place ids
 const lyById = (id) => layers.find((l) => l.id === id);
 const nameIn = (list, l) => (list.find((n) => n.lang === l) || list.find((n) => n.lang === 'en') || list[0]).name;

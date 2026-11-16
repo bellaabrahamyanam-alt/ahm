@@ -71,3 +71,9 @@ None. `search.js` and the sidebar code are out of scope.
 - **Files:** `app/js/core/shapes.js`, `tests/js/routes.test.js`.
 - **How to verify:** `node tests/js/run.js`.
 - **Follow-ups:** the label of a shape type in the lists is its English name (or the first one), not the language of the page.
+
+## 2026-11-16 — T-040: the time slider rule (core)
+
+- **What:** `visibleAt(item, at)`, `timeSpan(items)`, `timeAdvance(at, speed, dtMs, end)` in `dates.js`; `timeLook(item)` and `timeActive()` in `layer-rules.js` (read `AHM.state.get('time')`); `run()` and `shapesRun()` drop items for which `timeLook` is `'no'`. Rule: hidden before the start of `date_from` and at or after the end of `date_to`; `faded` inside the period of an approximate date and inside a range; an unknown end or start never hides; no dates at all = `undated`, shown faded while `time.undated` is on, else hidden (T-049, option 3, see TODO).
+- **Why:** T-040. **Files:** `app/js/core/dates.js`, `layer-rules.js`, `search.js`, `shapes.js`, `tests/js/dates.test.js`, `search.test.js`.
+- **Verify:** `node tests/js/run.js time --no-browser`. **Follow-ups:** T-041 (versions), T-043 (names at the moment) use the same moment.

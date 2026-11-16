@@ -6,8 +6,9 @@
   const values = {
     selected: null,
     layers: { only: new Set(), hide: new Set(), open: null, editing: null, staged: null, noteAll: false },
+    time: { at: null, playing: false, speed: 10, undated: true }, // the time slider (T-040): at = ISO text of the moment, null = off
   };
-  const layerFields = Object.keys(values.layers).sort().join();
+  const fields = { layers: Object.keys(values.layers).sort().join(), time: Object.keys(values.time).sort().join() };
 
   const check = (key) => {
     if (!Object.prototype.hasOwnProperty.call(values, key)) throw new Error('state: unknown key "' + key + '"');
@@ -20,8 +21,8 @@
 
   const set = (key, value) => {
     check(key);
-    if (key === 'layers' && (!isObject(value) || Object.keys(value).sort().join() !== layerFields)) {
-      throw new Error('state: "layers" needs an object with the fields ' + layerFields);
+    if (fields[key] && (!isObject(value) || Object.keys(value).sort().join() !== fields[key])) {
+      throw new Error('state: "' + key + '" needs an object with the fields ' + fields[key]);
     }
     const old = values[key];
     if (value === old) return;

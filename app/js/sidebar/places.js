@@ -86,11 +86,11 @@ function update() {
   const r = run(searchOptions()),
     l = $("#lang").value,
     q = $("#q").value.trim();
-  const nf = state.types.size + (l ? 1 : 0) + (periodActive() ? 1 : 0) + lyFilterCount();
+  const nf = state.types.size + (l ? 1 : 0) + (periodActive() ? 1 : 0) + (timeActive() ? 1 : 0) + lyFilterCount();
   $("#fcount").textContent = nf ? `(${nf})` : "";
   const chip = (k, t) => `<button class="chip on" data-clear="${k}" title="Remove this filter">${t} ✕</button>`;
   // the selected types and the language are shown inside Filters, so only the period is repeated here
-  $("#fActive").innerHTML = periodActive() ? chip("period", "period") : "";
+  $("#fActive").innerHTML = (periodActive() ? chip("period", "period") : "") + (timeActive() ? chip("time", "Time: " + dateText({ fmt: "y", ts: timeState.at, mode: "exact", ts_to: null })) : "");
   $("#count").textContent = r.length + " of " + places.length + " places";
   $("#list").innerHTML = r.length
     ? r.map(({ p, hits }) => placeRowHTML(p, hits, l, q)).join("")
@@ -108,6 +108,7 @@ function update() {
         type_code: p.type,
         dates: placeWhen(p),
         halo: lyHalo(p.id),
+        faded: timeLook(p) === "faded", // only possible at the moment of the time bar (T-040)
       },
     })),
   };
@@ -120,6 +121,7 @@ $("#activeBar").addEventListener("click", (e) => {
   if (k.startsWith("type:")) state.types.delete(k.slice(5));
   else if (k === "lang") $("#lang").value = "";
   else if (k === "period") initPeriod();
+  else if (k === "time") return tbOff();
   fillTypes();
   update();
 });

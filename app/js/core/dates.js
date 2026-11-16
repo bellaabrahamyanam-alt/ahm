@@ -194,6 +194,49 @@ function dateClean(d, what) {
 const dateBounds = (d) => [isoToSec(d.ts), periodEndSec(d.fmt, isoToSec(d.mode === 'range' ? d.ts_to : d.ts))];
 /** A place exists from `from` to `to`, either may be unknown (open). Returns [lo, hi) with ±Infinity for open ends. */
 const spanBounds = (from, to) => [from ? dateBounds(from)[0] : -Infinity, to ? dateBounds(to)[1] : Infinity];
+
+// ---- the time slider (T-040) ----
+const YEAR_SEC = 31556952; // 365.2425 days
+/**
+ * One item with `date_from` / `date_to` (a place, shape or layer) at the moment `at` (seconds): 'no' (outside its life), 'yes',
+ * 'faded' (only possible: inside the period of an approximate date or inside a range) or 'undated' (no date at all; the caller decides).
+ * An unknown end never hides (docs/05: unknown, not "still exists"), nor does an unknown start.
+ */
+function visibleAt(item, at) {
+  const f = item.date_from,
+    t = item.date_to;
+  if (!f && !t) return 'undated';
+  let look = 'yes';
+  if (f) {
+    const [lo, hi] = dateBounds(f);
+    if (at < lo) return 'no';
+    if (f.mode !== 'exact' && at < hi) look = 'faded';
+  }
+  if (t) {
+    const [lo, hi] = dateBounds(t);
+    if (at >= hi) return 'no';
+    if (t.mode !== 'exact' && at >= lo) look = 'faded';
+  }
+  return look;
+}
+/** [earliest start, latest end] in seconds of the dated items, or null when no item has a date. */
+function timeSpan(items) {
+  let a = Infinity,
+    b = -Infinity;
+  for (const it of items)
+    for (const d of [it.date_from, it.date_to])
+      if (d) {
+        const [lo, hi] = dateBounds(d);
+        a = Math.min(a, lo);
+        b = Math.max(b, hi);
+      }
+  return a === Infinity ? null : [a, b];
+}
+/** Play: `at` moved on by `speed` years per second for `dtMs` milliseconds, never past `end`; `done` when it got there. */
+function timeAdvance(at, speed, dtMs, end) {
+  const next = at + (speed * YEAR_SEC * dtMs) / 1000;
+  return next >= end ? { at: end, done: true } : { at: next, done: false };
+}
 /** For the sidebar sort: unknown dates last. */
 const dateKey = (d) => (d ? isoToSec(d.ts) : Infinity);
 /** Throws when a "from" date lies after the end of a "to" date. */
@@ -288,6 +331,9 @@ if (typeof module !== 'undefined' && module.exports)
     dateClean,
     dateBounds,
     spanBounds,
+    visibleAt,
+    timeSpan,
+    timeAdvance,
     dateKey,
     dateOrderCheck,
     dateText,

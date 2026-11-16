@@ -3,7 +3,7 @@
 // (tasks/007-sidebar-fixes.md); tasks 012 and 014 add to it.
 
 const { test, ok, eq, J } = require('./lib/harness');
-const { load } = require('./lib/ctx');
+const { load, UI_STANDINS } = require('./lib/ctx');
 
 // ---- types dictionary (INTERFACES.md I-8) ----
 const TYPES_DICT = [
@@ -55,4 +55,44 @@ test('types: a type name is written by administrators, so it never reaches HTML 
       ok(!raw || f === 'routes.js', `${f}:${i + 1} prints typeLabel without esc()`);
     });
   }
+});
+
+// ---- T-040: the time bar ----
+function timePage() {
+  const p = load(['state.js', 'config.js', 'dates.js', 'data.js', 'datefield.js', 'layer-rules.js', 'shapes.js', 'timebar.js'], UI_STANDINS);
+  const y = (n) => ({ fmt: 'y', ts: String(n).padStart(4, '0') + '-01-01T00:00:00Z', mode: 'exact', ts_to: null });
+  p.X('places = __0; shapes = []', [{ id: 'a', date_from: y(100), date_to: y(300) }, { id: 'b', date_from: y(500), date_to: null }]);
+  p.time = () => J(p.X("JSON.parse(JSON.stringify(AHM.state.get('time')))"));
+  return p;
+}
+
+test('time bar: "Time" starts at the earliest date of the data, "Off" switches back and stops play', () => {
+  const p = timePage();
+  eq(null, p.time().at);
+  p.X('tbOpen()');
+  eq('0100-01-01T00:00:00Z', p.time().at);
+  p.X('tbPlay(true)');
+  eq(true, p.time().playing);
+  p.X('tbOff()');
+  eq({ at: null, playing: false, speed: 10, undated: true }, p.time());
+});
+
+test('time bar: a step of play moves the moment by the speed and stops at the latest date', () => {
+  const p = timePage();
+  p.X("AHM.state.patch('time', { at: '0100-01-01T00:00:00Z', speed: 10 })");
+  p.X('tbTick(1000)');
+  ok(p.time().at.startsWith('0110-'), 'ten years later: ' + p.time().at);
+  p.X("AHM.state.patch('time', { at: '0500-01-01T00:00:00Z', playing: true, speed: 500 })");
+  p.X('tbTick(1000)');
+  eq(false, p.time().playing, 'at the end play stops');
+  ok(p.time().at.startsWith('0500-12-31') || p.time().at.startsWith('0501-01-01'), 'and the moment stays at the end: ' + p.time().at);
+  p.X('tbOff()');
+});
+
+test('time bar: every change of the moment refreshes the lists and the map (update)', () => {
+  const p = timePage();
+  p.calls.length = 0;
+  p.X("AHM.state.patch('time', { at: '0200-01-01T00:00:00Z' })");
+  ok(p.calls.includes('update'), 'update() ran');
+  p.X('tbOff()');
 });

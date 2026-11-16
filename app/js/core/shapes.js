@@ -90,6 +90,7 @@ function shapesRun({ q: text = '', lang: l = '', types = new Set(), period: [a, 
       if (group && shapeGroup(s) !== group) return false;
       if (types.size && !types.has(s.type)) return false;
       if (!layerAllows(s.id)) return false; // the Only / Hide filters of the layers work on shapes too
+      if (timeLook(s) === 'no') return false; // the time slider (T-040)
       if (a !== null || b !== null) {
         // the same rule as for places: with a period set, only shapes whose life is known and overlaps it
         if (!s.date_from && !s.date_to) return false;
