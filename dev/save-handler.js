@@ -897,7 +897,7 @@ function cleanGeometry(g) {
 }
 function cleanShape(inp, codes, places, kinds) {
   const names = cleanNames(inp.names, codes, 'a border needs at least one name');
-  if (!kinds[inp.type]) throw bad('unknown border type');
+  if (!kinds[inp.type]) throw bad('unknown border type' + (typeof inp.type === 'string' ? ` “${inp.type}” (it is not a line, area or river type in the types dictionary)` : ''));
   if (typeof inp.color !== 'string' || !COLOR.test(inp.color)) throw bad('the colour must look like #aa3344');
   const opacity = Number(inp.opacity);
   if (!(opacity >= 0 && opacity <= 1)) throw bad('the opacity must be between 0 and 1');

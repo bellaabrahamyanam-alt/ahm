@@ -263,3 +263,50 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
     await pg.evaluate(()=>{lyState.only.clear();lyState.hide.clear();});
     
 });
+
+scenario('browser: a new version of a border in one go: the outline opens for editing, Next asks the dates, Save makes a second version of the same series and leaves the first as it was', null, async (pg, S) => {
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
+  const old = await pg.evaluate(async () => { // the drawing tool needs the real map: a stand-in that hands back a moved outline
+    AHM.map.drawShape = ({ coords }) => ({ remove() {}, points: () => [], getGeometry: () => { const r = coords.map((c) => [c[0] + 0.5, c[1] + 0.25]); return { type: 'Polygon', coordinates: [[...r, r[0]]] }; } });
+    AHM.map.showPreview = () => {};
+    await shReload();
+    tab('shapes');
+    const s = shapes.find((x) => x.type === 'kingdom');
+    shOpen(s.id);
+    return { id: s.id, geometry: JSON.stringify(s.geometry), n: shapes.length };
+  });
+  ok((await pg.locator('[data-shact=addversion]').innerText()).startsWith('New version'), 'the sheet has one button for a new version');
+  await pg.click('[data-shact=addversion]');
+  ok(await pg.evaluate(() => sh.draw && sh.draw.mode === 'version' && sh.draw.version.prevId !== undefined), 'the button opens the outline for editing (version mode), no form yet');
+  ok(/New version: move the points/.test(await pg.locator('#shAdd').innerText()) && /Next: dates/.test(await pg.locator('#shFinish').innerText()), 'the banner says what to do and the button is Next');
+  eq(old.n, await pg.evaluate(() => shapes.length), 'nothing is saved yet');
+  await pg.click('#shFinish');
+  ok(/New version of/.test(await pg.locator('#shDetail .dock-title').innerText()), 'Next opens the details form titled as a new version');
+  ok(/stays as it is/.test(await pg.locator('#shDetail').innerText()), 'the form says the first version stays');
+  await pg.click('.pf-add');
+  await pg.locator('#shForm .nn').last().fill('Later outline');
+  await pg.click('[data-shact=save]'); await pg.waitForTimeout(800);
+  const after = await pg.evaluate(() => shapes.map((s) => ({ id: s.id, series: s.series || null, geometry: JSON.stringify(s.geometry), names: s.names.map((n) => n.name) })));
+  eq(old.n + 1, after.length, 'one shape was added');
+  const first = after.find((s) => s.id === old.id), added = after.find((s) => s.id !== old.id && s.series === first.series);
+  ok(first.series && added, 'both are versions of one series (the first joined it)');
+  eq(old.geometry, first.geometry, 'the first version keeps its outline');
+  ok(added.geometry !== first.geometry, 'the new version has the moved outline');
+  ok(added.names.includes('Later outline'), 'the new name was saved');
+  ok(/Versions in time \(2\)/i.test(await pg.locator('#shDetail').innerText()) && (await pg.locator('#shDetail .chips .chip.on').count()) >= 1, 'the sheet of the new version lists both versions and marks the open one');
+  // Cancel in the drawing step brings the first version back
+  await pg.evaluate((id) => shOpen(id), old.id);
+  await pg.click('[data-shact=addversion]');
+  await pg.evaluate(() => shCancelDraw());
+  ok(await pg.evaluate((id) => !sh.draw && sh.open === id, old.id), 'cancelling returns to the version we started from');
+  eq(old.n + 1, await pg.evaluate(() => shapes.length), 'cancelling saves nothing');
+});
+
+scenario('browser: the server names the unknown type in its error', null, async (pg, S) => {
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(800);
+  const r = await pg.evaluate(async () => {
+    const x = await fetch('/api/shape/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: [{ lang: 'en', name: 'X' }], type: 'nonsense', color: '#336699', opacity: 0.5, label: true, source: '', date_from: null, date_to: null, geometry: { type: 'Polygon', coordinates: [[[44, 40], [44.5, 40], [44.5, 40.5], [44, 40]]] } }) });
+    return { status: x.status, error: (await x.json()).error };
+  });
+  ok(r.status === 400 && /unknown border type “nonsense”/.test(r.error), 'the error names the type: ' + r.error);
+});

@@ -150,7 +150,7 @@ Owner, in the chat, 2026-11-15. The date model already exists (`core/dates.js`: 
   Contract: maybe (a new `AHM.map` command in I-2); the builder says which in the item before the code.
   Needs: T-040, T-041, T-052.
 
-- [ ] T-063 "Add version for another time" and "Other versions" on the route card (`app/js/sidebar/routes.js`), as T-041 did for borders and rivers
+- [ ] T-063 "New version…" and "Versions in time" on the route card (`app/js/sidebar/routes.js`), as T-041 did for borders and rivers
   Done when: the route card lists the other versions of its series and can add one (same form logic as `shOpenForm` with `prevId`); a test shows it.
   Contract: no.
 

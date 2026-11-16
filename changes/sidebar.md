@@ -122,3 +122,11 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Why:** `crypto.randomUUID` exists only in a secure context (https or localhost). On a plain-http forum the button threw and the form did not open.
 - **Files:** `app/js/sidebar/shapes.js`, `tests/js/layers.test.js` (1 test), `app/dist/`.
 - **How to verify:** `node tests/js/run.js "shNewUuid"`. Chromium, `randomUUID` removed: the button opens the "New version" form without a page error.
+
+## 2026-11-17 — A new version of a border in one go (T-041 simplified)
+
+- **What:** `app/js/sidebar/shapes.js`. The button "Add version for another time" is now "New version…". It opens the outline of the open shape in the drawing tool at once (mode `version`, banner "New version: move the points", button "Next: dates"); Next opens the form (titled "New version of “name”", names, type, look taken over, only the dates are new); Save creates the second version and joins the first to the series. The first version is not changed. Cancel in either step returns to the first version. An outline the tool cannot edit (several parts) skips the drawing step. The sheet now lists ALL versions in time ("Versions in time (n)") with the open one marked. New: `shStartVersion`, `shVersionChips`, `shVersionHint`; `shStartDraw(kind, existing, version)`.
+- **Also:** the server error `unknown border type` now names the type (`service/store.php`, `dev/save-handler.js`); parity case in `tests/fixtures/rules.json` tightened.
+- **Why:** the old way needed five steps (add, copy saved with the same outline, find it in the list, edit, save) and did not show that the copy is a version.
+- **Files:** `app/js/sidebar/shapes.js`, `service/store.php`, `dev/save-handler.js`, `tests/js/browser.test.js` (2 scenarios), `tests/fixtures/rules.json`, `app/dist/`.
+- **How to verify:** `node tests/js/run.js browser`. NOT verified: the real drawing tool on the real map (MapLibre is a stand-in in tests): moving points with the mouse.

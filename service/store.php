@@ -1528,7 +1528,7 @@ class store
     {
         $names = self::clean_names($in['names'] ?? [], $codes, 'a border needs at least one name');
         if (!is_string($in['type'] ?? null) || !isset($kinds[$in['type']])) {
-            throw self::bad('unknown border type');
+            throw self::bad('unknown border type' . (is_string($in['type'] ?? null) ? ' “' . $in['type'] . '” (it is not a line, area or river type in the types dictionary)' : ''));
         }
         $color = $in['color'] ?? null;
         if (!is_string($color) || !preg_match(self::COLOR, $color)) {

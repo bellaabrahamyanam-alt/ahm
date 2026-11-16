@@ -1828,7 +1828,7 @@
      ]
     }
    },
-   "expect": "unknown border type"
+   "expect": "unknown border type “settlement”"
   },
   {
    "name": "shape: an unknown type",
