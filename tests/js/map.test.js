@@ -1150,7 +1150,7 @@ test('map: relief: with tiles the dropdown has "Map + relief"; the source and la
   eq(256, src.tileSize);
   eq(11, src.maxzoom);
   eq(TERRAIN.tiles, src.tiles);
-  eq([37, 37, 49, 42.5], src.bounds, 'bounds = bbox of the config: no requests outside the built area');
+  ok(!('bounds' in src), 'no bounds in the config: the source has none (the AWS tiles cover the world, relief must not stop at bbox)');
   ok(src.attribution.includes('produced using Copernicus WorldDEM-30'), 'attribution');
   const l = ml.rec.layers.find((x) => x.id === 'ahm-relief');
   eq('hillshade', l.type);
@@ -1337,7 +1337,39 @@ test('map: relief colours: moving the mouse shows the height in metres read from
   eq(1, urls.length, 'the same tile is not fetched twice');
 });
 
+test('map: relief: bounds are passed to the source only when terrain.bounds is set (own tiles)', () => {
+  const { ml, switchBasemap } = boot({ before: withTerrain({ ...TERRAIN, bounds: [37, 37, 49, 42.5] }) });
+  switchBasemap('@relief');
+  eq([37, 37, 49, 42.5], ml.rec.sources['ahm-terrain'].def.bounds, 'terrain.bounds = the built area');
+  const shipped = load(['config.js']).X('AHM_CONFIG.basemap.terrain');
+  ok(!shipped.bounds, 'the shipped config (AWS tiles) sets no bounds');
+});
+
+test('map: relief credit: the terrain attribution is plain visible text while relief is chosen, and gone otherwise', () => {
+  const { p, ml, switchBasemap } = boot({ before: withTerrain(TERRAIN) });
+  eq('', p.el('#base-credit').textContent || '', 'nothing before relief is chosen');
+  ok(p.el('#base-credit').hidden, 'hidden');
+  switchBasemap('@relief');
+  eq(TERRAIN.attribution, p.el('#base-credit').textContent, 'the text of AHM_CONFIG.basemap.terrain.attribution');
+  ok(!p.el('#base-credit').hidden, 'shown');
+  ok(ml.rec.sources['ahm-terrain'].def.attribution, 'the MapLibre source keeps its attribution too');
+  switchBasemap('sat1');
+  ok(p.el('#base-credit').hidden && !p.el('#base-credit').textContent, 'hidden again when relief is off');
+  switchBasemap('');
+  ok(p.el('#base-credit').hidden, 'and on the plain map');
+});
+
+test('map: relief credit: the element sits in the page under the base-map select and wraps on a phone (index.html, map.css)', () => {
+  const fs = require('fs');
+  const html = fs.readFileSync(require('path').join(__dirname, '..', '..', 'app', 'index.html'), 'utf8');
+  ok(/<select id="basemap"><\/select>\s*<div id="base-credit" hidden><\/div>/.test(html), 'under the select, hidden at first');
+  const css = fs.readFileSync(require('path').join(__dirname, '..', '..', 'app', 'css', 'map.css'), 'utf8');
+  ok(/#base-credit\s*\{[^}]*overflow-wrap:\s*anywhere/.test(css), 'long words and URLs wrap');
+  ok(!/#base-credit\s*\{[^}]*(white-space:\s*nowrap|width:\s*\d+px)/.test(css), 'no fixed width, no nowrap');
+});
+
 test('map: relief colours: the shipped config says whether the colours adapt to the view', () => {
+  eq(false, load(['config.js']).X('AHM_CONFIG.basemap.terrain.color.adapt'), 'default: the fixed metres of the ramp');
   eq('boolean', typeof load(['config.js']).X('AHM_CONFIG.basemap.terrain.color.adapt'));
   eq('boolean', typeof load(['config.js']).X('AHM_CONFIG.basemap.terrain.color.smooth'));
 });
@@ -1411,6 +1443,15 @@ test('map: settings are saved in localStorage and read again at the start', () =
   eq(0.2, b.p.el('#relief-opacity').value);
   eq(0.9, b.p.el('#relief-strength').value);
   eq(true, b.p.el('#relief-contours').checked);
+});
+
+test('map: relief colours: "adapt" is off by default, and an old save (without v: 2) cannot switch it on', () => {
+  const noAdapt = { ...COLOR_TERRAIN, color: { ...COLOR_TERRAIN.color, adapt: undefined } };
+  const off = { ...COLOR_TERRAIN, color: { ...COLOR_TERRAIN.color, adapt: false } };
+  const mk = (terrain, saved) => boot({ before: (p) => { withTerrain(terrain)(p); p.ctx.localStorage = { getItem: () => JSON.stringify(saved), setItem() {} }; } });
+  eq(false, mk(noAdapt, {}).p.el('#relief-adapt').checked, 'no config value: off');
+  eq(false, mk(off, { adapt: true }).p.el('#relief-adapt').checked, 'v1 save: the new default wins once');
+  eq(true, mk(off, { v: 2, adapt: true }).p.el('#relief-adapt').checked, 'a v2 save is respected');
 });
 
 test('map: contours: marching squares gives one closed line around a cone, and nothing for a flat or missing grid', () => {
