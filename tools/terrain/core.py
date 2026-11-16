@@ -11,9 +11,29 @@ from PIL import Image
 
 TILE = 256
 VERSION = 'v1'  # the folder of the tiles; a new version = a new folder (never overwrite tiles that browsers cache for a year)
-# Required wording for ADAPTED data (the licence text, do not paraphrase). The same text is in app/js/config.js (basemap.terrain.attribution).
-ATTRIBUTION = ('produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 '
-               'provided under COPERNICUS by the European Union and ESA; all rights reserved')
+# Required wording for ADAPTED data (the licence text, do not paraphrase). The same texts are in app/js/config.js (comment of basemap.terrain).
+# GLO-30: verified. GLO-90: read on the Copernicus Data Space page of COP-DEM and in the ESA licence PDF (Art. 6(b)) through a summarising fetch tool,
+# not as raw text; the PDF is said to write "WorldDEM(TM)-90" with a trademark sign, the page without. Compare with the licence before you publish.
+ATTRIBUTION_30 = ('produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 '
+                  'provided under COPERNICUS by the European Union and ESA; all rights reserved')
+ATTRIBUTION_90 = ATTRIBUTION_30.replace('WorldDEM-30', 'WorldDEM-90')
+ATTRIBUTION = ATTRIBUTION_30  # the text of a build that uses GLO-30 only (the default config text)
+# --dataset: which Copernicus datasets a step may use, in the order they are tried. auto = GLO-30, GLO-90 for a square GLO-30 does not have.
+DATASETS = {'auto': (30, 90), 'glo30': (30,), 'glo90': (90,)}
+
+
+def resolutions(dataset):
+    if dataset not in DATASETS:
+        raise ValueError('unknown dataset %r (use %s)' % (dataset, ', '.join(DATASETS)))
+    return DATASETS[dataset]
+
+
+def attribution_for(used):
+    """The required credit for the products really used: a set of 30 and/or 90. A mixed build names both (one sentence each)."""
+    used = set(used)
+    if used == {30, 90}:
+        return ATTRIBUTION_30 + '; ' + ATTRIBUTION_90
+    return ATTRIBUTION_90 if used == {90} else ATTRIBUTION_30
 LICENCE_URL = 'https://spacedata.copernicus.eu/collections/copernicus-digital-elevation-model'
 MAX_LAT = 85.0511287798066
 EARTH_CIRC_M = 40075016.686
@@ -72,14 +92,14 @@ def squares_for_bbox(bbox):
     return [(la, lo) for la in range(math.floor(s), math.ceil(n)) for lo in range(math.floor(w), math.ceil(e))]
 
 
-# Armenia and Azerbaijan are NOT in the free Copernicus GLO-30 (Public) dataset; the 90 m dataset (GLO-90) covers them. Approximate boxes
-# (W, S, E, N), only to PREDICT in `squares`; they overlap the neighbours, so a square may turn out to have GLO-30 after all. The download
-# decides by the real answer of the server, never by these boxes.
-NO_GLO30_BOXES = [(43.4, 38.8, 46.7, 41.3), (44.7, 38.3, 50.9, 41.95)]  # Armenia with Nakhchivan, Azerbaijan
+# A PREDICTION, not a fact: older sources (Google Earth Engine catalog, ASF HyP3) say GLO-30 leaves out Armenia and Azerbaijan; the Copernicus
+# Data Space page says release 2023_1 opened them. Whether the public bucket holds those squares is UNVERIFIED: the download tells. Only used
+# to print a note in `squares`; the download always asks the server and decides by its answer.
+NO_GLO30_BOXES = [(43.4, 38.8, 46.7, 41.3), (44.7, 38.3, 50.9, 41.95)]  # Armenia with Nakhchivan, Azerbaijan (approximate)
 
 
 def expected_dataset(lat, lon):
-    """30 or 90: the dataset the tool expects to end up with for the 1x1 degree square whose south-west corner is (lat, lon)."""
+    """30 or 90: what older sources predict for the square whose south-west corner is (lat, lon). Only a prediction."""
     for w, s, e, n in NO_GLO30_BOXES:
         if lon < e and lon + 1 > w and lat < n and lat + 1 > s:
             return 90
@@ -91,21 +111,34 @@ def square_id(lat, lon):
 
 
 def no_tile_marker(dem_dir, lat, lon):
-    """Empty file that says: the server answered 404 for this square in GLO-30 AND GLO-90 (sea or no data: elevation 0)."""
+    """File that says: the server answered HTTP 404 for this square (sea or no data: elevation 0). Its text lists the datasets that were tried
+    ("30 90", "90"); an empty file means both (older runs)."""
     return os.path.join(dem_dir, 'NO_TILE_%s.txt' % square_id(lat, lon))
 
 
-def dem_status(dem_dir, bbox):
-    """{(lat, lon): 30 | 90 | 'none' | None}: GLO-30 file, GLO-90 file, confirmed no tile (marker), or not downloaded yet (None)."""
+def marker_tried(dem_dir, lat, lon):
+    """Set of datasets (30, 90) the marker covers, or None when there is no marker."""
+    p = no_tile_marker(dem_dir, lat, lon)
+    if not os.path.isfile(p):
+        return None
+    got = {int(t) for t in open(p, encoding='utf-8').read().split() if t in ('30', '90')}
+    return got or {30, 90}
+
+
+def dem_status(dem_dir, bbox, dataset='auto'):
+    """{(lat, lon): 30 | 90 | 'none' | None}: a file of an allowed dataset (first in the order of `dataset`), confirmed no tile (a marker that
+    covers every allowed dataset), or not downloaded yet (None)."""
+    want = resolutions(dataset)
     out = {}
     for lat, lon in squares_for_bbox(bbox):
         out[(lat, lon)] = None
-        for res in (30, 90):
+        for res in want:
             if os.path.isfile(os.path.join(dem_dir, square_name(lat, lon, res) + '.tif')):
                 out[(lat, lon)] = res
                 break
         else:
-            if os.path.isfile(no_tile_marker(dem_dir, lat, lon)):
+            tried = marker_tried(dem_dir, lat, lon)
+            if tried and set(want) <= tried:
                 out[(lat, lon)] = 'none'
     return out
 
@@ -119,6 +152,10 @@ def seam_edges(status):
             if v in (30, 90) and w in (30, 90) and v != w:
                 r.append((lon + 1.0, lat + 0.5) if dlon else (lon + 0.5, lat + 1.0))
     return r
+
+
+def used_datasets(status):
+    return {v for v in status.values() if v in (30, 90)}
 
 
 def square_name(lat, lon, res=30):
@@ -143,6 +180,10 @@ class Mosaic:
     def read(self, c0, r0, c1, r1):
         """float32 array (r1 - r0, c1 - c0) of elevations in metres; the window is inside the grid. Missing data = 0."""
         raise NotImplementedError
+
+    def datasets(self):
+        """Set of the Copernicus datasets (30, 90) the pixels come from; it decides the credit in NOTICE.txt. A synthetic source: {30}."""
+        return {30}
 
 
 # ---------------------------------------------------------------- resampling
@@ -206,22 +247,45 @@ def terrarium_decode(rgb):
 
 # ---------------------------------------------------------------- the files next to the tiles
 
-def notice_text(step, maxzoom):
+def notice_text(step, maxzoom, used=(30,)):
+    used = sorted(set(used) or {30})
     return '\n'.join([
         'Terrain tiles of the ahm/map extension (relief layer). Keep this file with the tiles.',
         '',
         'Attribution (required, the licence wording for adapted data):',
-        ATTRIBUTION,
+        attribution_for(used),
         '',
-        'Disclaimer: the licence states that the providers do not incur any liability for any use of the Copernicus WorldDEM-30.',
+        'Disclaimer: the licence states that the providers do not incur any liability for any use of the %s.'
+        % ' and the '.join('Copernicus WorldDEM-%d' % r for r in used),
         'No endorsement: this product is not endorsed by, and no endorsement by the European Union or ESA may be implied.',
         'Subsequent users: whoever receives these tiles must receive this notice and is bound by the same obligations.',
         '',
         'Licence: ' + LICENCE_URL,
-        'Processing: Copernicus DEM GLO-30 (GLO-90 for squares missing from GLO-30, e.g. Armenia and Azerbaijan; sea and squares with no tile = 0 m) resampled to Web Mercator,',
+        'Processing: Copernicus DEM %s (%s) resampled to Web Mercator,'
+        % ('GLO-30 and GLO-90' if used == [30, 90] else 'GLO-%d' % used[0], 'sea and squares with no tile = 0 m'),
         'zoom 0 to %d, 256 px, Terrarium encoding, lossless WebP, elevation rounded to %g m.' % (maxzoom, step),
         '',
     ])
+
+
+def config_block(attribution, maxzoom, bbox, version=VERSION):
+    """The lines to put into `basemap.terrain` of app/js/config.js after the tiles are uploaded (docs/10)."""
+    return '\n'.join([
+        '      tiles: ["https://YOUR-FORUM/ahm-terrain/%s/{z}/{x}/{y}.webp"],  // your forum address' % version,
+        '      maxzoom: %d,' % maxzoom,
+        '      bounds: [%s],  // the same numbers as bbox: no requests (and no PHP start) for tiles that were not built' % ', '.join('%g' % v for v in bbox),
+        '      attribution: "%s",' % attribution,
+    ])
+
+
+def pack_facts(out):
+    """(attribution, maxzoom, version) read back from an output folder, for the config block that `pack` prints."""
+    text = open(os.path.join(out, 'NOTICE.txt'), encoding='utf-8').read().split('\n')
+    att = text[text.index('Attribution (required, the licence wording for adapted data):') + 1]
+    vs = sorted(d for d in os.listdir(out) if re.fullmatch(r'v\d+', d))
+    ver = vs[-1] if vs else VERSION
+    zs = [int(d) for d in os.listdir(os.path.join(out, ver)) if d.isdigit()]
+    return att, max(zs), ver
 
 
 HTACCESS = """# Static terrain tiles: Apache serves them directly, never through PHP (phpBB's rewrite rules must not see this folder).
@@ -269,7 +333,7 @@ def build(src, out, bbox, maxzoom=11, step=1.0, force=False, version=VERSION, pr
     means its whole subtree is on disk (an interrupted run resumes by skipping what exists). Returns {written, skipped, bytes}."""
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, 'NOTICE.txt'), 'w', encoding='utf-8') as f:
-        f.write(notice_text(step, maxzoom))
+        f.write(notice_text(step, maxzoom, src.datasets()))
     with open(os.path.join(out, '.htaccess'), 'w', encoding='utf-8') as f:
         f.write(HTACCESS)
     rng = {z: tiles_for_bbox(bbox, z) for z in range(maxzoom + 1)}

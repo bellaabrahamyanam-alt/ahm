@@ -22,17 +22,23 @@ def bbox_of(a):
 def cmd_squares(a):
     bb = bbox_of(a)
     sq = core.squares_for_bbox(bb)
+    res = core.resolutions(a.dataset)
     n90 = 0
     for lat, lon in sq:
-        if core.expected_dataset(lat, lon) == 90:
+        if a.dataset == 'auto' and core.expected_dataset(lat, lon) == 90:
             n90 += 1
-            note = 'GLO-30 first; Armenia/Azerbaijan are not in GLO-30, expect the GLO-90 fallback'
+            note = 'GLO-30 first; older sources predict GLO-30 is missing here, so GLO-90 is probably used (only a prediction)'
+        elif a.dataset == 'auto':
+            note = 'GLO-30 first, GLO-90 if the server has no GLO-30 file'
         else:
-            note = 'GLO-30 first, GLO-90 if there is no GLO-30 file'
-        print('%s  # %s %s' % (core.square_url(lat, lon, 30), core.square_id(lat, lon), note))
-    print('# bbox %s: %d squares; the first word of a line is the address. About %d are expected from GLO-90 (Armenia/Azerbaijan, approximate boxes); '
-          'the rest from GLO-30. Which squares are sea (no file in either dataset) cannot be known before the download. '
-          'Addresses are from memory, UNVERIFIED: see docs/10.' % (bb, len(sq), n90), file=sys.stderr)
+            note = 'GLO-%d only' % res[0]
+        print('%s  # %s %s' % (core.square_url(lat, lon, res[0]), core.square_id(lat, lon), note))
+    extra = ''
+    if a.dataset == 'auto':
+        extra = (' About %d may come from GLO-90 (Armenia/Azerbaijan, approximate boxes; this is a prediction from older sources: the first '
+                 'download shows the truth, and prints how many squares came from which dataset).' % n90)
+    print('# bbox %s: %d squares, dataset %s.%s Squares that are sea have no file. The first word of a line is the address; the addresses '
+          'are from memory, UNVERIFIED: see docs/10.' % (bb, len(sq), a.dataset, extra), file=sys.stderr)
 
 
 class DownloadStop(Exception):
@@ -55,16 +61,20 @@ def fetch(url, dest):
             os.remove(tmp)
 
 
-def fetch_square(dem, lat, lon, fetch=fetch, log=print):
-    """Gets the square: GLO-30, else GLO-90. Returns 30, 90, or 'none' (404 in BOTH: sea or no data, 0 m; remembered in a marker file).
-    ONLY an HTTP 404 means "no tile". 403, 5xx, network errors and timeouts raise DownloadStop (a flattened mountain would look like sea)."""
-    for res in (30, 90):
-        path = os.path.join(dem, core.square_name(lat, lon, res) + '.tif')
-        if os.path.isfile(path):
+def fetch_square(dem, lat, lon, dataset='auto', fetch=fetch, log=print):
+    """Gets the square from the datasets `dataset` allows, in order. Returns 30, 90, or 'none' (HTTP 404 in every allowed dataset: sea or no
+    data, 0 m; remembered in a marker file). ONLY an HTTP 404 means "no tile". 403, 5xx, network errors and timeouts raise DownloadStop
+    (a flattened mountain would look like sea)."""
+    want = core.resolutions(dataset)
+    for res in want:
+        if os.path.isfile(os.path.join(dem, core.square_name(lat, lon, res) + '.tif')):
             return res
-    if os.path.isfile(core.no_tile_marker(dem, lat, lon)):
+    tried = core.marker_tried(dem, lat, lon)
+    if tried and set(want) <= tried:
         return 'none'
-    for res in (30, 90):
+    for res in want:
+        if tried and res in tried:
+            continue  # a 404 for this dataset is already known
         url = core.square_url(lat, lon, res)
         log('        trying %s' % url)
         try:
@@ -81,9 +91,10 @@ def fetch_square(dem, lat, lon, fetch=fetch, log=print):
         except (urllib.error.URLError, OSError) as e:  # a timeout and a reset connection are OSError
             raise DownloadStop('network error for %s: %s. Not treated as sea. Nothing is lost: run the same command again, finished files are '
                                'skipped.' % (url, e))
-    open(core.no_tile_marker(dem, lat, lon), 'w').close()
-    log('        no tile in GLO-30 or GLO-90 (HTTP 404 on both): taken as sea / no data, elevation 0 m (noted in %s)'
-        % os.path.basename(core.no_tile_marker(dem, lat, lon)))
+    with open(core.no_tile_marker(dem, lat, lon), 'w', encoding='utf-8') as f:
+        f.write(' '.join(str(r) for r in sorted(set(want) | (tried or set()))) + '\n')
+    log('        no tile (HTTP 404 in %s): taken as sea / no data, elevation 0 m (noted in %s)'
+        % (' and '.join('GLO-%d' % r for r in want), os.path.basename(core.no_tile_marker(dem, lat, lon))))
     return 'none'
 
 
@@ -95,31 +106,31 @@ def cmd_download(a):
     for i, (lat, lon) in enumerate(sq, 1):
         print('[%d/%d] %s' % (i, len(sq), core.square_id(lat, lon)))
         try:
-            r = fetch_square(a.dem, lat, lon)
+            r = fetch_square(a.dem, lat, lon, a.dataset)
         except DownloadStop as e:
             sys.exit('stopped: %s' % e)
         if r == 'none':
             none.append((lat, lon))
         else:
             got[r] += 1
-    print('\nDone: %d squares from GLO-30, %d from GLO-90, %d without a tile.' % (got[30], got[90], len(none)))
+    print('\nDone (dataset %s): %d squares from GLO-30, %d from GLO-90, %d without a tile.' % (a.dataset, got[30], got[90], len(none)))
     if none:
-        print('Without a tile (HTTP 404 in both datasets, taken as 0 m): %s\nFine for sea (Persian Gulf, Black Sea, Caspian). If one of them is land, '
+        print('Without a tile (HTTP 404, taken as 0 m): %s\nFine for sea (Persian Gulf, Black Sea, Caspian). If one of them is land, '
               'the file names are probably wrong: list the bucket (docs/10).' % ', '.join('%s/%s' % m for m in none))
 
 
 def need_downloaded(a):
     """Stops when a square was neither downloaded nor confirmed absent: building from it would flatten real mountains to 0 m."""
-    todo = [k for k, v in core.dem_status(a.dem, bbox_of(a)).items() if v is None]
+    todo = [k for k, v in core.dem_status(a.dem, bbox_of(a), a.dataset).items() if v is None]
     if todo:
-        sys.exit('error: %d square(s) not downloaded yet (first: %s/%s). Run  python terrain.py download --dem %s  again; it continues where it stopped.'
-                 % (len(todo), todo[0][0], todo[0][1], a.dem))
+        sys.exit('error: %d square(s) not downloaded yet (first: %s/%s). Run  python terrain.py download --dem %s --dataset %s  again; it continues '
+                 'where it stopped.' % (len(todo), todo[0][0], todo[0][1], a.dem, a.dataset))
 
 
 def mosaic(a):
     import geotiff_source
     try:
-        return geotiff_source.GeoTiffMosaic(a.dem, bbox_of(a))
+        return geotiff_source.GeoTiffMosaic(a.dem, bbox_of(a), dataset=a.dataset)
     except geotiff_source.SourceError as e:
         sys.exit('error: %s' % e)
 
@@ -137,12 +148,14 @@ def cmd_check(a):
     n90 = sum(1 for r in rows if r[2] == 90)
     print('%d squares: %d GLO-30, %d GLO-90, %d without a tile (0 m). Mosaic %d x %d px (virtual, nothing of that size is held in memory).'
           % (len(rows), len(rows) - miss - n90, n90, miss, m.width, m.height))
-    seams = core.seam_edges(core.dem_status(a.dem, bbox_of(a)))
+    seams = core.seam_edges(m.status)
     if seams:
         print('%d borders between a GLO-30 square and a GLO-90 square (different products: a seam is possible there). Look at some after the '
               'build, for example:' % len(seams))
         for lon, lat in seams[:3]:
             print('  python terrain.py preview --out ahm-terrain --zoom 10 --at %g %g --png seam.png' % (lon, lat))
+    print('Credit for this data: ' + core.attribution_for(m.datasets()))
+    need_downloaded(a)
     bb = bbox_of(a)
     print('Tiles for zoom 0..%d: %d' % (a.maxzoom, sum(core.tile_count(bb, z) for z in range(a.maxzoom + 1))))
 
@@ -160,6 +173,7 @@ def cmd_build(a):
         sys.exit('error: %s\nTiles already written are kept; run the same command again to continue.' % e)
     files, size = core.disk_totals(a.out, a.version)
     print('Done: written %d, skipped (already there) %d. On disk: %d tiles, %s.' % (st['written'], st['skipped'], files, core.human(size)))
+    print('\nAfter you upload the tiles, put this into basemap.terrain of app/js/config.js:\n' + core.config_block(core.attribution_for(m.datasets()), a.maxzoom, bb, a.version))
 
 
 def cmd_preview(a):
@@ -172,15 +186,20 @@ def cmd_preview(a):
 def cmd_pack(a):
     info = core.pack(a.out, a.archive)
     print('Wrote %s: %d files, %s. Unpack it in the forum folder: it creates ahm-terrain/.' % (a.archive, info['files'], core.human(info['bytes'])))
+    att, maxzoom, ver = core.pack_facts(a.out)
+    print('\nAfter you upload the tiles, put this into basemap.terrain of app/js/config.js:\n' + core.config_block(att, maxzoom, bbox_of(a), ver))
 
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     sub = p.add_subparsers(dest='cmd', required=True)
 
-    def add(name, fn, h, dem=False, out=False):
+    def add(name, fn, h, dem=False, out=False, dataset=False):
         s = sub.add_parser(name, help=h)
         s.set_defaults(fn=fn)
+        if dataset or dem:
+            s.add_argument('--dataset', choices=list(core.DATASETS), default='auto',
+                           help='auto (default): GLO-30, GLO-90 for a square GLO-30 does not have; glo30: only GLO-30; glo90: only GLO-90 (90 m)')
         s.add_argument('--bbox', nargs=4, type=float, metavar=('W', 'S', 'E', 'N'), help='default: bbox of app/js/config.js')
         if dem:
             s.add_argument('--dem', required=True, help='folder of the downloaded .tif squares')
@@ -188,8 +207,8 @@ def main(argv=None):
             s.add_argument('--out', required=True, help='output folder (becomes <forum>/ahm-terrain/)')
         return s
 
-    add('squares', cmd_squares, 'print the GLO-30 URL of every square and the dataset expected for it')
-    add('download', cmd_download, 'download the squares (GLO-90 for a square missing in GLO-30)', dem=True)
+    add('squares', cmd_squares, 'print the URL of every square and the dataset it comes from', dataset=True)
+    add('download', cmd_download, 'download the squares (--dataset decides GLO-30, GLO-90 or both)', dem=True)
     c = add('check', cmd_check, 'open every square, report problems (dry run, writes nothing)', dem=True)
     c.add_argument('--maxzoom', type=int, default=11)
     b = add('build', cmd_build, 'build the tiles (resumable)', dem=True, out=True)

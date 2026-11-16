@@ -1,4 +1,4 @@
-"""Tests of the enlarged area (T-055): the download rule (a real 404 is "no tile", anything else is never "sea"), the squares list, the guard
+"""Tests of the enlarged area (T-060): the download rule (a real 404 is "no tile", anything else is never "sea"), the squares list, the guard
 before a build, the mixed GLO-30 / GLO-90 mosaic (with a stand-in for rasterio: the window arithmetic is tested, GDAL itself is NOT), the
 open-file limit and the preview position. Run: python3 -I -m unittest discover -s tools/terrain -p "test_*.py" """
 import io
@@ -123,7 +123,7 @@ class Cli(unittest.TestCase):
         self.assertEqual(285, len(lines))
         by = {re.search(r'(N\d+_00_E\d+)', l).group(1): l for l in lines}
         self.assertIn('GLO-90', by['N40_00_E044'])
-        self.assertIn('Armenia/Azerbaijan', by['N40_00_E044'])
+        self.assertIn('prediction', by['N40_00_E044'])
         self.assertNotIn('Armenia', by['N33_00_E044'])
         self.assertTrue(by['N33_00_E044'].startswith('https://copernicus-dem-30m'))
         self.assertRegex(r.stderr, r'285 squares')
@@ -266,7 +266,7 @@ class Mosaic(unittest.TestCase):
         open(core.no_tile_marker(self.dem, 40, 45), 'w').close()
         m = geotiff_source.GeoTiffMosaic(self.dem, bb, ppd=10)
         rows = {(a, b): (r, t) for a, b, r, t in m.inspect()}
-        self.assertIn('no tile (404 in GLO-30 and GLO-90)', rows[(40, 45)][1])
+        self.assertIn('no tile (HTTP 404)', rows[(40, 45)][1])
 
 
 if __name__ == '__main__':

@@ -1150,7 +1150,7 @@ test('map: relief: with tiles the dropdown has "Map + relief"; the source and la
   eq(256, src.tileSize);
   eq(11, src.maxzoom);
   eq(TERRAIN.tiles, src.tiles);
-  eq([32, 29, 51, 44], src.bounds, 'bounds = bbox of the config: no requests outside the built area');
+  ok(!('bounds' in src), 'no bounds in the config: the source has none (the AWS tiles cover the world, relief must not stop at bbox)');
   ok(src.attribution.includes('produced using Copernicus WorldDEM-30'), 'attribution');
   const l = ml.rec.layers.find((x) => x.id === 'ahm-relief');
   eq('hillshade', l.type);
@@ -1227,9 +1227,9 @@ function bootRelief(terrain = COLOR_TERRAIN, tile = null) {
     before: (p) => {
       withTerrain(terrain)(p);
       Object.assign(p.ctx, tile ? tileMock(tile) : {}, { setTimeout: (f) => (Promise.resolve().then(f), 1), clearTimeout() {} }); // no 250 ms wait
-      p.el('#relief-color').checked = p.el('#relief-shade').checked = p.el('#relief-adapt').checked = p.el('#relief-smooth').checked = true; // checked in index.html
+      p.el('#relief-color').checked = p.el('#relief-shade').checked = p.el('#relief-adapt').checked = p.el('#relief-smooth').checked = p.el('#relief-blend').checked = true; // checked in index.html
       p.el('#relief-contours').checked = false; // off in index.html
-      ['#relief-color', '#relief-shade', '#relief-adapt', '#relief-smooth', '#relief-ramp', '#relief-opacity', '#relief-strength', '#relief-contours', '#relief-interval', '#relief-stops', '#relief-add', '#relief-reset', '#relief-profile-btn', '#relief-profile-clear'].forEach((sel) => {
+      ['#relief-color', '#relief-shade', '#relief-adapt', '#relief-smooth', '#relief-blend', '#relief-ramp', '#relief-opacity', '#relief-strength', '#relief-contours', '#relief-interval', '#relief-stops', '#relief-add', '#relief-reset', '#relief-profile-btn', '#relief-profile-clear'].forEach((sel) => {
         p.el(sel).addEventListener = (name, fn) => (handlers[sel] = handlers[sel + ':' + name] = fn);
       });
     },
@@ -1337,7 +1337,40 @@ test('map: relief colours: moving the mouse shows the height in metres read from
   eq(1, urls.length, 'the same tile is not fetched twice');
 });
 
+test('map: relief: bounds are passed to the source only when terrain.bounds is set (own tiles)', () => {
+  const { ml, switchBasemap } = boot({ before: withTerrain({ ...TERRAIN, bounds: [37, 37, 49, 42.5] }) });
+  switchBasemap('@relief');
+  eq([37, 37, 49, 42.5], ml.rec.sources['ahm-terrain'].def.bounds, 'terrain.bounds = the built area');
+  const shipped = load(['config.js']).X('AHM_CONFIG.basemap.terrain');
+  ok(!shipped.bounds, 'the shipped config (AWS tiles) sets no bounds');
+});
+
+test('map: relief credit: the terrain attribution is plain visible text while relief is chosen, and gone otherwise', () => {
+  const { p, ml, switchBasemap } = boot({ before: withTerrain(TERRAIN) });
+  eq('', p.el('#base-credit').textContent || '', 'nothing before relief is chosen');
+  ok(p.el('#base-credit').hidden, 'hidden');
+  switchBasemap('@relief');
+  eq(TERRAIN.attribution, p.el('#base-credit').textContent, 'the text of AHM_CONFIG.basemap.terrain.attribution');
+  ok(!p.el('#base-credit').hidden, 'shown');
+  ok(ml.rec.sources['ahm-terrain'].def.attribution, 'the MapLibre source keeps its attribution too');
+  switchBasemap('sat1');
+  ok(p.el('#base-credit').hidden && !p.el('#base-credit').textContent, 'hidden again when relief is off');
+  switchBasemap('');
+  ok(p.el('#base-credit').hidden, 'and on the plain map');
+});
+
+test('map: relief credit: the element sits in the page under the base-map select and wraps on a phone (index.html, map.css)', () => {
+  const fs = require('fs');
+  const html = fs.readFileSync(require('path').join(__dirname, '..', '..', 'app', 'index.html'), 'utf8');
+  ok(/<select id="basemap"><\/select>\s*<div id="base-credit" hidden><\/div>/.test(html), 'under the select, hidden at first');
+  const css = fs.readFileSync(require('path').join(__dirname, '..', '..', 'app', 'css', 'map.css'), 'utf8');
+  ok(/#base-credit\s*\{[^}]*overflow-wrap:\s*anywhere/.test(css), 'long words and URLs wrap');
+  ok(!/#base-credit\s*\{[^}]*(white-space:\s*nowrap|width:\s*\d+px)/.test(css), 'no fixed width, no nowrap');
+});
+
 test('map: relief colours: the shipped config says whether the colours adapt to the view', () => {
+  eq(true, load(['config.js']).X('AHM_CONFIG.basemap.terrain.color.adapt'), 'default: the ramp follows the view');
+  eq(true, load(['config.js']).X('AHM_CONFIG.basemap.terrain.color.blend'), 'default: smooth transitions');
   eq('boolean', typeof load(['config.js']).X('AHM_CONFIG.basemap.terrain.color.adapt'));
   eq('boolean', typeof load(['config.js']).X('AHM_CONFIG.basemap.terrain.color.smooth'));
 });
@@ -1411,6 +1444,47 @@ test('map: settings are saved in localStorage and read again at the start', () =
   eq(0.2, b.p.el('#relief-opacity').value);
   eq(0.9, b.p.el('#relief-strength').value);
   eq(true, b.p.el('#relief-contours').checked);
+});
+
+test('map: relief colours: flat bands: the expression has a hard edge at every boundary, smooth stays as it was', () => {
+  const p = load(['typeicons.js', 'map.js']);
+  const st = [[0, '#00ff00'], [1000, '#ffff00'], [3000, '#ffffff']];
+  eq(['interpolate', ['linear'], ['elevation'], 0, '#00ff00', 1000, '#ffff00', 3000, '#ffffff'], p.X('rampExpression(__0, true)', st), 'smooth = today');
+  const f = p.X('rampExpression(__0, false)', st);
+  eq(['interpolate', ['linear'], ['elevation'], 0, '#00ff00', 999.99, '#00ff00', 1000, '#ffff00', 2999.99, '#ffff00', 3000, '#ffffff'], f);
+  const ins = f.slice(3).filter((_, k) => k % 2 === 0);
+  ok(ins.every((v, k) => !k || v > ins[k - 1]), 'strictly increasing: ' + ins);
+  const g = p.X('rampExpression(__0, false)', [[500, '#111111'], [500, '#222222'], [500.05, '#333333']]); // repeated and nearly equal heights
+  const gi = g.slice(3).filter((_, k) => k % 2 === 0);
+  ok(gi.every((v, k) => !k || v > gi[k - 1]), 'still strictly increasing: ' + gi);
+});
+
+test('map: relief colours: flat bands are applied after "adapt" (edges move with the stretched ramp), checkbox, legend, saving', async () => {
+  const { layer, change, p, ml } = bootRelief({ ...COLOR_TERRAIN, color: { ...COLOR_TERRAIN.color, blend: true } }, [[129, 244, 0], [137, 0, 0]]);
+  await idle();
+  ok(p.el('#relief-blend').checked, 'checked by default (smooth)');
+  eq(9, layer('ahm-relief-color').paint['color-relief-color'].length, 'smooth: 3 stops');
+  change('#relief-blend', { checked: false });
+  const e = layer('ahm-relief-color').paint['color-relief-color'];
+  eq(500, e[3], 'first stop at the lowest height in view (adapt)');
+  eq(2304, e[e.length - 2], 'last stop at the highest height in view');
+  ok(Math.abs(e[5] - (500 + (1000 / 3000) * 1804 - 0.01)) < 0.01, 'the band edge follows the stretched ramp: ' + e[5]);
+  eq(e[4], e[6], 'the same colour right up to the edge');
+  ok(/#00ff00 0\.0%, #00ff00 33\.3%, #ffff00 33\.3%/.test(p.el('#relief-legend').style.background), p.el('#relief-legend').style.background);
+  const saved = [];
+  p.ctx.localStorage = { getItem: () => null, setItem: (k, v) => saved.push(v) };
+  change('#relief-blend', { checked: false });
+  eq(false, JSON.parse(saved.at(-1)).blend, 'saved with the other relief settings');
+  const b = boot({ before: (q) => { withTerrain(COLOR_TERRAIN)(q); q.ctx.localStorage = { getItem: () => JSON.stringify({ blend: false }), setItem() {} }; } });
+  eq(false, b.p.el('#relief-blend').checked, 'restored');
+  const c2 = boot({ before: (q) => { withTerrain({ ...COLOR_TERRAIN, color: { ...COLOR_TERRAIN.color, blend: false } })(q); } });
+  eq(false, c2.p.el('#relief-blend').checked, 'config blend false starts flat');
+});
+
+test('map: relief colours: the saved "adapt" is read as it always was', () => {
+  const mk = (saved) => boot({ before: (q) => { withTerrain(COLOR_TERRAIN)(q); q.ctx.localStorage = { getItem: () => JSON.stringify(saved), setItem() {} }; } });
+  eq(true, mk({}).p.el('#relief-adapt').checked);
+  eq(false, mk({ adapt: false }).p.el('#relief-adapt').checked);
 });
 
 test('map: contours: marching squares gives one closed line around a cone, and nothing for a flat or missing grid', () => {
@@ -1555,7 +1629,7 @@ test('map: relief colours: "Smooth colours" slides the range to the new one in 4
   eq([10, 30], range(), 'the first range is set at once');
 });
 
-// T-055: the area of the map (config `bbox`) is Mesopotamia from the Persian Gulf to the Caucasus, Ankara to Baku. It feeds the search
+// T-060: the area of the map (config `bbox`) is Mesopotamia from the Persian Gulf to the Caucasus, Ankara to Baku. It feeds the search
 // bias (providers.js), the relief source bounds (map.js) and the terrain build tool (tools/terrain reads the same line).
 test('config: bbox is [32, 29, 51, 44] and the place search is biased to exactly that box', async () => {
   const vm = require('vm');
