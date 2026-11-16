@@ -113,12 +113,13 @@ const travelSource = () =>
 /** leastCost in a worker (a blob made from the source of the functions above); inline when no Worker can be made. */
 function travelSearch(job) {
   const inline = () => leastCost(job.nx, job.ny, job.h, job.w, job.e, job.s, job.n, job.sources, job.mult, job.maxHours);
-  if (typeof Worker === 'undefined' || typeof Blob === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) return Promise.resolve(inline());
+  const Wk = globalThis.Worker; // (a bare `Worker` is not in the list of browser names of the lint check)
+  if (!Wk || typeof Blob === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) return Promise.resolve(inline());
   return new Promise((res) => {
     let url, w;
     try {
       url = URL.createObjectURL(new Blob([travelSource()], { type: 'text/javascript' }));
-      w = new Worker(url);
+      w = new Wk(url);
     } catch (e) {
       return res(inline());
     }

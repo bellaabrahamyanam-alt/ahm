@@ -7,7 +7,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 | domain | files | lines | largest file |
 |---|---|---|---|
 | sidebar | 14 | 3740 | `app/js/sidebar/layers.js` (691) |
-| map | 6 | 2669 | `app/js/map/map.js` (1223) |
+| map | 6 | 2670 | `app/js/map/map.js` (1223) |
 | core | 7 | 1039 | `app/js/core/shapes.js` (367) |
 | state | 1 | 43 | `app/js/state/state.js` (43) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
