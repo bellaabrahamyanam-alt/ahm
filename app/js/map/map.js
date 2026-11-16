@@ -66,14 +66,20 @@ const terrainOn = () => {
   return !!(t && t.tiles && t.tiles.length);
 };
 // Relief settings the controls change. `color` exists only when the config has a `terrain.color` section.
-const relief = { color: true, shade: true, ramp: null, custom: null, opacity: 0.65, strength: 0.5, adapt: false, smooth: true, range: null, contours: false, interval: "auto" }; // range = [low, high] metres in view; custom = the stops edited by the user
+const relief = { color: true, shade: true, ramp: null, custom: null, opacity: 0.65, strength: 0.5, adapt: true, smooth: true, blend: true, range: null, contours: false, interval: "auto" }; // range = [low, high] metres in view; custom = the stops edited by the user
 const prof = { on: false, pts: [] }; // the height profile: drawing mode and clicked points [lng, lat]
 const colorOn = () => !!(terrainOn() && AHM_CONFIG.basemap.terrain.color && AHM_CONFIG.basemap.terrain.color.ramps);
 // MapLibre needs strictly rising stops: sort by height, and nudge a repeated height up by 0.1 m.
-function rampExpression(stops) {
+// blend true: the colour slides from one stop to the next (the look so far). blend false: flat bands, [stop i, stop i+1) has the colour of stop i,
+// below the first stop the first colour, above the last the last one. Done with the same `interpolate`: before every boundary the colour of
+// the band below is repeated at boundary - BAND_EDGE, so the slide between the two inputs is only 0.01 m wide (the Terrarium step is 1/256 m = 0.004 m).
+// (A `step` expression would be cleaner, but whether color-relief-color accepts it in MapLibre 5.24.1 could not be checked here.) The ONE place to swap.
+const BAND_EDGE = 0.01;
+function rampExpression(stops, blend = relief.blend) {
   const s = stops.map(([m, c]) => [Number(m), c]).sort((a, b) => a[0] - b[0]);
-  for (let i = 1; i < s.length; i++) if (s[i][0] <= s[i - 1][0]) s[i][0] = s[i - 1][0] + 0.1;
-  return ["interpolate", ["linear"], ["elevation"], ...s.flat()];
+  for (let i = 1; i < s.length; i++) if (s[i][0] <= s[i - 1][0]) s[i][0] = s[i - 1][0] + 0.1; // after this the gaps are >= 0.1 > BAND_EDGE
+  const out = blend ? s : s.flatMap(([m, c], i) => (i ? [[m - BAND_EDGE, s[i - 1][1]], [m, c]] : [[m, c]]));
+  return ["interpolate", ["linear"], ["elevation"], ...out.flat()];
 }
 const baseStops = () => {
   const r = AHM_CONFIG.basemap.terrain.color.ramps;
@@ -519,8 +525,8 @@ function loadSettings() {
 }
 function saveSettings() {
   try {
-    const { ramp, custom, opacity, strength, adapt, smooth, color, shade, contours, interval } = relief;
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 2, ramp, custom, opacity, strength, adapt, smooth, color, shade, contours, interval }));
+    const { ramp, custom, opacity, strength, adapt, smooth, blend, color, shade, contours, interval } = relief;
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ ramp, custom, opacity, strength, adapt, smooth, blend, color, shade, contours, interval }));
   } catch (e) {
     // private mode or no storage: the settings are just not kept
   }
@@ -531,8 +537,15 @@ function drawReliefLegend() {
   const st = rampStops();
   const lo = st[0][0];
   const span = st[st.length - 1][0] - lo || 1;
+  const pc = (m) => (((m - lo) / span) * 100).toFixed(1) + "%";
+  // flat bands: the colour of stop i holds up to stop i+1 (two colour stops at the same place give a hard edge)
   $("#relief-legend").style.background =
-    "linear-gradient(to right, " + st.map(([m, c]) => c + " " + (((m - lo) / span) * 100).toFixed(1) + "%").join(", ") + ")";
+    "linear-gradient(to right, " +
+    (relief.blend
+      ? st.map(([m, c]) => c + " " + pc(m))
+      : st.flatMap(([m, c], i) => [c + " " + pc(m), c + " " + pc(i + 1 < st.length ? st[i + 1][0] : m)])
+    ).join(", ") +
+    ")";
   $("#relief-ticks").innerHTML = st.map(([m]) => "<span>" + Math.round(m) + "</span>").join("");
   $("#relief-ticks").title = "metres above sea level";
 }
@@ -571,7 +584,8 @@ function initReliefControls() {
   const sv = loadSettings();
   relief.ramp = c.ramps[c.ramp] ? c.ramp : Object.keys(c.ramps)[0];
   relief.opacity = c.opacity;
-  relief.adapt = c.adapt === true;
+  relief.adapt = c.adapt !== false;
+  relief.blend = c.blend !== false;
   relief.smooth = c.smooth !== false;
   relief.strength = AHM_CONFIG.basemap.terrain.paint["hillshade-exaggeration"];
   // saved settings of the user win over the config, when they are still valid
@@ -579,8 +593,7 @@ function initReliefControls() {
   if (c.ramps[sv.ramp] || (sv.ramp === "__custom" && relief.custom)) relief.ramp = sv.ramp;
   if (typeof sv.opacity === "number" && sv.opacity >= 0 && sv.opacity <= 1) relief.opacity = sv.opacity;
   if (typeof sv.strength === "number" && sv.strength >= 0 && sv.strength <= 1) relief.strength = sv.strength;
-  ["adapt", "smooth", "color", "shade", "contours"].forEach((k) => {
-    if (k === "adapt" && !(sv.v >= 2)) return; // v1 saves were made when "adapt" defaulted to true: the new default (false) wins once
+  ["adapt", "smooth", "blend", "color", "shade", "contours"].forEach((k) => {
     if (typeof sv[k] === "boolean") relief[k] = sv[k];
   });
   if (sv.interval === "auto" || [10, 20, 50, 100, 200, 500, 1000].includes(Number(sv.interval))) relief.interval = String(sv.interval);
@@ -590,6 +603,7 @@ function initReliefControls() {
   $("#relief-shade").checked = relief.shade;
   $("#relief-adapt").checked = relief.adapt;
   $("#relief-smooth").checked = relief.smooth;
+  $("#relief-blend").checked = relief.blend;
   $("#relief-contours").checked = relief.contours;
   $("#relief-interval").value = relief.interval;
   $("#relief-opacity").value = relief.opacity;
@@ -601,6 +615,7 @@ function initReliefControls() {
     relief.shade = $("#relief-shade").checked;
     relief.adapt = $("#relief-adapt").checked;
     relief.smooth = $("#relief-smooth").checked;
+    relief.blend = $("#relief-blend").checked;
     relief.contours = $("#relief-contours").checked;
     relief.interval = $("#relief-interval").value;
     relief.ramp = $("#relief-ramp").value;
@@ -614,7 +629,7 @@ function initReliefControls() {
     scheduleAdapt();
     saveSettings();
   };
-  ["#relief-color", "#relief-shade", "#relief-adapt", "#relief-smooth", "#relief-ramp", "#relief-contours", "#relief-interval"].forEach((id) =>
+  ["#relief-color", "#relief-shade", "#relief-adapt", "#relief-smooth", "#relief-blend", "#relief-ramp", "#relief-contours", "#relief-interval"].forEach((id) =>
     $(id).addEventListener("change", onChange),
   );
   ["#relief-opacity", "#relief-strength"].forEach((id) => $(id).addEventListener("input", onChange));

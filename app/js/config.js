@@ -111,7 +111,11 @@ const AHM_CONFIG = {
         ramp: "armenia",
         opacity: 0.65, // 0 = no colour, 1 = fully covers the map
         smooth: true, // the colours slide to the new range (about 0.4 s) instead of jumping; false = jump
-        adapt: false, // false = the fixed metres of the ramp (the same colours at every zoom); true = stretch the ramp over the heights in view, so the colours change as you zoom and move
+        adapt: true, // stretch the ramp over the heights in view, so the colours change as you zoom and move; false = the fixed metres of the ramp
+        // true = the colour slides from one stop to the next (a gradient). false = flat bands with a sharp edge: from stop i up to the next stop the colour is
+        // the one of stop i (500-1000 m with a green stop at 500 is the same green all over); below the first stop the first colour, above the last the last.
+        // Not the same as `smooth`, which only animates the slide to a new range.
+        blend: true,
         ramps: {
           armenia: {
             label: "Armenia (350-4100 m)",
