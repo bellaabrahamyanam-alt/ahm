@@ -123,6 +123,7 @@ function shPush() {
           dash: t.dash,
           label: s.label,
           arrows: isRoute(s) && !s.twoway,
+          river: isRiver(s), // the map widens rivers with "River size" (T-055)
           halo: lyState.editing ? lyHalo(s.id) : '', // while members are chosen, the members of the layer get a ring
           size: bboxArea(shBox(s)),
         };

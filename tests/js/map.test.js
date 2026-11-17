@@ -76,6 +76,8 @@ function makeMapLibre() {
       rec.layers.push({ ...def });
     },
     getLayer: any,
+    hasImage: () => false,
+    addImage() {},
     removeLayer(id) {
       rec.layers = rec.layers.filter((l) => l.id !== id);
     },
@@ -1706,10 +1708,10 @@ test('map: river size: above 1x one line layer on the waterway layer of the base
   eq('openmaptiles', l.source);
   eq('waterway', l['source-layer']);
   eq('base-label', ml.rec.before['ahm-waterway-boost'], 'below the labels');
-  eq(3, l.paint['line-width'][5], 'width at zoom 10 is 1.5 x 2');
+  eq(3, l.paint['line-width'][6], 'width at zoom 10 is 1.5 x 2');
   slide(4);
   eq(1, ml.rec.layers.filter((x) => x.id === 'ahm-waterway-boost').length, 'still one layer');
-  eq(6, boost().paint['line-width'][5], 'the width follows the slider');
+  eq(6, boost().paint['line-width'][6], 'the width follows the slider');
   slide(1);
   ok(!boost(), 'gone at 1x');
   slide(0.5);
@@ -1734,11 +1736,14 @@ test('map: river size: a satellite base map hides the boost layer', () => {
 });
 
 test('map: river size: river shapes are drawn with width x factor, others unchanged (shapes.js with the stand-in map)', () => {
-  const p = load(['typeicons.js', 'map.js', 'shapes.js']);
+  const p = load(['typeicons.js', 'map.js', 'map/shapes.js']);
   const ml = makeMapLibre();
   Object.assign(p.ctx, { maplibregl: ml.maplibregl, AHM_CONFIG: CONFIG, esc: String, registerTypeIcons() {}, overlaysInit() {}, syncOverlays() {}, console: { log() {}, warn() {}, error() {} } });
-  p.X('initMap()');
-  ml.fire('load');
+  const m = new ml.maplibregl.Map(); // the stand-in map; only shapesInit runs here
+  m.getCanvas = () => ({ style: {}, addEventListener() {} });
+  ml.rec.loaded = true;
+  p.X('map = __0', m);
+  p.X('shapesInit()');
   const line = () => ml.rec.layers.find((l) => l.id === 'ahm-shape-line-solid').paint['line-width'];
   const factor = (e) => JSON.stringify(e).match(/"case",\["==",\["get","river"\],true\],([0-9.]+),1/);
   eq('1', factor(line())[1], 'starts at 1');
