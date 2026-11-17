@@ -93,3 +93,6 @@ None. `search.js` and the sidebar code are out of scope.
 
 - **What:** `sources`, `loadSources`, `sourceById`, `evidenceAllows` in `core/data.js`; `run()` and `shapesRun()` take `certainty` and `sources` (Sets, empty = all); `config.js` has `sources` and `sourceSave`. An object with no certainty or no source never matches a chosen one.
 - **Verify:** `node tests/js/run.js evidence --no-browser`.
+## 2026-11-17 — T-057: select rivers
+- **What:** `riversTouching(rivers, area, mode)` and `areasByName(list, q)` in `core/shapes.js`: rivers that touch/cross (or lie inside) a box or a Polygon/MultiPolygon, bounding boxes first; area shapes by any name.
+- **Why:** T-057. **Files:** see `changes/map.md` (same item). **Verify:** `node tests/js/run.js river --no-browser`. **Follow-ups:** T-064, T-065.

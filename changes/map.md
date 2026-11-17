@@ -129,6 +129,18 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **What:** the symbols (`ahm-places`) and the labels (`ahm-labels`) are drawn at opacity 0.35 and 0.45 when the feature property `faded` is `true` (I-2 [1.10]). Shapes need no change: the sidebar lowers their `opacity`.
 - **Files:** `app/js/map/map.js`, `tests/js/map.test.js`. **Verify:** `node tests/js/run.js faded --no-browser`. Not seen on a real map.
 
+## 2026-11-17 — T-057: rectangle tool and river highlight
+- **What:** `AHM.map.selectBox(on)` (drag a box instead of moving the map; mouse up emits `box:select { bbox: [w, s, e, n] }`, Escape emits `box:cancel`; the map ignores the click after the drag) and `AHM.map.highlightRivers(ids)` (layer `ahm-river-sel`, a glow under the river lines; kept when asked before the map is ready). Box drawn by `ahm-box`, `ahm-box-fill`, `ahm-box-line`.
+- **Why:** T-057 (owner, in the chat). **Contract:** I-2 1.11 (Approved line in `TODO.md`), `tests/js/contract.test.js`.
+- **Files:** `app/js/map/shapes.js`, `app/js/map/map.js` (clicks), `interfaces/I-2-sidebar-map.md`, `tests/js/map.test.js`, `tests/js/contract.test.js`.
+- **Verify:** `node tests/js/run.js select --no-browser`. Not seen on the real map: drag by mouse, the glow look. Touch is not handled.
+- **Follow-ups:** T-064, T-065.
+
+## 2026-11-17 — T-057: base-map rivers in the selection
+- **What:** `AHM.map.baseRivers()` (named river/canal/stream pieces of the loaded `waterway` tiles, merged by name, ids `b:<name>`); `highlightRivers` accepts `b:` ids (layer `ahm-base-river-sel`, filter by `name`). The sidebar adds them to every rectangle or area selection, lists them with "map", zooms to them.
+- **Why:** owner, in the chat: the selection must also take rivers not added by hand. **Contract:** I-2 1.12 (Approved line in `TODO.md`).
+- **Limits:** only tiles loaded in the view, so a large area needs a zoomed-out view and the geometry may be simplified; rivers with no `name` and ditches are skipped; same-named rivers merge; a base river cannot be hidden by "Show only these" or opened.
+
 ## 2026-11-17 — T-056: 3D view (tilt, rotation, 3D terrain)
 
 - **What:** More > Maps & base map has a "3D view" block: tilt slider (0 to 85), rotation slider (0 to 359), buttons Flat, Tilt 60, North up, and (when `basemap.terrain.tiles` is set) a "3D terrain" checkbox with a height slider (0.5x to 4x, default 1x). The map is created with `maxPitch: 85`. Sliders call `setPitch`/`setBearing`; the `pitch` and `rotate` events move the sliders back (bearing shown as 0 to 359). 3D = `map.setTerrain({ source: "ahm-terrain", exaggeration })`, cleared with `setTerrain(null)`. The raster-dem source is now added by `ensureTerrainSource()`, shared with the hillshade and colours, so 3D works with the shading off and nothing is added twice. Saved in `localStorage` key `ahm-view3d` (`pitch`, `bearing`, `terrain`, `exag`); bad values are ignored. No saved data and no contract change.

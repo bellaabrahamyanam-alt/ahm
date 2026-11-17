@@ -32,7 +32,9 @@ function fakeEl(sel) {
     style: {},
     children: [],
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
-    addEventListener() {},
+    addEventListener(ev, fn) {
+      ((e._on ||= {})[ev] ||= []).push(fn); // kept so that a test can call the handlers a script registered at load
+    },
     removeEventListener() {},
     setAttribute() {},
     getAttribute: () => null,

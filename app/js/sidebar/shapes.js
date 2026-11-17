@@ -14,6 +14,10 @@ const sh = {
   adding: false, // the add panel is open
   geo: [], // results of the OpenStreetMap search
   geoQ: '',
+  rsel: new Set(), // the selected rivers (T-057), by id; this session only
+  rbase: new Map(), // the selected rivers of the base map: "b:<name>" -> { id, name, geometry }
+  rOnly: false, // "Show only these": the map draws only the selected rivers
+  boxOn: false, // the rectangle tool of the map is on
   river: { on: false, seen: false, q: '', lines: [], clicks: [], res: [] }, // rivers: the river lines found by name (only used for drawing and looking, never saved) and the clicks they were used for
 };
 const shCan = () => AHM_CONFIG.canEdit;
@@ -67,7 +71,9 @@ function shSetMode(m) {
   if (m === sh.mode) return;
   if (sh.draw) shCancelDraw(); // a drawing belongs to its tab: leaving the tab cancels it
   sh.modes[sh.mode].q = $('#shQ').value;
+  if (sh.boxOn) AHM.map.selectBox(false), (sh.boxOn = false), rvBoxBtn(); // the rectangle belongs to the Rivers tab
   sh.mode = m;
+  $('#rvSel').hidden = m !== 'rivers';
   sh.open = null;
   sh.adding = false;
   if (m === 'rivers' && !sh.river.seen) (sh.river.on = true), (sh.river.seen = true); // the first time, the Rivers tab follows a river by default; after that the choice is kept
@@ -104,7 +110,7 @@ function shRefresh() {
 function shPush() {
   const l = $('#lang').value,
     out = [];
-  [...shVisibleOf('borders'), ...shVisibleOf('rivers')].filter((s) => !sh.hidden.has(s.id)).concat(rtVisible().filter((s) => !rts.hidden.has(s.id))) // borders, rivers and routes (routes.js)
+  [...shVisibleOf('borders'), ...shVisibleOf('rivers').filter((s) => !(sh.rOnly && sh.rsel.size) || sh.rsel.has(s.id))].filter((s) => !sh.hidden.has(s.id)).concat(rtVisible().filter((s) => !rts.hidden.has(s.id))) // borders, rivers and routes (routes.js)
     .filter((s) => !(sh.draw && sh.draw.id === s.id) && !(rts.draw && rts.draw.id === s.id)) // the shape whose outline is being redrawn is drawn by the tool
     .sort((a, b) => bboxArea(shBox(b)) - bboxArea(shBox(a))) // big first: small shapes end on top
     .forEach((s) => {
@@ -390,8 +396,9 @@ function shOpenForm(f) {
     `<div class="label">Type</div><div class="chips sh-typepick">${shTypeChips(f.type || shTypeList()[0] || 'territory')}</div>` +
     `<div class="sn">The type sets the line pattern and the first colour. You can change the colour afterwards.</div>` +
     `<div class="label">Dates (optional)</div><div class="sn">Leave “Unknown” for a modern border or when you do not know. Borders with dates follow the period filter.</div>` +
-    `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}${f.prevId && !shapeById(f.prevId).date_to ? '<label class="sh-check"><input type="checkbox" id="shClosePrev" checked> End the previous version the day before</label>' : ''}</div>` +
-    evidenceFormHTML(f, false) + // certainty and sources (T-046)
+    `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}${f.prevId && !shapeById(f.prevId).date_to ? '<label class="sh-check"><input type="checkbox" id="shClosePrev" checked> End the previous version the day before</label>' : ''}` +
+    evidenceFormHTML(f, false) + // certainty and sources (T-046), inside #shForm so that shReadForm finds it
+    '</div>' +
     `<div class="err-line" id="shErr"></div></div><div class="dock-foot"><button type="button" class="primary" data-shact="save">Save</button><button type="button" data-shact="cancel">Cancel</button></div>`;
   shShow(true);
   tab(sh.mode === 'rivers' ? 'rivers' : 'shapes');
@@ -735,3 +742,86 @@ function shSet(list) {
   shapes = list;
   shRenderAdd();
 }
+
+// ---- select rivers (T-057): by a rectangle on the map or by the name of an area; the selection can be zoomed to, kept alone on the map ----
+const rvBoxBtn = () => ($('#rvBox').textContent = sh.boxOn ? 'Drag on the map (Esc cancels)' : 'Select by rectangle');
+const rvIsBase = (id) => id.startsWith('b:');
+/** The ids of every river that touches `area` (a box or a geometry): the ones you added, then the rivers of the base map that are loaded in the view. */
+function rvFound(area) {
+  const mode = $('#rvInside').checked ? 'inside' : 'cross',
+    base = AHM.map.baseRivers(),
+    own = riversTouching(shapes.filter(isRiver), area, mode),
+    ids = riversTouching(base, area, mode);
+  ids.forEach((id) => sh.rbase.set(id, base.find((b) => b.id === id)));
+  return { ids: [...own, ...ids], base: ids.length };
+}
+function rvSync() {
+  [...sh.rsel].forEach((id) => (rvIsBase(id) ? sh.rbase.has(id) : shapeById(id)) || sh.rsel.delete(id)); // a river that was deleted leaves the selection
+  if (!sh.rsel.size) sh.rOnly = false;
+  const l = $('#lang').value,
+    nameOf = (id) => (rvIsBase(id) ? sh.rbase.get(id).name : shapeName(shapeById(id), l));
+  $('#rvCount').textContent = sh.rsel.size + ' selected';
+  $('#rvOnly').textContent = sh.rOnly ? 'Show all rivers' : 'Show only these';
+  $('#rvSelList').innerHTML = [...sh.rsel]
+    .sort((a, b) => nameOf(a).localeCompare(nameOf(b)))
+    .map((id) => `<li data-sid="${esc(id)}"><b>${esc(nameOf(id))}</b>${rvIsBase(id) ? ' <span class="sn">map</span>' : ''} <button type="button" class="icon-btn" data-rvdel="${esc(id)}" title="Remove from the selection" aria-label="Remove from the selection">×</button></li>`)
+    .join('');
+  AHM.map.highlightRivers([...sh.rsel].sort((a, b) => rvIsBase(a) - rvIsBase(b))); // your rivers first
+  shPush();
+}
+/** Adds the rivers found; says how many were new. */
+function rvAdd(found, what) {
+  const n = sh.rsel.size;
+  found.ids.forEach((id) => sh.rsel.add(id));
+  $('#rvMsg').textContent = `${sh.rsel.size - n} new of ${found.ids.length} rivers found${what ? ' for ' + what : ''}.${found.base ? ' Base-map rivers: only those with a name that are loaded in the view; zoom to the area first.' : ''}`;
+  rvSync();
+}
+$('#rvBox').addEventListener('click', () => {
+  sh.boxOn = !sh.boxOn;
+  AHM.map.selectBox(sh.boxOn);
+  rvBoxBtn();
+});
+AHM.on('box:select', ({ bbox }) => {
+  sh.boxOn = false;
+  rvBoxBtn();
+  rvAdd(rvFound(bbox));
+});
+AHM.on('box:cancel', () => {
+  sh.boxOn = false;
+  rvBoxBtn();
+});
+$('#rvArea').addEventListener('input', (e) => {
+  const l = $('#lang').value;
+  $('#rvAreaRes').innerHTML = areasByName(shapes, e.target.value)
+    .slice(0, 8)
+    .map((a) => `<button type="button" data-area="${a.id}">${esc(shapeName(a, l))} <span class="sn">${esc(shapeType(a.type).label)}</span></button>`)
+    .join('');
+});
+$('#rvAreaRes').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-area]'),
+    a = b && shapeById(b.dataset.area);
+  if (!a) return;
+  rvAdd(rvFound(a.geometry), shapeName(a, $('#lang').value));
+  $('#rvArea').value = '';
+  $('#rvAreaRes').innerHTML = '';
+});
+$('#rvSelList').addEventListener('click', (e) => {
+  const x = e.target.closest('[data-rvdel]'),
+    li = e.target.closest('li[data-sid]');
+  if (x) (sh.rsel.delete(x.dataset.rvdel), rvSync());
+  else if (li && !rvIsBase(li.dataset.sid)) shOpen(li.dataset.sid, true);
+});
+$('#rvClear').addEventListener('click', () => {
+  sh.rsel.clear();
+  sh.rbase.clear();
+  $('#rvMsg').textContent = '';
+  rvSync();
+});
+$('#rvOnly').addEventListener('click', () => {
+  sh.rOnly = !sh.rOnly;
+  rvSync();
+});
+$('#rvZoom').addEventListener('click', () => {
+  const pts = [...sh.rsel].flatMap((id) => bboxCorners(rvIsBase(id) ? geomBBox(sh.rbase.get(id).geometry) : shBox(shapeById(id))));
+  if (pts.length) AHM.map.fitTo(pts);
+});

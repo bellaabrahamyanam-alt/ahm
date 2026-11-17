@@ -1,7 +1,8 @@
 // Shapes on the map (map domain): borders (areas) and lines, drawn exactly as the sidebar describes them. The map knows nothing about
 // border types: every feature arrives with its look (colour, opacity, width, dash) already resolved. Also the drawing tool.
 // Commands (AHM.map.*, INTERFACES.md I-2): setShapes(fc), highlightShape(id|null), previewShape(id, {color, opacity}|null),
-//   showPreview(geometry|null) (a blue draft outline), drawShape({ kind: 'area'|'line', coords?, ids?, snap? }, onChange), isDrawing(), riverNameAt([lon, lat]).
+//   showPreview(geometry|null) (a blue draft outline), drawShape({ kind: 'area'|'line', coords?, ids?, snap? }, onChange), isDrawing(), riverNameAt([lon, lat]),
+//   highlightRivers(ids) (a glow under the selected rivers), selectBox(on) (the rectangle tool; events box:select { bbox }, box:cancel).
 // Events: shape:click { id } (a click on a line or an outline, 6 px tolerance), map:click now carries shapes: [{ id }] (areas under the
 //   cursor), draw:finish (Enter or double click while drawing), draw:cancel (Esc).
 // Feature properties: kind ('area' | 'line' | 'label'), id, name, type (text), dates (text), color, ink (label colour), opacity, width,
@@ -13,6 +14,9 @@ const SHAPE_FILL = 'ahm-shape-fill';
 const SHAPE_LINES = Object.keys(SHAPE_DASH).map((d) => 'ahm-shape-line-' + d);
 const DRAFT = '#bc2a4d'; // the colour of the shape being drawn
 const PREVIEW = '#1d6fd1'; // the colour of a search result shown before it is added
+let riverSelIds = [], // ids of the selected river shapes (T-057), drawn as a glow under their lines
+  riverSelNames = [], // names of the selected rivers of the base map
+  boxTool = null; // the rectangle tool: { from: lngLat | null } while it is on
 let riverK = 1; // "River size" (T-055): the width of every river feature (property river: true) is multiplied by it; a view setting, not saved in the data
 const widthOf = () => ['*', ['get', 'width'], ['case', ['==', ['get', 'river'], true], riverK, 1]];
 let labelFont = ['Noto Sans Regular']; // map.js sets the font of the base map
@@ -60,6 +64,14 @@ function shapesInit() {
     layout: { 'line-join': 'round' },
     paint: { 'line-color': '#ffffff', 'line-width': ['+', widthOf(), 5], 'line-opacity': ['case', flag('selected'), 0.95, 0] },
   });
+  add({
+    // the selected rivers (T-057): a soft glow under the river lines
+    id: 'ahm-river-sel',
+    type: 'line',
+    filter: ['in', ['get', 'id'], ['literal', riverSelIds]],
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: { 'line-color': '#f5a300', 'line-width': ['+', widthOf(), 6], 'line-opacity': 0.6 },
+  });
   Object.entries(SHAPE_DASH).forEach(([d, dash]) =>
     add({
       id: 'ahm-shape-line-' + d,
@@ -74,6 +86,22 @@ function shapesInit() {
       },
     })
   );
+  applyRiverSel(); // a selection asked for before the layers existed
+  // the rectangle of the "select by rectangle" tool (T-057)
+  map.addSource('ahm-box', { type: 'geojson', data: EMPTY });
+  add({ id: 'ahm-box-fill', type: 'fill', paint: { 'fill-color': '#f5a300', 'fill-opacity': 0.12 } }, 'ahm-box');
+  add({ id: 'ahm-box-line', type: 'line', paint: { 'line-color': '#c77f00', 'line-width': 2, 'line-dasharray': [2, 1] } }, 'ahm-box');
+  map.on('mousedown', (e) => {
+    if (boxTool && !boxTool.done) boxTool.from = e.lngLat;
+  });
+  map.on('mousemove', (e) => boxTool && boxTool.from && !boxTool.done && drawBox(boxOf(boxTool.from, e.lngLat)));
+  map.on('mouseup', (e) => {
+    if (!boxTool || !boxTool.from || boxTool.done) return;
+    const b = boxOf(boxTool.from, e.lngLat);
+    endBox(false);
+    AHM.emit('box:select', { bbox: b });
+  });
+  document.addEventListener('keydown', (e) => e.key === 'Escape' && boxTool && !boxTool.done && endBox(true));
   // the path found between two places (sidebar/routes.js): a bold line over the routes, with a white casing
   map.addSource('ahm-found', { type: 'geojson', data: foundNow || EMPTY });
   add({ id: 'ahm-found-casing', type: 'line', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 9, 'line-opacity': 0.9 } }, 'ahm-found');
@@ -401,11 +429,59 @@ function drawShape(opts, onChange) {
 }
 const endDraw = () => shapeDrawing && shapeDrawing.remove();
 
+// ---- the selected rivers (T-057) ----
+const BASE_RIVER_CLASSES = ['river', 'canal', 'stream']; // the classes of the "waterway" layer of the base map that count as rivers
+const waterwaySource = () => {
+  const l = map.getStyle().layers.find((x) => x['source-layer'] === 'waterway' && x.source);
+  return l && l.source;
+};
+function applyRiverSel() {
+  if (!mapReady || !map.getLayer('ahm-river-sel')) return; // shapesInit calls this again
+  map.setFilter('ahm-river-sel', ['in', ['get', 'id'], ['literal', riverSelIds]]);
+  const has = !!map.getLayer('ahm-base-river-sel'),
+    filter = ['in', ['get', 'name'], ['literal', riverSelNames]];
+  if (!riverSelNames.length) return has && map.removeLayer('ahm-base-river-sel');
+  if (has) return map.setFilter('ahm-base-river-sel', filter);
+  const src = waterwaySource();
+  if (!src) return;
+  const before = map.getStyle().layers.find((l) => l.type === 'symbol' && !l.id.startsWith('ahm-'));
+  map.addLayer(
+    {
+      id: 'ahm-base-river-sel',
+      type: 'line',
+      source: src,
+      'source-layer': 'waterway',
+      filter,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#f5a300', 'line-width': ['interpolate', ['linear'], ['zoom'], 6, 2, 10, 4, 14, 8], 'line-opacity': 0.7 },
+    },
+    before && before.id,
+  );
+}
+
+// ---- the rectangle tool (T-057): drag a box on the map; the sidebar gets it as [west, south, east, north] ----
+const boxOf = (a, b) => [Math.min(a.lng, b.lng), Math.min(a.lat, b.lat), Math.max(a.lng, b.lng), Math.max(a.lat, b.lat)];
+function drawBox(b) {
+  const src = map.getSource('ahm-box');
+  if (src) src.setData(b ? { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]], [b[0], b[1]]]] } } : EMPTY);
+}
+/** Ends the tool. The tool object stays until the click that follows the mouse up has passed (the map ignores clicks while `boxTool` is set). */
+function endBox(cancel) {
+  const t = boxTool;
+  if (!t || t.done) return;
+  t.done = true;
+  drawBox(null);
+  map.dragPan.enable();
+  map.getCanvas().style.cursor = '';
+  setTimeout(() => boxTool === t && (boxTool = null), 0);
+  if (cancel) AHM.emit('box:cancel');
+}
+
 /** River size (T-055): sets the factor of the widths of river features; the layers keep their other widths. Called by map.js (slider). */
 function setRiverSize(k) {
   riverK = k;
   if (!map) return;
-  const w = { 'ahm-shape-halo': 8, 'ahm-shape-shadow': 9, 'ahm-shape-casing': 5 };
+  const w = { 'ahm-shape-halo': 8, 'ahm-shape-shadow': 9, 'ahm-shape-casing': 5, 'ahm-river-sel': 6 };
   Object.entries(w).forEach(([id, add]) => map.getLayer(id) && map.setPaintProperty(id, 'line-width', ['+', widthOf(), add]));
   SHAPE_LINES.forEach((id) => map.getLayer(id) && map.setPaintProperty(id, 'line-width', ['+', widthOf(), ['case', ['boolean', ['feature-state', 'hover'], false], 1, 0]]));
 }
@@ -415,6 +491,37 @@ Object.assign(AHM.map, {
     shapesNow = fc;
     const s = mapReady && map.getSource('ahm-shapes');
     if (s) s.setData(fc);
+  },
+  /** The rivers drawn as selected: shape ids, and "b:<name>" for the rivers of that name in the base map. */
+  highlightRivers(ids) {
+    riverSelIds = ids.filter((i) => !i.startsWith('b:'));
+    riverSelNames = ids.filter((i) => i.startsWith('b:')).map((i) => i.slice(2));
+    applyRiverSel();
+  },
+  /** The named rivers, canals and streams of the base map in the tiles that are loaded now (the view), the pieces of one river together: [{ id: 'b:<name>', name, geometry: MultiLineString }]. */
+  baseRivers() {
+    const src = waterwaySource(),
+      by = new Map();
+    if (!src) return [];
+    for (const f of map.querySourceFeatures(src, { sourceLayer: 'waterway' })) {
+      const n = f.properties && f.properties.name;
+      if (!n || !BASE_RIVER_CLASSES.includes(f.properties.class)) continue;
+      const g = f.geometry,
+        lines = g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : [];
+      by.set(n, (by.get(n) || []).concat(lines));
+    }
+    return [...by].map(([name, coordinates]) => ({ id: 'b:' + name, name, geometry: { type: 'MultiLineString', coordinates } }));
+  },
+  /** true: the next drag on the map draws a box (event box:select, Escape = box:cancel); false: stops the tool without an event. */
+  selectBox(on) {
+    if (!on) {
+      if (boxTool) endBox(false);
+      return;
+    }
+    if (boxTool && !boxTool.done) return;
+    boxTool = { from: null, done: false };
+    map.dragPan.disable();
+    map.getCanvas().style.cursor = 'crosshair';
   },
   highlightShape(id) {
     if (!mapReady || !map.getSource('ahm-shapes')) {

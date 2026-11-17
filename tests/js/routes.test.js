@@ -163,3 +163,60 @@ test('river types: a river type is a line that is not a route and not a border; 
   assert.strictEqual(run("shapeGroup({ type: 'road' })"), 'route');
   assert.strictEqual(run("shapeGroup({ type: 'country' })"), 'border');
 });
+
+// ---- T-057: selecting rivers by a rectangle or by an area (core/shapes.js: riversTouching, areasByName) ----
+const riverRun = () => {
+  const ctx = vm.createContext({ console, norm: (x) => String(x).toLowerCase() });
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../../app/js/core/shapes.js'), 'utf8'), ctx, { filename: 'shapes.js' });
+  return (code, vars = {}) => (Object.assign(ctx, vars), vm.runInContext(code, ctx));
+};
+const line = (id, ...pts) => ({ id, geometry: { type: 'LineString', coordinates: pts } });
+const SQUARE = [0, 0, 10, 10];
+const RIVERS = [
+  line('cross', [-5, 5], [15, 5]), // goes through the box with no vertex in it
+  line('inside', [2, 2], [8, 8]),
+  line('outside', [20, 20], [30, 30]),
+  line('corner', [10, 10], [15, 15]), // touches the corner only
+  line('near', [-5, 12], [5, 12]), // its bounding box overlaps nothing of the box, lies above it
+  line('half', [5, 5], [15, 5]), // one vertex inside, one outside
+];
+
+test('riversTouching: a box in mode cross takes every river that touches or crosses it, in the order of the list', () => {
+  const run = riverRun();
+  assert.deepEqual(run('riversTouching(R, B, "cross")', { R: RIVERS, B: SQUARE }), ['cross', 'inside', 'corner', 'half']);
+  assert.deepEqual(run('riversTouching(R, B)', { R: RIVERS, B: SQUARE }), ['cross', 'inside', 'corner', 'half'], 'cross is the default');
+});
+
+test('riversTouching: mode inside takes only the rivers whose every vertex is inside', () => {
+  assert.deepEqual(riverRun()('riversTouching(R, B, "inside")', { R: RIVERS, B: SQUARE }), ['inside']);
+});
+
+test('riversTouching: a polygon with a hole: a river only in the hole is not touched; a river over the hole edge is', () => {
+  const run = riverRun();
+  const donut = { type: 'Polygon', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]], [[3, 3], [7, 3], [7, 7], [3, 7], [3, 3]]] };
+  const R = [line('hole', [4, 4], [6, 6]), line('edge', [4, 4], [8, 8]), line('ring', [1, 1], [2, 2])];
+  assert.deepEqual(run('riversTouching(R, G, "cross")', { R, G: donut }), ['edge', 'ring']);
+  assert.deepEqual(run('riversTouching(R, G, "inside")', { R, G: donut }), ['ring']);
+});
+
+test('riversTouching: MultiPolygon areas, MultiLineString rivers, a triangle, and shapes without a line are skipped', () => {
+  const run = riverRun();
+  const multi = { type: 'MultiPolygon', coordinates: [[[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]], [[[10, 10], [12, 10], [12, 12], [10, 12], [10, 10]]]] };
+  const R = [{ id: 'two', geometry: { type: 'MultiLineString', coordinates: [[[50, 50], [51, 51]], [[11, 11], [11.5, 11.5]]] } }, line('none', [5, 5], [6, 6]), { id: 'area', geometry: multi }];
+  assert.deepEqual(run('riversTouching(R, G, "cross")', { R, G: multi }), ['two']);
+  const tri = { type: 'Polygon', coordinates: [[[0, 0], [10, 0], [0, 10], [0, 0]]] };
+  assert.deepEqual(run('riversTouching(R, G)', { R: [line('a', [1, 1], [2, 2]), line('b', [8, 8], [9, 9])], G: tri }), ['a']);
+});
+
+test('areasByName: finds area shapes by any of their names, not lines; empty text finds nothing', () => {
+  const run = riverRun();
+  const poly = { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] };
+  const L = [
+    { id: 'a', names: [{ lang: 'en', name: 'Lori' }, { lang: 'ru', name: 'Лори' }], geometry: poly },
+    { id: 'b', names: [{ lang: 'en', name: 'Lori road' }], geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] } },
+    { id: 'c', names: [{ lang: 'en', name: 'Syunik' }, { lang: 'en', name: 'Siunik (old)' }], geometry: poly },
+  ];
+  assert.deepEqual(run('areasByName(L, "lor").map((s) => s.id)', { L }), ['a']);
+  assert.deepEqual(run('areasByName(L, "siun").map((s) => s.id)', { L }), ['c'], 'an old name');
+  assert.deepEqual(run('areasByName(L, "").length', { L }), 0);
+});
