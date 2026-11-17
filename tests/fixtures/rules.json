@@ -1828,7 +1828,7 @@
      ]
     }
    },
-   "expect": "unknown border type"
+   "expect": "unknown border type “settlement”"
   },
   {
    "name": "shape: an unknown type",
@@ -2125,6 +2125,300 @@
     "width": "wide"
    },
    "expect": "width must be between"
+  },
+  {
+   "name": "shape series: a first version of a series saves",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "fiefdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": {
+     "fmt": "y",
+     "ts": "0100-01-01T00:00:00Z",
+     "mode": "exact",
+     "ts_to": null
+    },
+    "date_to": {
+     "fmt": "y",
+     "ts": "0199-01-01T00:00:00Z",
+     "mode": "exact",
+     "ts_to": null
+    },
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    },
+    "series": "5e1f0000-0000-4000-8000-000000000041"
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "shape series: a second version that starts where the first ends saves",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "fiefdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": {
+     "fmt": "y",
+     "ts": "0200-01-01T00:00:00Z",
+     "mode": "exact",
+     "ts_to": null
+    },
+    "date_to": {
+     "fmt": "y",
+     "ts": "0299-01-01T00:00:00Z",
+     "mode": "exact",
+     "ts_to": null
+    },
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    },
+    "series": "5e1f0000-0000-4000-8000-000000000041"
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "shape series: a version that overlaps another version of the series is refused",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "fiefdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": {
+     "fmt": "y",
+     "ts": "0150-01-01T00:00:00Z",
+     "mode": "exact",
+     "ts_to": null
+    },
+    "date_to": {
+     "fmt": "y",
+     "ts": "0250-01-01T00:00:00Z",
+     "mode": "exact",
+     "ts_to": null
+    },
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    },
+    "series": "5e1f0000-0000-4000-8000-000000000041"
+   },
+   "expect": "versions of one series overlap"
+  },
+  {
+   "name": "shape series: a version with an unknown date is not compared, it saves",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "fiefdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    },
+    "series": "5e1f0000-0000-4000-8000-000000000041"
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "shape series: a line in a series of areas is refused",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "pilgrim-path",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": {
+     "fmt": "y",
+     "ts": "0300-01-01T00:00:00Z",
+     "mode": "exact",
+     "ts_to": null
+    },
+    "date_to": {
+     "fmt": "y",
+     "ts": "0399-01-01T00:00:00Z",
+     "mode": "exact",
+     "ts_to": null
+    },
+    "geometry": {
+     "type": "LineString",
+     "coordinates": [
+      [
+       44.0,
+       40.0
+      ],
+      [
+       44.5,
+       40.5
+      ]
+     ]
+    },
+    "series": "5e1f0000-0000-4000-8000-000000000041"
+   },
+   "expect": "same kind"
+  },
+  {
+   "name": "shape series: a series that is not a UUID is refused",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "S"
+     }
+    ],
+    "type": "fiefdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    },
+    "series": "abc"
+   },
+   "expect": "UUID"
   }
  ]
 }

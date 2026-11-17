@@ -141,3 +141,18 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Why:** owner, in the chat: the selection must also take rivers not added by hand. **Contract:** I-2 1.12 (Approved line in `TODO.md`).
 - **Limits:** only tiles loaded in the view, so a large area needs a zoomed-out view and the geometry may be simplified; rivers with no `name` and ditches are skipped; same-named rivers merge; a base river cannot be hidden by "Show only these" or opened.
 
+## 2026-11-17 — T-056: 3D view (tilt, rotation, 3D terrain)
+
+- **What:** More > Maps & base map has a "3D view" block: tilt slider (0 to 85), rotation slider (0 to 359), buttons Flat, Tilt 60, North up, and (when `basemap.terrain.tiles` is set) a "3D terrain" checkbox with a height slider (0.5x to 4x, default 1x). The map is created with `maxPitch: 85`. Sliders call `setPitch`/`setBearing`; the `pitch` and `rotate` events move the sliders back (bearing shown as 0 to 359). 3D = `map.setTerrain({ source: "ahm-terrain", exaggeration })`, cleared with `setTerrain(null)`. The raster-dem source is now added by `ensureTerrainSource()`, shared with the hillshade and colours, so 3D works with the shading off and nothing is added twice. Saved in `localStorage` key `ahm-view3d` (`pitch`, `bearing`, `terrain`, `exag`); bad values are ignored. No saved data and no contract change.
+- **Why:** to see mountains and valleys from the side.
+- **Files:** `app/js/map/map.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (stand-in now has `setPitch`, `setBearing`, `getPitch`, `getBearing`, `setTerrain`, constructor options, and refuses a second source of the same id like MapLibre), `tests/js/browser.test.js` (stub answers `getPitch`/`getBearing`), `graph/`, `context/`, `docs/02`, `docs/08`, `docs/14`, `TODO.md`.
+- **How to verify:** `node tests/js/run.js map --no-browser`. By eye (NOT done: no real map here): tilt and rotate with the sliders and with right-button or Ctrl drag; 3D terrain on and off; the HTML place markers stay at the right spot when tilted.
+- **Follow-ups:** none new.
+
+## 2026-11-17 — T-055: River size slider
+- **What:** slider "River size" (0.5x to 4x, step 0.1, default 1x) in More > Maps & base map > Rivers. River features (`river: true`, sent by `sidebar/shapes.js`) are drawn with width x factor in every width layer (halo, shadow, casing, line); other shapes unchanged. Above 1x one extra line layer `ahm-waterway-boost` on the `waterway` source layer of the base style (width by zoom 0.5 / 1.5 / 4 x factor at zoom 6 / 10 / 14, colour `#4f8fd6`, below the first base symbol layer, hidden under a satellite map); removed at 1x. Saved in `localStorage` `ahm-river-size`; bad values are ignored.
+- **Why:** T-055 (owner, answer a2 of T-059: the slider also thickens the background rivers, all together).
+- **Files:** `app/js/map/map.js`, `app/js/map/shapes.js`, `app/js/sidebar/shapes.js`, `app/index.html`, `app/dist/`, `graph/`, `tests/js/map.test.js`, `docs/02`, `TODO.md`.
+- **Contract:** no change to a contract file. The optional feature property `river` is new next to the ones `sidebar/shapes.js` already sends (comment of `map/shapes.js` updated).
+- **Verify:** `node tests/js/run.js river --no-browser`. By eye (not done here): slide to 3x, rivers and base-map rivers get thicker; 1x restores them.
+- **Follow-ups:** T-064 (scope selected or filtered).

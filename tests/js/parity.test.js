@@ -117,3 +117,27 @@ test('dev server: two saves in the same second keep both archive copies', async 
     await s.stop();
   }
 });
+
+test('dev server: versions of one series (T-041): an update that overlaps another version is refused, an update without series keeps it', async () => {
+  const s = await start();
+  try {
+    await fetch(s.base + '/data/places.geojson');
+    const sid = '5e1f0000-0000-4000-8000-000000000041';
+    const y = (n) => ({ fmt: 'y', ts: String(n).padStart(4, '0') + '-01-01T00:00:00Z', mode: 'exact', ts_to: null });
+    const body = (a, b, extra = {}) => ({
+      names: [{ lang: 'en', name: 'V' }], type: 'kingdom', color: '#336699', opacity: 0.5, label: false, source: '', date_from: y(a), date_to: y(b), series: sid,
+      geometry: { type: 'Polygon', coordinates: [[[44, 40], [44.5, 40], [44.5, 40.5], [44, 40]]] }, ...extra,
+    });
+    const a = (await s.post('/api/shape/save', body(100, 199))).json.id;
+    const b = (await s.post('/api/shape/save', body(200, 299))).json.id;
+    eq(200, (await s.post('/api/shape/save', body(100, 199, { id: a }))).status, 'unchanged');
+    const r = await s.post('/api/shape/save', body(100, 250, { id: a }));
+    ok(r.status === 400 && /versions of one series overlap/.test(r.json.error), 'overlap refused: ' + JSON.stringify(r.json));
+    const nos = body(200, 299, { id: b });
+    delete nos.series;
+    eq(200, (await s.post('/api/shape/save', nos)).status);
+    eq(2, s.data('shapes.geojson').features.filter((f) => f.properties.series === sid).length, 'the series is kept');
+  } finally {
+    await s.stop();
+  }
+});

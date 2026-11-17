@@ -9,7 +9,7 @@ const path = require('path');
 const STUB = `(function(){
  const p=new Proxy(function(){},{get:(t,k)=>{ if(k==='then')return undefined;
   if(k==='on'||k==='once')return (ev,a,b)=>{const f=typeof a==='function'?a:b; if(ev==='load'||ev==='style.load'||ev==='idle')setTimeout(()=>f&&f({}),0); return p;};
-  if(k==='getZoom')return()=>6; if(k==='getLayer'||k==='getSource')return()=>undefined; if(k==='queryRenderedFeatures')return()=>[];
+  if(k==='getZoom')return()=>6; if(k==='getPitch'||k==='getBearing')return()=>0; if(k==='getLayer'||k==='getSource')return()=>undefined; if(k==='queryRenderedFeatures')return()=>[];
   if(k==='getBounds')return()=>({getWest:()=>40,getEast:()=>48,getNorth:()=>42,getSouth:()=>36}); if(k==='getCanvas')return()=>({style:{},addEventListener(){},removeEventListener(){}});
   if(k==='getStyle')return()=>({layers:[],sources:{}}); if(k==='isStyleLoaded')return()=>true; if(k==='getLngLat')return()=>({lat:40,lng:44});
   return ()=>p; }, apply:()=>p, construct:()=>p});
@@ -262,4 +262,93 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
     ok(await pg.evaluate(()=>layers.length)===1 && await pg.evaluate(()=>places.some(p=>p.names.some(n=>n.name==='Newtown'))), 'layer deleted, places kept');
     await pg.evaluate(()=>{lyState.only.clear();lyState.hide.clear();});
     
+});
+
+scenario('browser: a new version of a border in one go: the outline opens for editing, Next asks the dates, Save makes a second version of the same series and leaves the first as it was', null, async (pg, S) => {
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
+  const old = await pg.evaluate(async () => { // the drawing tool needs the real map: a stand-in that hands back a moved outline
+    AHM.map.drawShape = ({ coords }) => ({ remove() {}, points: () => [], getGeometry: () => { const r = coords.map((c) => [c[0] + 0.5, c[1] + 0.25]); return { type: 'Polygon', coordinates: [[...r, r[0]]] }; } });
+    AHM.map.showPreview = () => {};
+    await shReload();
+    tab('shapes');
+    const s = shapes.find((x) => x.type === 'kingdom');
+    shOpen(s.id);
+    return { id: s.id, geometry: JSON.stringify(s.geometry), n: shapes.length };
+  });
+  ok((await pg.locator('[data-shact=addversion]').innerText()).startsWith('New version'), 'the sheet has one button for a new version');
+  await pg.click('[data-shact=addversion]');
+  ok(await pg.evaluate(() => sh.draw && sh.draw.mode === 'version' && sh.draw.version.prevId !== undefined), 'the button opens the outline for editing (version mode), no form yet');
+  ok(/New version: move the points/.test(await pg.locator('#shAdd').innerText()) && /Next: dates/.test(await pg.locator('#shFinish').innerText()), 'the banner says what to do and the button is Next');
+  eq(old.n, await pg.evaluate(() => shapes.length), 'nothing is saved yet');
+  await pg.click('#shFinish');
+  ok(/New version of/.test(await pg.locator('#shDetail .dock-title').innerText()), 'Next opens the details form titled as a new version');
+  ok(/stays as it is/.test(await pg.locator('#shDetail').innerText()), 'the form says the first version stays');
+  await pg.click('.pf-add');
+  await pg.locator('#shForm .nn').last().fill('Later outline');
+  await pg.click('[data-shact=save]'); await pg.waitForTimeout(800);
+  const after = await pg.evaluate(() => shapes.map((s) => ({ id: s.id, series: s.series || null, geometry: JSON.stringify(s.geometry), names: s.names.map((n) => n.name) })));
+  eq(old.n + 1, after.length, 'one shape was added');
+  const first = after.find((s) => s.id === old.id), added = after.find((s) => s.id !== old.id && s.series === first.series);
+  ok(first.series && added, 'both are versions of one series (the first joined it)');
+  eq(old.geometry, first.geometry, 'the first version keeps its outline');
+  ok(added.geometry !== first.geometry, 'the new version has the moved outline');
+  ok(added.names.includes('Later outline'), 'the new name was saved');
+  ok(/Versions in time \(2\)/i.test(await pg.locator('#shDetail').innerText()) && (await pg.locator('#shDetail .chips .chip.on').count()) >= 1, 'the sheet of the new version lists both versions and marks the open one');
+  // Cancel in the drawing step brings the first version back
+  await pg.evaluate((id) => shOpen(id), old.id);
+  await pg.click('[data-shact=addversion]');
+  await pg.evaluate(() => shCancelDraw());
+  ok(await pg.evaluate((id) => !sh.draw && sh.open === id, old.id), 'cancelling returns to the version we started from');
+  eq(old.n + 1, await pg.evaluate(() => shapes.length), 'cancelling saves nothing');
+});
+
+scenario('browser: the server names the unknown type in its error', null, async (pg, S) => {
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(800);
+  const r = await pg.evaluate(async () => {
+    const x = await fetch('/api/shape/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: [{ lang: 'en', name: 'X' }], type: 'nonsense', color: '#336699', opacity: 0.5, label: true, source: '', date_from: null, date_to: null, geometry: { type: 'Polygon', coordinates: [[[44, 40], [44.5, 40], [44.5, 40.5], [44, 40]]] } }) });
+    return { status: x.status, error: (await x.json()).error };
+  });
+  ok(r.status === 400 && /unknown border type “nonsense”/.test(r.error), 'the error names the type: ' + r.error);
+});
+
+scenario('browser: a new version of a route in one go: the path opens for editing, Next asks the dates, Save adds a second version of the series, the first is unchanged and ends the day before', null, async (pg, S) => {
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
+  const old = await pg.evaluate(async () => {
+    const line = [[44.0, 40.0], [44.5, 40.2], [45.0, 40.1]];
+    const x = await fetch('/api/shape/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: [{ lang: 'en', name: 'Test road' }], type: 'trade', color: '#aa5500', opacity: 0.8, label: true, source: '', twoway: true, stops: [], date_from: null, date_to: null, geometry: { type: 'LineString', coordinates: line } }) });
+    if (x.status !== 200) return { status: x.status, error: (await x.json()).error };
+    await shReload();
+    // the drawing tool needs the real map: a stand-in that hands back a moved path
+    AHM.map.drawShape = ({ coords, ids }) => { let pts = coords.map((c) => [c[0] + 0.5, c[1] + 0.25]); return { remove() {}, undo() {}, count: () => pts.length, points: () => pts, ids: () => ids, flags: () => [], ready: async () => {} }; };
+    const s = shapes.find((r) => r.names.some((n) => n.name === 'Test road'));
+    rtOpen(s.id);
+    return { id: s.id, geometry: JSON.stringify(s.geometry), n: shapes.length };
+  });
+  ok(old.id, 'the route was saved: ' + JSON.stringify(old));
+  ok((await pg.locator('[data-rtact=addversion]').innerText()).startsWith('New version'), 'the route card has the button');
+  await pg.click('[data-rtact=addversion]');
+  ok(await pg.evaluate(() => rts.draw && rts.draw.mode === 'version'), 'the button opens the path for editing (version mode), no form yet');
+  ok(/Next: dates/.test(await pg.locator('#rtFinish').innerText()) && /New version: move the points/.test(await pg.locator('#rtAdd').innerText()), 'banner and button say what to do');
+  eq(old.n, await pg.evaluate(() => shapes.length), 'nothing is saved yet');
+  await pg.click('#rtFinish');
+  ok(/New version of/.test(await pg.locator('#rtDetail .dock-title').innerText()) && /stays as it is/.test(await pg.locator('#rtDetail').innerText()), 'Next opens the form titled as a new version');
+  eq('Test road', await pg.locator('#rtForm .nn').first().inputValue(), 'the name is taken over');
+  // the dates: began in the year 1200
+  await pg.selectOption('#rtForm .pf-from .df-mode', 'exact'); await pg.selectOption('#rtForm .pf-from .df-fmt', 'y'); await pg.fill('#rtForm .pf-from .df-y', '1200');
+  await pg.click('[data-rtact=save]'); await pg.waitForTimeout(900);
+  const after = await pg.evaluate(() => shapes.map((s) => ({ id: s.id, series: s.series || null, geometry: JSON.stringify(s.geometry), color: s.color, to: s.date_to })));
+  eq(old.n + 1, after.length, 'one route was added');
+  const first = after.find((s) => s.id === old.id), added = after.find((s) => s.id !== old.id && s.series === first.series);
+  ok(first.series && added, 'both are versions of one series');
+  eq(old.geometry, first.geometry, 'the first version keeps its path');
+  ok(added.geometry !== first.geometry, 'the new version has the moved path');
+  eq('#aa5500', added.color, 'the look is taken over');
+  ok(first.to !== null, 'the first version now ends before the new one: ' + JSON.stringify(first.to));
+  ok(/Versions in time \(2\)/i.test(await pg.locator('#rtDetail').innerText()), 'the route card lists both versions');
+  // Cancel in the drawing step returns to the route
+  await pg.evaluate((id) => rtOpen(id), old.id);
+  await pg.click('[data-rtact=addversion]');
+  await pg.click('[data-rtadd=canceldraw]');
+  ok(await pg.evaluate((id) => !rts.draw && rts.open === id, old.id), 'cancelling returns to the route we started from');
+  eq(old.n + 1, await pg.evaluate(() => shapes.length), 'cancelling saves nothing');
 });

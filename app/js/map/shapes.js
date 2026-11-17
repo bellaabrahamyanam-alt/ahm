@@ -6,7 +6,7 @@
 // Events: shape:click { id } (a click on a line or an outline, 6 px tolerance), map:click now carries shapes: [{ id }] (areas under the
 //   cursor), draw:finish (Enter or double click while drawing), draw:cancel (Esc).
 // Feature properties: kind ('area' | 'line' | 'label'), id, name, type (text), dates (text), color, ink (label colour), opacity, width,
-//   dash (solid | dashed | dotted | dashdot), arrows (boolean: a one-way route, drawn with direction arrows), label (boolean), halo ('' or a colour), size (area of the bounding box: smaller shapes are drawn on top and hit first).
+//   river (boolean: a river, drawn 'River size' times wider), dash (solid | dashed | dotted | dashdot), arrows (boolean: a one-way route, drawn with direction arrows), label (boolean), halo ('' or a colour), size (area of the bounding box: smaller shapes are drawn on top and hit first).
 //   A 'label' feature is a Point where an area's name is drawn.
 const SHAPE_DASH = { solid: null, dashed: [3, 2], dotted: [0.1, 2.2], dashdot: [4, 1.6, 0.8, 1.6] };
 const SHAPE_HIT_PX = 6;
@@ -17,6 +17,8 @@ const PREVIEW = '#1d6fd1'; // the colour of a search result shown before it is a
 let riverSelIds = [], // ids of the selected river shapes (T-057), drawn as a glow under their lines
   riverSelNames = [], // names of the selected rivers of the base map
   boxTool = null; // the rectangle tool: { from: lngLat | null } while it is on
+let riverK = 1; // "River size" (T-055): the width of every river feature (property river: true) is multiplied by it; a view setting, not saved in the data
+const widthOf = () => ['*', ['get', 'width'], ['case', ['==', ['get', 'river'], true], riverK, 1]];
 let labelFont = ['Noto Sans Regular']; // map.js sets the font of the base map
 let shapesNow = null, // the last collection received (drawn as soon as the map is ready)
   shapeSel = null,
@@ -45,7 +47,7 @@ function shapesInit() {
     type: 'line',
     filter: ['all', notLabel, ['!=', ['coalesce', ['get', 'halo'], ''], '']],
     layout: { 'line-join': 'round' },
-    paint: { 'line-color': ['coalesce', ['get', 'halo'], '#000000'], 'line-width': ['+', ['get', 'width'], 8], 'line-opacity': 0.85 },
+    paint: { 'line-color': ['coalesce', ['get', 'halo'], '#000000'], 'line-width': ['+', widthOf(), 8], 'line-opacity': 0.85 },
   });
   add({
     // the selected shape (DESIGN.md): a soft shadow and a white casing under its line
@@ -53,14 +55,14 @@ function shapesInit() {
     type: 'line',
     filter: notLabel,
     layout: { 'line-join': 'round' },
-    paint: { 'line-color': '#000000', 'line-blur': 4, 'line-width': ['+', ['get', 'width'], 9], 'line-opacity': ['case', flag('selected'), 0.28, 0] },
+    paint: { 'line-color': '#000000', 'line-blur': 4, 'line-width': ['+', widthOf(), 9], 'line-opacity': ['case', flag('selected'), 0.28, 0] },
   });
   add({
     id: 'ahm-shape-casing',
     type: 'line',
     filter: notLabel,
     layout: { 'line-join': 'round' },
-    paint: { 'line-color': '#ffffff', 'line-width': ['+', ['get', 'width'], 5], 'line-opacity': ['case', flag('selected'), 0.95, 0] },
+    paint: { 'line-color': '#ffffff', 'line-width': ['+', widthOf(), 5], 'line-opacity': ['case', flag('selected'), 0.95, 0] },
   });
   add({
     // the selected rivers (T-057): a soft glow under the river lines
@@ -68,7 +70,7 @@ function shapesInit() {
     type: 'line',
     filter: ['in', ['get', 'id'], ['literal', riverSelIds]],
     layout: { 'line-join': 'round', 'line-cap': 'round' },
-    paint: { 'line-color': '#f5a300', 'line-width': ['+', ['get', 'width'], 6], 'line-opacity': 0.6 },
+    paint: { 'line-color': '#f5a300', 'line-width': ['+', widthOf(), 6], 'line-opacity': 0.6 },
   });
   Object.entries(SHAPE_DASH).forEach(([d, dash]) =>
     add({
@@ -78,7 +80,7 @@ function shapesInit() {
       layout: { 'line-cap': d === 'dotted' ? 'round' : 'butt', 'line-join': 'round' },
       paint: {
         'line-color': col,
-        'line-width': ['+', ['get', 'width'], ['case', flag('hover'), 1, 0]],
+        'line-width': ['+', widthOf(), ['case', flag('hover'), 1, 0]],
         'line-opacity': ['case', ['==', ['get', 'kind'], 'line'], opa, 0.9],
         ...(dash ? { 'line-dasharray': dash } : {}),
       },
@@ -473,6 +475,15 @@ function endBox(cancel) {
   map.getCanvas().style.cursor = '';
   setTimeout(() => boxTool === t && (boxTool = null), 0);
   if (cancel) AHM.emit('box:cancel');
+}
+
+/** River size (T-055): sets the factor of the widths of river features; the layers keep their other widths. Called by map.js (slider). */
+function setRiverSize(k) {
+  riverK = k;
+  if (!map) return;
+  const w = { 'ahm-shape-halo': 8, 'ahm-shape-shadow': 9, 'ahm-shape-casing': 5, 'ahm-river-sel': 6 };
+  Object.entries(w).forEach(([id, add]) => map.getLayer(id) && map.setPaintProperty(id, 'line-width', ['+', widthOf(), add]));
+  SHAPE_LINES.forEach((id) => map.getLayer(id) && map.setPaintProperty(id, 'line-width', ['+', widthOf(), ['case', ['boolean', ['feature-state', 'hover'], false], 1, 0]]));
 }
 
 Object.assign(AHM.map, {

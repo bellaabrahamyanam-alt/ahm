@@ -88,3 +88,8 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `service/store.php`, `dev/save-handler.js`, `data/types.json`, `tests/fixtures/rules.json` (19 rows), `tests/php/TypeTest.php`, `tests/php/ParityTest.php`, `tests/js/parity.test.js`, `tests/js/lib/devserver.js` (optional `prepare` before the handler starts).
 - **How to verify:** `php tests/php/run.php`, `node tests/js/run.js`.
 - **Follow-ups:** the pattern `dashdot` is outside the 5 patterns of I-8 (`double` and `triple` are accepted and drawn solid until T-033); `tests/data/DataCheck.php` does not check the type of a shape (T-037). Verified here: `php tests/php/run.php` 121 passed, `php tests/data/run.php` 51 passed, `node tests/js/run.js` 187 passed.
+
+## 2026-11-16 — T-041: versions of one shape in time (`series`)
+
+- **What:** optional shape property `series` (UUID). Rules in `service/store.php` (`clean_shape`, `series_check`) and `dev/save-handler.js` (`cleanShape`, `seriesCheck`): UUID or absent; one kind per series (area or line); versions whose dates are all known do not overlap. 6 rows in `tests/fixtures/rules.json`, `tests/php/ShapeSeriesTest.php`, a test in `tests/js/parity.test.js`.
+- **Why:** T-041. Nothing to migrate. **Verify:** `php tests/php/run.php`, `node tests/js/run.js parity --no-browser`.
