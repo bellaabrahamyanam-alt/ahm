@@ -249,6 +249,7 @@ function shRenderView() {
     (shapeVersions(s).length
       ? `<div class="label">Versions in time (${shapeVersions(s).length + 1})</div><div class="chips">${shVersionChips(s)}</div>`
       : '') +
+    evidenceHTML(s) + // certainty and sources (T-046)
     `<div class="label">Look</div><div class="sh-look">` +
     `<label>Colour <input type="color" id="shColor" value="${esc(s.color)}"${dis}></label>` +
     `<label>${kind === 'area' ? 'Fill opacity' : 'Line opacity'} <input type="range" id="shOp" min="0" max="1" step="0.05" value="${s.opacity}"${dis}> <span id="shOpVal">${Math.round(s.opacity * 100)}%</span></label>` +
@@ -395,7 +396,9 @@ function shOpenForm(f) {
     `<div class="label">Type</div><div class="chips sh-typepick">${shTypeChips(f.type || shTypeList()[0] || 'territory')}</div>` +
     `<div class="sn">The type sets the line pattern and the first colour. You can change the colour afterwards.</div>` +
     `<div class="label">Dates (optional)</div><div class="sn">Leave “Unknown” for a modern border or when you do not know. Borders with dates follow the period filter.</div>` +
-    `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}${f.prevId && !shapeById(f.prevId).date_to ? '<label class="sh-check"><input type="checkbox" id="shClosePrev" checked> End the previous version the day before</label>' : ''}</div>` +
+    `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}${f.prevId && !shapeById(f.prevId).date_to ? '<label class="sh-check"><input type="checkbox" id="shClosePrev" checked> End the previous version the day before</label>' : ''}` +
+    evidenceFormHTML(f, false) + // certainty and sources (T-046), inside #shForm so that shReadForm finds it
+    '</div>' +
     `<div class="err-line" id="shErr"></div></div><div class="dock-foot"><button type="button" class="primary" data-shact="save">Save</button><button type="button" data-shact="cancel">Cancel</button></div>`;
   shShow(true);
   tab(sh.mode === 'rivers' ? 'rivers' : 'shapes');
@@ -416,7 +419,7 @@ function shReadForm() {
     from = dfRead(root.querySelector('.pf-from'), 'Began'),
     to = dfRead(root.querySelector('.pf-to'), 'Ended');
   dateOrderCheck(from, to);
-  return { names, type, date_from: from, date_to: to };
+  return { names, type, date_from: from, date_to: to, ...evidenceRead(root, false) };
 }
 async function shSaveForm() {
   const f = sh.form;

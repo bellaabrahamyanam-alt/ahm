@@ -3,7 +3,7 @@ const { start } = require('./lib/devserver');
 const path = require('path');
 const fs = require('fs');
 const table = require('../fixtures/rules.json').cases;
-const URLS = { save: '/api/save', layer: '/api/layer/save', category: '/api/category/save', language: '/api/language/save', type: '/api/type/save', shape: '/api/shape/save' };
+const URLS = { save: '/api/save', layer: '/api/layer/save', category: '/api/category/save', language: '/api/language/save', type: '/api/type/save', shape: '/api/shape/save', source: '/api/source/save' };
 
 test('parity table: the Node dev server gives the verdict the table says (PHP is checked against the same table)', async () => {
   const s = await start();
@@ -13,8 +13,9 @@ test('parity table: the Node dev server gives the verdict the table says (PHP is
     const P = s.data('places.geojson').features.map((f) => f.properties.id);
     const L0 = s.data('layers.json').layers[0].id;
     const C0 = s.data('categories.json').categories[0].id;
+    const S = s.data('sources.json').sources.map((x) => x.id);
     const expand = (b) =>
-      JSON.parse(JSON.stringify(b).replace(/@P(\d+)/g, (_, n) => P[+n]).replace(/@L0/g, L0).replace(/@C0/g, C0));
+      JSON.parse(JSON.stringify(b).replace(/@P(\d+)/g, (_, n) => P[+n]).replace(/@S(\d+)/g, (_, n) => S[+n]).replace(/@L0/g, L0).replace(/@C0/g, C0));
     ok(table.length >= 50);
     for (const c of table) {
       const r = await s.post(URLS[c.via], expand(c.body));
@@ -137,6 +138,36 @@ test('dev server: versions of one series (T-041): an update that overlaps anothe
     delete nos.series;
     eq(200, (await s.post('/api/shape/save', nos)).status);
     eq(2, s.data('shapes.geojson').features.filter((f) => f.properties.series === sid).length, 'the series is kept');
+  } finally {
+    await s.stop();
+  }
+});
+
+test('dev server: sources (T-046): add and change a source; certainty, radius and sources are kept when an update sends nothing, and cleared by null / []', async () => {
+  const s = await start();
+  try {
+    await fetch(s.base + '/data/places.geojson');
+    const S = s.data('sources.json').sources.map((x) => x.id);
+    const sid = (await s.post('/api/source/save', { title: 'Pliny, Natural History', citation: 'NH 6', url: 'https://example.org/p' })).json.id;
+    eq(S.length + 1, s.data('sources.json').sources.length);
+    await s.post('/api/source/save', { id: sid, title: 'Pliny the Elder', citation: 'NH 6' });
+    const now = s.data('sources.json').sources.find((x) => x.id === sid);
+    ok(now.title === 'Pliny the Elder' && now.url === undefined, 'renamed, and the link is gone when not sent');
+    const base = { lat: 40.1, lon: 44.5, type: 'village', names: [{ lang: 'en', name: 'Certain' }] };
+    const id = (await s.post('/api/save', { place: { ...base, certainty: 'disputed', radius_m: 8000, sources: [S[0], S[0], S[1]] } })).json.id;
+    const prop = () => s.data('places.geojson').features.find((f) => f.properties.id === id).properties;
+    eq([S[0], S[1]], prop().sources, 'a source is listed once');
+    await s.post('/api/save', { place_update: { ...base, id, names: [{ lang: 'en', name: 'Renamed' }] } });
+    ok(prop().label === 'Renamed' && prop().certainty === 'disputed' && prop().radius_m === 8000, 'kept when not sent');
+    await s.post('/api/save', { place_update: { ...base, id, certainty: null, radius_m: '', sources: [] } });
+    ok(!('certainty' in prop()) && !('radius_m' in prop()) && !('sources' in prop()), 'cleared');
+    const shape = { names: [{ lang: 'en', name: 'B' }], type: 'kingdom', color: '#336699', opacity: 0.5, label: false, source: '', date_from: null, date_to: null, geometry: { type: 'Polygon', coordinates: [[[44, 40], [44.5, 40], [44.5, 40.5], [44, 40]]] } };
+    const bid = (await s.post('/api/shape/save', { ...shape, certainty: 'approximate', sources: [S[1]] })).json.id;
+    await s.post('/api/shape/save', { ...shape, id: bid });
+    const bp = () => s.data('shapes.geojson').features.find((f) => f.properties.id === bid).properties;
+    ok(bp().certainty === 'approximate' && bp().sources[0] === S[1], 'kept');
+    await s.post('/api/shape/save', { ...shape, id: bid, certainty: null, sources: [] });
+    ok(!('certainty' in bp()) && !('sources' in bp()), 'cleared');
   } finally {
     await s.stop();
   }

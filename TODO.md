@@ -21,7 +21,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 **Next (builder)**, in this order (`builder: next` takes the first open item of the first group)
 - 1. Rivers and 3D: T-058, T-064, T-065, T-059, T-061, T-062
-- 2. History and time: T-043, T-046, T-042
+- 2. History and time: T-043, T-067, T-068, T-042
 - 3. Analysis and sharing: T-044, T-045, T-047
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
@@ -129,17 +129,22 @@ Owner, in the chat, 2026-11-15. The date model already exists (`core/dates.js`: 
   Logic: `names[]` entries get optional `date_from` and `date_to` (date model); absent = always. Rule: with the slider off nothing changes (the first name of a language, as today). With it on: the first name of that language whose period contains `at`, else the first name of that language. Core function `nameAt(item, lang, at)`. Rules in `store.php` and `save-handler.js` (parity table rows). The place form (`placeform.js`) and the shape form get "from / to" per name row with `datefield.js`. Applies to places and shapes first.
   Done when: tests cover `nameAt` (period inside, outside, no period, unknown language), the server accepts and refuses the new fields, search finds an old name, the forms save and show them.
   Contract: yes (I-1 property, I-3 `nameAt`). Works without T-040 (shows the first name).
-- [ ] T-046 Certainty and sources per object
-  What: phase 1: a dictionary of sources (title, citation, link; like languages and categories, editors add). Places and shapes get an optional certainty (exact, approximate, disputed), an optional radius in metres (drawn as a faded circle around approximate and disputed points) and a list of sources. Filters by source and certainty. Phase 2: competing claims: the same object at two places or two shapes according to two sources, each with its sources; the sheet lists "Other claims" and a source toggle shows one author's version or all.
-  Logic: every new property is optional and absent = unchanged, so adding this later changes no data; nothing needs migrating now. `shapes.geojson` already has a free-text `source`; it stays. New file `sources.json` (id, title, citation, url) with the usual store rules. Phase 2 uses the same link idea as `series` in T-041 (a `claim_of` id); the builder checks if one mechanism fits both.
-  Done when (phase 1): server rules and parity rows, the forms save the new fields, the map draws the circle, the filters work. Phase 2 is its own item after the owner has seen phase 1.
-  Contract: yes (I-1, I-9, new file in I-1).
 - [ ] T-042 Border change between two dates: area gained and lost
   What: choose a border (a series from T-041) and two dates A and B. The map shows what was gained (green) and lost (red); a panel shows km2 and % of each. A note says that old borders are approximate.
   Logic: take the version valid at A and at B; gained = B minus A, lost = A minus B (polygon difference); area on the sphere (not on the flat map). For the difference use the MIT library `polygon-clipping`, vendored and pinned (exact result); the simpler option without a library is to compare the two polygons on a grid of cells (approximate to the cell size). Owner decides in T-052. Result is drawn as a temporary map layer, not saved.
   Done when: a test with two squares of known size gives the exact gained and lost area, the panel shows the numbers, the layer is removed when the panel is closed.
   Contract: maybe (a new `AHM.map` command in I-2); the builder says which in the item before the code.
   Needs: T-040, T-041, T-052.
+
+- [ ] T-067 Certainty and sources, phase 2: competing claims
+  What: the same object at two places or as two shapes according to two sources, each with its own sources. The sheet lists "Other claims"; a source toggle shows one author's version or all.
+  Logic: the same link idea as `series` (T-041): a `claim_of` id; the builder checks if one mechanism fits both. Phase 1 (T-046) gave the dictionary `sources.json` and `certainty` / `sources` / `radius_m`; use them. Do this after the owner has seen phase 1.
+  Done when: server rules and parity rows, the sheet lists other claims, the source toggle works on the map, tests.
+  Contract: yes (I-1, I-9).
+- [ ] T-068 Certainty and sources on borders, rivers and routes in the UI
+  What: T-046 put the fields in the place and border forms and the Certainty and Source chips on the places list. The route card has no fields, and the borders, rivers and routes lists are not filtered (`shapesRun` already takes `certainty` and `sources`).
+  Done when: the route form saves `certainty` and `sources`; the shape tabs have the same chips (or the Places filters are explained there); a test per list.
+  Contract: no.
 
 ### 3. Analysis and sharing
 
@@ -209,6 +214,7 @@ Waits for T-003 and T-001.
 
 ## Done
 
+- [x] T-046 Certainty and sources per object, phase 1 (2026-11-17, PR #38, branch `feat/certainty-sources`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-2`, `I-3`, `I-9`, `tests/js/contract.test.js`). `sources.json` dictionary, `certainty` / `sources` on places and borders, `radius_m` on places with a circle on the map, forms, sheets, filters for the places list. Phase 2 is T-065; the rest of the UI is T-066. Not seen in a browser.
 - [x] T-057 Select rivers by a rectangle and by area names (2026-11-17, PR #39, branch `feat/river-select`). Approved: 2026-11-17 owner, in the chat: "Also do t-057 and push on seperate branch" (covers `interfaces/I-2-sidebar-map.md` and `tests/js/contract.test.js`). Contract I-2 1.11: `highlightRivers(ids)`, `selectBox(on)`, events `box:select { bbox }` and `box:cancel`. Approved: 2026-11-17 owner, in the chat: "I wanted to select all known and unknown rivers ... cannot select also those rivers which weren't added to map manually" (covers I-2 1.12: `baseRivers()`, `b:<name>` ids in `highlightRivers`). The selection also takes the named rivers, canals and streams of the base map, but only those loaded in the view (`querySourceFeatures`), grouped by name; unnamed ones and ditches are left out; "Show only these" cannot hide base-map rivers. The selection lives in the sidebar, not in `AHM.state` (no new state key: only the sidebar reads it, and the map gets the ids). Not built: "Make bolder" (scope of T-055, now T-064) and "Add to a layer" (T-065, needs T-031). Not seen in a browser; the rectangle uses the mouse only (no touch).
 - [x] T-056 3D map: tilt, rotation and 3D terrain (2026-11-17, PR #37, branch `feat/t-056-3d-tilt`). Tilt 0 to 85, rotation 0 to 359, Flat, Tilt 60, North up, 3D terrain with a height slider; saved in the browser. Not seen on a real map.
 - [x] T-063 A new version of a ROUTE in one go, like T-041 + the simplification for borders and rivers (2026-11-17, PR #35, branch `feat/route-versions`; owner, in the chat). "New version…" on the route card opens the path for editing, Next asks the dates (names, type, direction, look taken over), Save adds the second version of the series, the first stays and may end the day before; the card lists all versions.

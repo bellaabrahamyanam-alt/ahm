@@ -1,0 +1,15 @@
+{
+ "version": 1,
+ "sources": [
+  {
+   "id": "5a0c0001-0000-4000-8000-000000000001",
+   "title": "Strabo, Geography",
+   "citation": "Strabo, Geographica, book 11 (Caucasus, Albania, Iberia, Armenia)"
+  },
+  {
+   "id": "5a0c0002-0000-4000-8000-000000000002",
+   "title": "Movses Khorenatsi, History of the Armenians",
+   "citation": "Movses Khorenatsi, Patmut'iwn Hayots'"
+  }
+ ]
+}

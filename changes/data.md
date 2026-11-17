@@ -93,3 +93,8 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 
 - **What:** optional shape property `series` (UUID). Rules in `service/store.php` (`clean_shape`, `series_check`) and `dev/save-handler.js` (`cleanShape`, `seriesCheck`): UUID or absent; one kind per series (area or line); versions whose dates are all known do not overlap. 6 rows in `tests/fixtures/rules.json`, `tests/php/ShapeSeriesTest.php`, a test in `tests/js/parity.test.js`.
 - **Why:** T-041. Nothing to migrate. **Verify:** `php tests/php/run.php`, `node tests/js/run.js parity --no-browser`.
+
+## 2026-11-17 — T-046 phase 1: sources, certainty and radius
+
+- **What:** new file `sources.json` (`{ id, title, citation?, url? }`, sample in `data/sources.json`); optional `certainty`, `sources` and (places) `radius_m` on places and borders. `service/store.php` (`sources`, `save_source`, `clean_evidence`), `dev/save-handler.js` (`saveSource`, `cleanEvidence`), `controller/main.php` (`source_save`, data route `sources`), `config/routing.yml` (`/map/source-save`), 16 rows in `tests/fixtures/rules.json` (`@S0`, `@S1` = the first two sources), `tests/php/SourceTest.php`, 8 cases in `tests/data/DataTest.php` and `DataCheck.php`. A save that does not send a field keeps it; `null` / `''` / `[]` removes it. Nothing to migrate.
+- **Verify:** `php tests/php/run.php`, `php tests/data/run.php`, `node tests/js/run.js parity --no-browser`. Owner-approved: T-046.

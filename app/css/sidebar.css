@@ -1272,3 +1272,18 @@ body.collapsed #timebar {
     bottom: 30px;
   }
 }
+
+/* ---- certainty and sources in the forms (T-046) ---- */
+.pf-src {
+  display: block;
+  margin: 2px 0;
+}
+.pf-newsrc input {
+  display: block;
+  width: 100%;
+  margin: 3px 0;
+  box-sizing: border-box;
+}
+.pf-srcerr:empty {
+  display: none;
+}

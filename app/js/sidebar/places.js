@@ -41,6 +41,24 @@ function fillTypes() {
     )
     .join("");
   renderTypes(); // the list of the Place types fold shows the same names and counts
+  fillEvidence();
+}
+/** The certainty and source chips of Filters (T-046): the counts are of places; only sources that a place uses are listed. */
+function fillEvidence() {
+  const cc = {},
+    sc = {};
+  places.forEach((p) => {
+    if (p.certainty) cc[p.certainty] = (cc[p.certainty] || 0) + 1;
+    (p.sources || []).forEach((s) => (sc[s] = (sc[s] || 0) + 1));
+  });
+  $('#certChips').innerHTML = Object.keys(CERT_LABELS)
+    .map((k) => `<button class="chip${state.certainty.has(k) ? ' on' : ''}" data-cert="${k}">${CERT_LABELS[k]} <span>${cc[k] || 0}</span></button>`)
+    .join('');
+  const used = sources.filter((s) => sc[s.id]);
+  $('#srcLabel').hidden = $('#srcChips').hidden = !used.length;
+  $('#srcChips').innerHTML = used
+    .map((s) => `<button class="chip${state.sources.has(s.id) ? ' on' : ''}" data-src="${s.id}" title="${esc(s.citation || '')}">${esc(s.title)} <span>${sc[s.id]}</span></button>`)
+    .join('');
 }
 function setData(p, n) {
   places = p;
@@ -81,12 +99,12 @@ function placeDetail() {
   revealRow(li);
 }
 /** What run() needs from the sidebar fields (INTERFACES.md I-3). */
-const searchOptions = () => ({ q: $("#q").value, lang: $("#lang").value, sort: $("#sort").value, period: periodBounds() });
+const searchOptions = () => ({ q: $("#q").value, lang: $("#lang").value, sort: $("#sort").value, period: periodBounds(), certainty: state.certainty, sources: state.sources });
 function update() {
   const r = run(searchOptions()),
     l = $("#lang").value,
     q = $("#q").value.trim();
-  const nf = state.types.size + (l ? 1 : 0) + (periodActive() ? 1 : 0) + (timeActive() ? 1 : 0) + lyFilterCount();
+  const nf = state.types.size + state.certainty.size + state.sources.size + (l ? 1 : 0) + (periodActive() ? 1 : 0) + (timeActive() ? 1 : 0) + lyFilterCount();
   $("#fcount").textContent = nf ? `(${nf})` : "";
   const chip = (k, t) => `<button class="chip on" data-clear="${k}" title="Remove this filter">${t} ✕</button>`;
   // the selected types and the language are shown inside Filters, so only the period is repeated here
@@ -108,6 +126,8 @@ function update() {
         type_code: p.type,
         dates: placeWhen(p),
         halo: lyHalo(p.id),
+        certainty: p.certainty || "", // T-046: the map draws a circle for approximate and disputed places
+        radius_m: p.radius_m || 0,
         faded: timeLook(p) === "faded", // only possible at the moment of the time bar (T-040)
       },
     })),
@@ -143,10 +163,26 @@ $("#typeChips").addEventListener("click", (e) => {
   fillTypes();
   update();
 });
+$("#certChips").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-cert]");
+  if (!b) return;
+  state.certainty.has(b.dataset.cert) ? state.certainty.delete(b.dataset.cert) : state.certainty.add(b.dataset.cert);
+  fillEvidence();
+  update();
+});
+$("#srcChips").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-src]");
+  if (!b) return;
+  state.sources.has(b.dataset.src) ? state.sources.delete(b.dataset.src) : state.sources.add(b.dataset.src);
+  fillEvidence();
+  update();
+});
 $("#reset").onclick = () => {
   ["q", "lang"].forEach((i) => ($("#" + i).value = ""));
   initPeriod();
   state.types.clear();
+  state.certainty.clear();
+  state.sources.clear();
   lyClearFilters();
   $("#geo").innerHTML = "";
   searchFieldSync();
@@ -299,6 +335,7 @@ async function show(id) {
       .map((n) => `<span lang="${esc(n.lang)}">${esc(n.name)}</span> <span class="sn">[${esc(n.lang)}]</span>`)
       .join(" · ") +
     "</p>" +
+    evidenceHTML(p) + // certainty, radius and sources (T-046)
     lyPlaceHTML(p) +
     rtPlaceHTML(p) +
     lyScopeHTML(scope, ns.length, inLang.length) +

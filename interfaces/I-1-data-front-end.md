@@ -7,9 +7,9 @@ The front end never builds URLs by itself; it reads them from `AHM_CONFIG.url` (
 forum controller through `window.AHM_BACKEND` in production). Names are fixed:
 
 - Read (GET): `places`, `notesIndex`, `note(place, id)`, `languages`, `overlays`, `overlayImage(o)`, `layers`,
-  `layerNotesIndex`, `categories`; **[1.5]** `types`, `shapes`.
+  `layerNotesIndex`, `categories`; **[1.5]** `types`, `shapes`; **[1.11]** `sources` (the dictionary of sources, T-046).
 - Write (POST, JSON unless noted): `save`, `languageSave`, `overlaySave`, `overlayUpload(id)` (multipart), `overlayDelete`,
-  `layerSave`, `layerDelete`, `categorySave`; **[1.5]** `typeSave`, `typeDelete`, `shapeSave`, `shapeDelete` (`{ id }`; the sidebar deletes a border with it).
+  `layerSave`, `layerDelete`, `categorySave`; **[1.5]** `typeSave`, `typeDelete`, `shapeSave`, `shapeDelete` (`{ id }`; the sidebar deletes a border with it); **[1.11]** `sourceSave`: `{ id?, title, citation?, url? }` (editors; the three fields are replaced, a missing one is removed; no delete). Errors are 400 with `{ error }`.
 - Permission flags in config: `canEdit`, `loggedIn`, `loginUrl`, `canOverlay`, `canLanguage`, `canLayerAdmin`; **[1.5]** `canTypeAdmin`.
 - Errors: HTTP 4xx with `{ "error": "<message>" }`; 400 for invalid input, 403 for no permission.
 
@@ -22,6 +22,7 @@ forum controller through `window.AHM_BACKEND` in production). Names are fixed:
 
 ### File formats (owned by **data**; the front end only reads them through `core`)
 - `places.geojson`, `notes/index.json` + `notes/<place>/<id>.md`, `languages.json`, `categories.json`, `layers.json`,
-  `layer-notes/index.json`, `overlays.json`; **[1.5]** `types.json` (I-8), `shapes.geojson` (I-9).
+  `layer-notes/index.json`, `overlays.json`; **[1.5]** `types.json` (I-8), `shapes.geojson` (I-9); **[1.11]** `sources.json`: `{ version: 1, sources: [{ id, title, citation?, url? }] }` (`url` is http or https), an optional file.
+- **[1.11]** Optional properties of a place (and of a border, I-9), all absent = unchanged and not set: `certainty` (`exact`, `approximate` or `disputed`), `sources` (a list of source ids, each in `sources.json`, no duplicates, at most 20), and for places only `radius_m` (whole metres, 1 to 1000000: the circle around an approximate or disputed point). A save that sends one of them as `null`, `''` or `[]` removes it; a save that does not send it keeps it. An unknown source is refused (400 `unknown source`).
 - Dates: `null` or `{ fmt, ts, mode: exact|approx|range, ts_to }`; every `ts` is ISO 8601 / RFC 3339 text in UTC with `Z`.
 - Ids are UUID text. Names and descriptions are lists of `{ lang, name|text }`; `lang` comes from `languages.json`.

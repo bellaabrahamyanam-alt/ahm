@@ -245,6 +245,11 @@ function initMap() {
     });
     map.addSource("ahm-label-src", { type: "geojson", data: EMPTY }); // separate source: a font problem can never hide the markers
     registerTypeIcons(map); // one symbol per place type (shape + colour), see typeicons.js
+    // T-046: a faded circle of radius_m metres around approximate and disputed places (a dashed outline when disputed), under the symbols
+    map.addSource("ahm-uncertain", { type: "geojson", data: EMPTY });
+    map.addLayer({ id: "ahm-uncertain-fill", type: "fill", source: "ahm-uncertain", paint: { "fill-color": "#c0562b", "fill-opacity": 0.12 } });
+    map.addLayer({ id: "ahm-uncertain-line", type: "line", source: "ahm-uncertain", filter: ["!", ["get", "disputed"]], paint: { "line-color": "#c0562b", "line-width": 1.2, "line-opacity": 0.5 } });
+    map.addLayer({ id: "ahm-uncertain-dash", type: "line", source: "ahm-uncertain", filter: ["get", "disputed"], paint: { "line-color": "#c0562b", "line-width": 1.4, "line-opacity": 0.7, "line-dasharray": [2, 2] } });
     map.addLayer({
       // a ring under the marker: the members of the layer being edited, or the colour of an "only" layer
       id: "ahm-halo",
@@ -1277,8 +1282,37 @@ document.addEventListener("keydown", (e) => {
 
 // ---- the selected place (task 004 and 008) ----
 const featureSources = ["ahm-places", "ahm-label-src"];
+const EARTH_R = 6371008.8;
+/** A closed ring of 64 points, `r` metres from [lon, lat] on the sphere (the circle is round on the ground, not on the screen). */
+function circleRing([lon, lat], r) {
+  const rad = Math.PI / 180,
+    f1 = lat * rad,
+    l1 = lon * rad,
+    d = r / EARTH_R,
+    ring = [];
+  for (let i = 0; i < 64; i++) {
+    const t = (i / 64) * 2 * Math.PI,
+      f2 = Math.asin(Math.sin(f1) * Math.cos(d) + Math.cos(f1) * Math.sin(d) * Math.cos(t)),
+      l2 = l1 + Math.atan2(Math.sin(t) * Math.sin(d) * Math.cos(f1), Math.cos(d) - Math.sin(f1) * Math.sin(f2));
+    ring.push([((l2 / rad + 540) % 360) - 180, f2 / rad]);
+  }
+  ring.push(ring[0]);
+  return ring;
+}
 function applyFeatures() {
   if (!mapReady || !featuresNow) return;
+  const unc = map.getSource("ahm-uncertain");
+  if (unc)
+    unc.setData({
+      type: "FeatureCollection",
+      features: featuresNow.features
+        .filter((f) => (f.properties.certainty === "approximate" || f.properties.certainty === "disputed") && f.properties.radius_m > 0)
+        .map((f) => ({
+          type: "Feature",
+          geometry: { type: "Polygon", coordinates: [circleRing(f.geometry.coordinates, f.properties.radius_m)] },
+          properties: { id: f.properties.id, disputed: f.properties.certainty === "disputed" },
+        })),
+    });
   // the selected place is drawn by its own look, so it is never inside a bubble
   const places = map.getSource("ahm-places");
   if (places)

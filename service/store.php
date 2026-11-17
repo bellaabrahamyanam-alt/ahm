@@ -115,6 +115,8 @@ class store
             $stamp = date('Ymd-His');
             if (isset($in['place'])) {
                 $c = self::clean_place($in['place'], $codes, $types);
+                list($ev) = self::clean_evidence($in['place'], array_column($this->sources_data()['sources'], 'id'), true);
+                $c['props'] += $ev;
                 $pid = self::uuid4();
                 copy($geo, $this->archive_path('places', 'geojson'));
                 $fc['features'][] = [
@@ -131,11 +133,13 @@ class store
                 $u = $in['place_update'];
                 $pid = (string) ($u['id'] ?? '');
                 $c = self::clean_place($u, $codes, $types);
+                list($ev, $clear) = self::clean_evidence($u, array_column($this->sources_data()['sources'], 'id'), true);
+                $c['props'] += $ev;
                 $found = false;
                 foreach ($fc['features'] as $k => $f) {
                     if (($f['properties']['id'] ?? '') === $pid) {
                         $fc['features'][$k]['geometry'] = ['type' => 'Point', 'coordinates' => [$c['lon'], $c['lat']]];
-                        $fc['features'][$k]['properties'] = array_merge($f['properties'], $c['props']);
+                        $fc['features'][$k]['properties'] = array_diff_key(array_merge($f['properties'], $c['props']), array_flip($clear));
                         $found = true;
                     }
                 }
@@ -1003,6 +1007,122 @@ class store
         });
     }
 
+    // ------------------------------------------------------------------ sources, certainty (T-046 phase 1)
+    // sources.json is a dictionary like categories: { id, title, citation?, url? }. Editors add and change entries; none is deleted (places
+    // point to them by id). A place or a border may have a certainty, a list of sources and (places only) a radius in metres.
+    const MAX_RADIUS_M = 1000000;
+    const MAX_SOURCES = 20;
+    const CERTAINTY = ['exact', 'approximate', 'disputed'];
+
+    private function sources_data()
+    {
+        return $this->list_data('sources.json', 'sources');
+    }
+
+    public function sources()
+    {
+        return $this->locked(function () {
+            return $this->sources_data();
+        });
+    }
+
+    /** Editors (checked by the controller): adds a source, or changes one (all three fields are replaced; a missing citation or link is removed). Returns its id. */
+    public function save_source(array $in)
+    {
+        return $this->locked(function () use ($in) {
+            $title = self::one_line($in['title'] ?? '', 200);
+            if ($title === '') {
+                throw self::bad('a source needs a title');
+            }
+            $src = ['title' => $title];
+            $cit = self::one_line($in['citation'] ?? '', 1000);
+            if ($cit !== '') {
+                $src['citation'] = $cit;
+            }
+            $url = trim((string) ($in['url'] ?? ''));
+            if ($url !== '') {
+                if (!preg_match('~^https?://[^\s<>"\']{1,490}$~i', $url)) {
+                    throw self::bad('the link must start with http:// or https:// and have no spaces');
+                }
+                $src['url'] = $url;
+            }
+            $d = $this->sources_data();
+            $id = (string) ($in['id'] ?? '');
+            if ($id !== '') {
+                $found = false;
+                foreach ($d['sources'] as $i => $x) {
+                    if ($x['id'] === $id) {
+                        $d['sources'][$i] = ['id' => $id] + $src;
+                        $found = true;
+                    }
+                }
+                if (!preg_match(self::UUID, $id) || !$found) {
+                    throw self::bad('unknown source');
+                }
+            } else {
+                $id = self::uuid4();
+                $d['sources'][] = ['id' => $id] + $src;
+            }
+            $this->put_list('sources.json', 'sources', $d);
+            return $id;
+        });
+    }
+
+    /**
+     * certainty, radius_m and sources of a place or a border. Returns [properties to set, keys to remove]: a key that is not sent is left alone
+     * (absent = unchanged); null, '' or [] removes it. $radius_ok is false for borders (a radius is drawn around a point).
+     */
+    private static function clean_evidence(array $in, array $known, $radius_ok)
+    {
+        $set = [];
+        $clear = [];
+        if (array_key_exists('certainty', $in)) {
+            $c = $in['certainty'];
+            if ($c === null || $c === '') {
+                $clear[] = 'certainty';
+            } elseif (!in_array($c, self::CERTAINTY, true)) {
+                throw self::bad('certainty must be exact, approximate or disputed');
+            } else {
+                $set['certainty'] = $c;
+            }
+        }
+        if (array_key_exists('radius_m', $in)) {
+            $r = $in['radius_m'];
+            if ($r === null || $r === '') {
+                $clear[] = 'radius_m';
+            } else {
+                if (!$radius_ok) {
+                    throw self::bad('only a place has a radius');
+                }
+                if (is_bool($r) || !is_numeric($r) || (float) $r != floor((float) $r) || $r < 1 || $r > self::MAX_RADIUS_M) {
+                    throw self::bad('radius must be a whole number of metres from 1 to ' . self::MAX_RADIUS_M);
+                }
+                $set['radius_m'] = (int) $r;
+            }
+        }
+        if (array_key_exists('sources', $in)) {
+            $s = $in['sources'] === null ? [] : $in['sources'];
+            if (!is_array($s) || count($s) > self::MAX_SOURCES) {
+                throw self::bad('sources must be a list of at most ' . self::MAX_SOURCES . ' source ids');
+            }
+            $out = [];
+            foreach ($s as $x) {
+                if (!is_string($x) || !in_array($x, $known, true)) {
+                    throw self::bad('unknown source');
+                }
+                if (!in_array($x, $out, true)) {
+                    $out[] = $x;
+                }
+            }
+            if ($out) {
+                $set['sources'] = $out;
+            } else {
+                $clear[] = 'sources';
+            }
+        }
+        return [$set, $clear];
+    }
+
     private function clean_layer(array $in, array $codes)
     {
         $names = self::clean_names($in['names'] ?? [], $codes, 'a layer needs at least one name');
@@ -1640,6 +1760,8 @@ class store
             $codes = array_column($this->lang_load(), 'code');
             $kinds = $this->shape_kinds();
             $c = self::clean_shape($in, $codes, $this->place_ids(), $kinds);
+            list($ev, $clear) = self::clean_evidence($in, array_column($this->sources_data()['sources'], 'id'), false);
+            $c += $ev;
             $d = $this->read_shapes();
             $now = self::now_utc();
             $id = (string) ($in['id'] ?? '');
@@ -1659,7 +1781,7 @@ class store
                     $d['features'][$at]['geometry'] = self::clean_geometry($in['geometry']);
                 }
                 self::route_geometry_check($c['type'], $d['features'][$at]['geometry'], $kinds);
-                $d['features'][$at]['properties'] = array_merge($d['features'][$at]['properties'], $c, ['updated' => $now]);
+                $d['features'][$at]['properties'] = array_diff_key(array_merge($d['features'][$at]['properties'], $c, ['updated' => $now]), array_flip($clear));
                 self::series_check($d['features'][$at]['properties'], $d['features'], $kinds);
             } else {
                 $id = self::uuid4();

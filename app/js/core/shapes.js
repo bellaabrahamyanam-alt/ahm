@@ -94,8 +94,8 @@ const shapeDefaults = (type, kind) => ({
 });
 
 /** The shapes that pass the filters, sorted by name. options: q = text, lang = language code or '', types = Set (empty = all), period = [start, end) in seconds,
- *  group = 'border' | 'route' | 'river' (omitted = all). */
-function shapesRun({ q: text = '', lang: l = '', types = new Set(), period: [a, b] = [null, null], group = '' } = {}) {
+ *  group = 'border' | 'route' | 'river' (omitted = all), certainty / sources = Sets (T-046, empty = all). */
+function shapesRun({ q: text = '', lang: l = '', types = new Set(), period: [a, b] = [null, null], group = '', certainty = new Set(), sources: srcs = new Set() } = {}) {
   const q = norm(text);
   return shapes
     .filter((s) => {
@@ -103,6 +103,7 @@ function shapesRun({ q: text = '', lang: l = '', types = new Set(), period: [a, 
       if (types.size && !types.has(s.type)) return false;
       if (!layerAllows(s.id)) return false; // the Only / Hide filters of the layers work on shapes too
       if (timeLook(s) === 'no') return false; // the time slider (T-040)
+      if (!evidenceAllows(s, certainty, srcs)) return false; // certainty and source filters (T-046)
       if (a !== null || b !== null) {
         // the same rule as for places: with a period set, only shapes whose life is known and overlaps it
         if (!s.date_from && !s.date_to) return false;

@@ -307,6 +307,54 @@ function defects()
                 return $j;
             });
         }, 'category-id-duplicate'],
+        ['source id twice', function ($d) {
+            edit_json($d, 'sources.json', function ($j) {
+                $j['sources'][1]['id'] = $j['sources'][0]['id'];
+                return $j;
+            });
+        }, 'source-id-duplicate'],
+        ['source without a title', function ($d) {
+            edit_json($d, 'sources.json', function ($j) {
+                $j['sources'][0]['title'] = ' ';
+                return $j;
+            });
+        }, 'source-title'],
+        ['source link that is not http or https', function ($d) {
+            edit_json($d, 'sources.json', function ($j) {
+                $j['sources'][0]['url'] = 'javascript:alert(1)';
+                return $j;
+            });
+        }, 'source-url'],
+        ['place with a source that does not exist', function ($d) {
+            edit_json($d, 'places.geojson', function ($j) {
+                $j['features'][0]['properties']['sources'] = ['99999999-9999-4999-8999-999999999999'];
+                return $j;
+            });
+        }, 'place-source'],
+        ['place with a certainty that is not known', function ($d) {
+            edit_json($d, 'places.geojson', function ($j) {
+                $j['features'][0]['properties']['certainty'] = 'maybe';
+                return $j;
+            });
+        }, 'place-certainty'],
+        ['place with a radius that is not a whole number of metres', function ($d) {
+            edit_json($d, 'places.geojson', function ($j) {
+                $j['features'][0]['properties']['radius_m'] = 2.5;
+                return $j;
+            });
+        }, 'place-radius'],
+        ['border with a radius', function ($d) {
+            edit_json($d, 'shapes.geojson', function ($j) {
+                $j['features'][0]['properties']['radius_m'] = 100;
+                return $j;
+            });
+        }, 'shape-radius'],
+        ['border with a source that does not exist', function ($d) {
+            edit_json($d, 'shapes.geojson', function ($j) {
+                $j['features'][0]['properties']['sources'] = ['99999999-9999-4999-8999-999999999999'];
+                return $j;
+            });
+        }, 'shape-source'],
         ['layer note folder of a layer that does not exist', function ($d) {
             $l = '12121212-1212-4212-8212-121212121212';
             mkdir("$d/layer-notes/$l");
