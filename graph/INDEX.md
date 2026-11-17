@@ -6,12 +6,12 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 | domain | files | lines | largest file |
 |---|---|---|---|
-| sidebar | 13 | 3873 | `app/js/sidebar/shapes.js` (827) |
+| sidebar | 13 | 3900 | `app/js/sidebar/shapes.js` (829) |
 | map | 4 | 2614 | `app/js/map/map.js` (1458) |
-| core | 7 | 1176 | `app/js/core/shapes.js` (441) |
+| core | 7 | 1199 | `app/js/core/shapes.js` (441) |
 | state | 1 | 44 | `app/js/state/state.js` (44) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
-| data | 8 | 4116 | `service/store.php` (2044) |
+| data | 8 | 4134 | `service/store.php` (2055) |
 | shared | 5 | 262 | `app/js/config.js` (155) |
 
 ## Flags
@@ -19,9 +19,9 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - `app/js/map/map.js` has 1458 lines (limit 600); owner: map
 - `app/js/sidebar/layers.js` has 691 lines (limit 600); owner: sidebar
 - `app/js/sidebar/routes.js` has 655 lines (limit 600); owner: sidebar
-- `app/js/sidebar/shapes.js` has 827 lines (limit 600); owner: sidebar
-- `dev/save-handler.js` has 1232 lines (limit 600); owner: data
-- `service/store.php` has 2044 lines (limit 600); owner: data
+- `app/js/sidebar/shapes.js` has 829 lines (limit 600); owner: sidebar
+- `dev/save-handler.js` has 1239 lines (limit 600); owner: data
+- `service/store.php` has 2055 lines (limit 600); owner: data
 
 ## Cross-domain uses of top-level names (not through `AHM.*`; compare with the contract)
 
@@ -34,7 +34,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - map -> core: 5 names (label, places, route +2)
 - map -> data: 3 names (ovDelete, ovSave, path)
 - map -> sidebar: 7 names (btns, edit, focusPlace +4)
-- sidebar -> core: 90 names (BORDER_TYPES, DATE_FORMATS, MONTHS +87)
+- sidebar -> core: 91 names (BORDER_TYPES, DATE_FORMATS, MONTHS +88)
 - sidebar -> data: 3 names (layerSave, path, save)
 - sidebar -> map: 6 names (drawShape, hideMenu, locate +3)
 - state -> core: 1 name (state)

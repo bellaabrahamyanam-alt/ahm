@@ -352,3 +352,30 @@ scenario('browser: a new version of a route in one go: the path opens for editin
   ok(await pg.evaluate((id) => !rts.draw && rts.open === id, old.id), 'cancelling returns to the route we started from');
   eq(old.n + 1, await pg.evaluate(() => shapes.length), 'cancelling saves nothing');
 });
+
+scenario('browser: names over time (T-043): a name with a period saves in the place form, a wrong order is refused, nameAt picks the name of the moment', null, async (pg, S) => {
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
+  await pg.evaluate(() => openDlg('place', { lon: 44.5, lat: 40.1, name: 'Newname' }));
+  ok(await pg.locator('#dPlaceForm .pf-name .pf-period').count() === 1, 'every name row has a "Period of this name" part');
+  await pg.click('#dPlaceForm .pf-add');
+  ok(await pg.locator('#dPlaceForm .pf-name .pf-period').count() === 2, 'a row added with "+ Add another name" has it too');
+  await pg.locator('#dPlaceForm .pf-name').nth(1).locator('.nn').fill('Oldname');
+  const row = pg.locator('#dPlaceForm .pf-name').nth(1);
+  await row.locator('.pf-period summary').click();
+  await row.locator('.pf-nfrom .df-mode').selectOption('exact'); await row.locator('.pf-nfrom .df-y').fill('1300');
+  await row.locator('.pf-nto .df-mode').selectOption('exact'); await row.locator('.pf-nto .df-y').fill('1200');
+  await pg.selectOption('#dPlaceForm .pf-type', 'village');
+  await pg.click('#dSave'); await pg.waitForTimeout(400);
+  ok(/before|earlier|order|after/i.test(await pg.locator('#dErr').innerText()), 'a period that ends before it begins is refused: ' + await pg.locator('#dErr').innerText());
+  await row.locator('.pf-nto .df-y').fill('1500');
+  await pg.click('#dSave'); await pg.waitForTimeout(800);
+  const r = await pg.evaluate(() => {
+    const p = places.find((x) => x.names.some((n) => n.name === 'Newname'));
+    const sec = (y) => Date.parse(`${String(y).padStart(4, '0')}-06-01T00:00:00Z`) / 1000;
+    return { names: p.names.map((n) => [n.name, !!n.date_from, !!n.date_to]), at1400: nameAt(p, 'en', sec(1400)), at1600: nameAt(p, 'en', sec(1600)), off: nameAt(p, 'en', null) };
+  });
+  eq(JSON.stringify([['Newname', false, false], ['Oldname', true, true]]), JSON.stringify(r.names), 'the period was saved on the second name only');
+  eq('Oldname', r.at1400, 'inside its period the old name is the name');
+  eq('Newname', r.at1600, 'outside every period the first name is the name');
+  eq('Newname', r.off, 'with no moment (time bar off) the first name, as before');
+});

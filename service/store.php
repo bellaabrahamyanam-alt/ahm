@@ -262,7 +262,7 @@ class store
             if (!in_array($lg, $codes, true)) {
                 throw self::bad("language \"$lg\" is not in the list; ask an administrator to add it");
             }
-            $names[] = ['lang' => $lg, 'name' => $nm];
+            $names[] = ['lang' => $lg, 'name' => $nm] + self::name_period($n);
         }
         if (!$names) {
             throw self::bad('at least one name is required');
@@ -959,7 +959,18 @@ class store
     }
 
     /** A list of {lang, name} (several per language allowed); every language must be in the dictionary. */
-    private static function clean_names($list, array $codes, $none_msg)
+    /** The optional period of one name (T-043): date_from / date_to of the date model, stored only when set (absent = always). */
+    private static function name_period($n)
+    {
+        $from = dates::clean($n['date_from'] ?? null, 'name begin date');
+        $to = dates::clean($n['date_to'] ?? null, 'name end date');
+        dates::order_check($from, $to);
+        return array_filter(['date_from' => $from, 'date_to' => $to], function ($d) {
+            return $d !== null;
+        });
+    }
+
+    private static function clean_names($list, array $codes, $none_msg, $dated = false)
     {
         $out = [];
         foreach (is_array($list) ? $list : [] as $n) {
@@ -971,7 +982,7 @@ class store
             if (!in_array($lg, $codes, true)) {
                 throw self::bad("language \"$lg\" is not in the list; ask an administrator to add it");
             }
-            $out[] = ['lang' => $lg, 'name' => $nm];
+            $out[] = ['lang' => $lg, 'name' => $nm] + ($dated ? self::name_period($n) : []);
         }
         if (!$out) {
             throw self::bad($none_msg);
@@ -1646,7 +1657,7 @@ class store
     /** Checks the fields of a shape (not the geometry) and returns them ready to store. */
     private static function clean_shape(array $in, array $codes, array $places, array $kinds)
     {
-        $names = self::clean_names($in['names'] ?? [], $codes, 'a border needs at least one name');
+        $names = self::clean_names($in['names'] ?? [], $codes, 'a border needs at least one name', true);
         if (!is_string($in['type'] ?? null) || !isset($kinds[$in['type']])) {
             throw self::bad('unknown border type' . (is_string($in['type'] ?? null) ? ' “' . $in['type'] . '” (it is not a line, area or river type in the types dictionary)' : ''));
         }

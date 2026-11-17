@@ -98,3 +98,8 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 
 - **What:** new file `sources.json` (`{ id, title, citation?, url? }`, sample in `data/sources.json`); optional `certainty`, `sources` and (places) `radius_m` on places and borders. `service/store.php` (`sources`, `save_source`, `clean_evidence`), `dev/save-handler.js` (`saveSource`, `cleanEvidence`), `controller/main.php` (`source_save`, data route `sources`), `config/routing.yml` (`/map/source-save`), 16 rows in `tests/fixtures/rules.json` (`@S0`, `@S1` = the first two sources), `tests/php/SourceTest.php`, 8 cases in `tests/data/DataTest.php` and `DataCheck.php`. A save that does not send a field keeps it; `null` / `''` / `[]` removes it. Nothing to migrate.
 - **Verify:** `php tests/php/run.php`, `php tests/data/run.php`, `node tests/js/run.js parity --no-browser`. Owner-approved: T-046.
+
+## 2026-11-17 — T-043: names over time
+
+- **What:** `names[]` entries of places and borders (routes, rivers) may carry `date_from` / `date_to` of the date model (`name_period` in `service/store.php`, `namePeriod` in `dev/save-handler.js`); stored only when set; `date_to` before `date_from` is refused; a bad date is refused. Layers, categories and types are unchanged. 5 rows in `tests/fixtures/rules.json`.
+- **Verify:** `php tests/php/run.php parity`, `node tests/js/run.js parity --no-browser`. Nothing to migrate.

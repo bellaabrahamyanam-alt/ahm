@@ -80,6 +80,7 @@ A GeoJSON `FeatureCollection` of points. It opens directly in QGIS or any GeoJSO
 ```
 
 - Coordinates are `[longitude, latitude]` (GeoJSON order).
+- **Names over time (T-043).** A name of a place or a border may carry `date_from` and `date_to` (the date model, stored only when set; absent = always valid), e.g. a city called Dvin in one era and Dwin in another. With the time bar off the first name of the language is shown, as always. With it on, the first name of the language whose period holds the moment is shown, else the first name of the language; no such language: English by the same rule. Search finds every name; a list row says "also called …" when a name other than the shown one matched. Layers, types and categories have no name periods.
 - `names` may contain several names with the same `lang`. The first name of a language is the one shown. `lang` must be a code of the [language dictionary](#languages-1).
 - `label` is derived (the first English name, or the first name). It exists only so GIS tools can label the points.
 - `date_from` / `date_to` are [dates](#dates) or `null` (unknown). Both are optional. `date_to: null` means the end is not known (it no longer means "still exists").

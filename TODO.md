@@ -21,7 +21,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 **Next (builder)**, in this order (`builder: next` takes the first open item of the first group)
 - 1. Rivers and 3D: T-058, T-064, T-065, T-059, T-061, T-062
-- 2. History and time: T-043, T-067, T-068, T-042
+- 2. History and time: T-067, T-068, T-042
 - 3. Analysis and sharing: T-044, T-045, T-047
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
@@ -124,11 +124,6 @@ View and selection tools for rivers, and the 3D map. Rivers are shapes of geomet
 
 Owner, in the chat, 2026-11-15. The date model already exists (`core/dates.js`: exact, approximate, range; `date_from` / `date_to` on places, shapes and layers), so none of this needs old data to be changed. Order: T-040 -> T-041 -> T-043 -> T-046 -> T-042 (T-042 needs T-041 and the decision T-052). Decisions: T-049 to T-052.
 
-- [ ] T-043 Names over time
-  What: a place or shape can have names that are valid only in a period (a name per era and language). The map and the lists show the name of the chosen language that is valid at the slider date. Search finds every name, old ones too, and shows which name matched when it is not the shown one.
-  Logic: `names[]` entries get optional `date_from` and `date_to` (date model); absent = always. Rule: with the slider off nothing changes (the first name of a language, as today). With it on: the first name of that language whose period contains `at`, else the first name of that language. Core function `nameAt(item, lang, at)`. Rules in `store.php` and `save-handler.js` (parity table rows). The place form (`placeform.js`) and the shape form get "from / to" per name row with `datefield.js`. Applies to places and shapes first.
-  Done when: tests cover `nameAt` (period inside, outside, no period, unknown language), the server accepts and refuses the new fields, search finds an old name, the forms save and show them.
-  Contract: yes (I-1 property, I-3 `nameAt`). Works without T-040 (shows the first name).
 - [ ] T-042 Border change between two dates: area gained and lost
   What: choose a border (a series from T-041) and two dates A and B. The map shows what was gained (green) and lost (red); a panel shows km2 and % of each. A note says that old borders are approximate.
   Logic: take the version valid at A and at B; gained = B minus A, lost = A minus B (polygon difference); area on the sphere (not on the flat map). For the difference use the MIT library `polygon-clipping`, vendored and pinned (exact result); the simpler option without a library is to compare the two polygons on a grid of cells (approximate to the cell size). Owner decides in T-052. Result is drawn as a temporary map layer, not saved.
@@ -214,6 +209,7 @@ Waits for T-003 and T-001.
 
 ## Done
 
+- [x] T-043 Names over time (2026-11-17, PR #41, branch `feat/names-over-time`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-3`, `tests/js/contract.test.js`). Optional `date_from` / `date_to` on names of places and borders, core `nameAt`, forms and \"also called\" rows. Not seen in a browser.
 - [x] T-046 Certainty and sources per object, phase 1 (2026-11-17, PR #38, branch `feat/certainty-sources`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-2`, `I-3`, `I-9`, `tests/js/contract.test.js`). `sources.json` dictionary, `certainty` / `sources` on places and borders, `radius_m` on places with a circle on the map, forms, sheets, filters for the places list. Phase 2 is T-065; the rest of the UI is T-066. Not seen in a browser.
 - [x] T-057 Select rivers by a rectangle and by area names (2026-11-17, PR #39, branch `feat/river-select`). Approved: 2026-11-17 owner, in the chat: "Also do t-057 and push on seperate branch" (covers `interfaces/I-2-sidebar-map.md` and `tests/js/contract.test.js`). Contract I-2 1.11: `highlightRivers(ids)`, `selectBox(on)`, events `box:select { bbox }` and `box:cancel`. Approved: 2026-11-17 owner, in the chat: "I wanted to select all known and unknown rivers ... cannot select also those rivers which weren't added to map manually" (covers I-2 1.12: `baseRivers()`, `b:<name>` ids in `highlightRivers`). The selection also takes the named rivers, canals and streams of the base map, but only those loaded in the view (`querySourceFeatures`), grouped by name; unnamed ones and ditches are left out; "Show only these" cannot hide base-map rivers. The selection lives in the sidebar, not in `AHM.state` (no new state key: only the sidebar reads it, and the map gets the ids). Not built: "Make bolder" (scope of T-055, now T-064) and "Add to a layer" (T-065, needs T-031). Not seen in a browser; the rectangle uses the mouse only (no touch).
 - [x] T-056 3D map: tilt, rotation and 3D terrain (2026-11-17, PR #37, branch `feat/t-056-3d-tilt`). Tilt 0 to 85, rotation 0 to 359, Flat, Tilt 60, North up, 3D terrain with a height slider; saved in the browser. Not seen on a real map.
