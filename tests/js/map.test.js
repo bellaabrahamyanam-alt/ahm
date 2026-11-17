@@ -37,10 +37,11 @@ const fc = (...places) => ({
 /** A recording stand-in for the parts of MapLibre that map.js uses. Like the real one it refuses sources and layers
  *  before the style has loaded. `fire('load')` plays the map's load event. */
 function makeMapLibre() {
-  const rec = { loaded: false, layers: [], sources: {}, handlers: {}, before: {} };
+  const rec = { loaded: false, layers: [], sources: {}, handlers: {}, before: {}, pitch: 0, bearing: 0, terrain: null, options: null };
   const base = [
     { id: 'base-bg', type: 'background' },
     { id: 'base-water', type: 'fill', 'source-layer': 'water' },
+    { id: 'base-waterway', type: 'line', source: 'openmaptiles', 'source-layer': 'waterway' },
     { id: 'base-label', type: 'symbol', 'source-layer': 'place' },
   ];
   const own = (id) => rec.layers.find((l) => l.id === id);
@@ -56,6 +57,7 @@ function makeMapLibre() {
     addControl() {},
     addSource(id, def) {
       needStyle();
+      if (rec.sources[id]) throw new Error('Source "' + id + '" already exists.'); // like the real one
       rec.sources[id] = {
         def,
         type: def.type,
@@ -75,6 +77,8 @@ function makeMapLibre() {
       rec.layers.push({ ...def });
     },
     getLayer: any,
+    hasImage: () => false,
+    addImage() {},
     removeLayer(id) {
       rec.layers = rec.layers.filter((l) => l.id !== id);
     },
@@ -94,6 +98,17 @@ function makeMapLibre() {
     queryRenderedFeatures: () => [],
     getCanvas: () => ({ style: {} }),
     resize() {},
+    setPitch(v) {
+      rec.pitch = v;
+    },
+    setBearing(v) {
+      rec.bearing = v;
+    },
+    getPitch: () => rec.pitch,
+    getBearing: () => rec.bearing,
+    setTerrain(t) {
+      rec.terrain = t;
+    },
     flyTo() {},
     fitBounds() {},
     getZoom: () => 7,
@@ -104,7 +119,8 @@ function makeMapLibre() {
     (rec.handlers[name] || []).forEach((fn) => fn(arg));
   };
   const maplibregl = {
-    Map: function () {
+    Map: function (o) {
+      rec.options = o;
       return map;
     },
     NavigationControl: function () {},
@@ -140,6 +156,7 @@ function boot({ ready = true, before } = {}) {
     overlaysInit() {},
     syncOverlays() {},
     shapesInit() {}, // shapes.js is not loaded here: no borders to draw
+    setRiverSize: (k) => (p.ctx.__river ||= []).push(k), // T-055: shapes.js sets the river widths
     shapeLineAt: () => null,
     shapesAt: () => [],
     shapeDrawing: null,
@@ -476,6 +493,7 @@ function bootUx({ ready = true, glyphs = true } = {}) {
     overlaysInit() {},
     syncOverlays() {},
     shapesInit() {}, // shapes.js is not loaded here: no borders to draw
+    setRiverSize: (k) => (p.ctx.__river ||= []).push(k), // T-055: shapes.js sets the river widths
     shapeLineAt: () => null,
     shapesAt: () => [],
     shapeDrawing: null,
@@ -1663,4 +1681,211 @@ test('config: bbox is [32, 29, 51, 44] and the place search is biased to exactly
   await ctx.geocode('Baghdad', 'en');
   ok(url.includes('&bounded=1&'), 'the search stays bounded');
   ok(url.includes('&viewbox=32,44,51,29&'), 'viewbox = west,north,east,south of the config: ' + url);
+});
+
+// ---- 3D view: tilt, rotation and 3D terrain (T-056) ----
+const VIEW_SEL = ['#view-pitch', '#view-bearing', '#view-flat', '#view-tilt60', '#view-north', '#view-terrain', '#view-exag'];
+/** A page whose 3D controls hand their handlers back by selector and event name; `store` receives what is written to localStorage. */
+function bootView({ terrain = TERRAIN, saved = null, store = [] } = {}) {
+  const handlers = {};
+  const b = boot({
+    before: (p) => {
+      withTerrain(terrain)(p);
+      p.ctx.localStorage = {
+        getItem: (k) => (saved && k === 'ahm-view3d' ? JSON.stringify(saved) : null),
+        setItem: (k, v) => store.push([k, v]),
+      };
+      VIEW_SEL.forEach((sel) => {
+        p.el(sel).addEventListener = (name, fn) => (handlers[sel + ':' + name] = fn);
+      });
+    },
+  });
+  const fireOn = (sel, name, props = {}) => {
+    Object.assign(b.p.el(sel), props);
+    handlers[sel + ':' + name]({ target: b.p.el(sel) });
+  };
+  return { ...b, handlers, fireOn, store };
+}
+
+test('map: 3D view: the map allows a pitch up to 85 degrees', () => {
+  eq(85, boot().ml.rec.options.maxPitch);
+});
+
+test('map: 3D view: the sliders call setPitch and setBearing with numbers', () => {
+  const { ml, fireOn } = bootView();
+  fireOn('#view-pitch', 'input', { value: '45' });
+  eq(45, ml.rec.pitch);
+  fireOn('#view-bearing', 'input', { value: '270' });
+  eq(270, ml.rec.bearing);
+});
+
+test('map: 3D view: map events move the sliders (a drag with the mouse or two fingers), bearing as 0 to 359', () => {
+  const { p, ml } = bootView();
+  ml.rec.pitch = 62.4;
+  ml.fire('pitch');
+  eq(62, p.el('#view-pitch').value);
+  ml.rec.bearing = -90; // MapLibre answers -180 to 180
+  ml.fire('rotate');
+  eq(270, p.el('#view-bearing').value);
+  ml.rec.bearing = 359.6;
+  ml.fire('rotate');
+  eq(0, p.el('#view-bearing').value, 'rounds to 360 = 0');
+});
+
+test('map: 3D view: Flat, Tilt 60 and North up', () => {
+  const { p, ml, fireOn } = bootView();
+  ml.rec.pitch = 30;
+  ml.rec.bearing = 120;
+  fireOn('#view-tilt60', 'click');
+  eq(60, ml.rec.pitch);
+  eq(120, ml.rec.bearing, 'Tilt 60 keeps the rotation');
+  eq(60, p.el('#view-pitch').value);
+  fireOn('#view-north', 'click');
+  eq(0, ml.rec.bearing);
+  eq(60, ml.rec.pitch, 'North up keeps the tilt');
+  fireOn('#view-flat', 'click');
+  eq(0, ml.rec.pitch);
+  eq(0, p.el('#view-pitch').value);
+});
+
+test('map: 3D view: 3D terrain adds the relief source even when the shading is off, follows the exaggeration, and is cleared', () => {
+  const { ml, p, fireOn } = bootView();
+  ok(!ml.rec.sources['ahm-terrain'], 'nothing is requested before 3D is switched on');
+  eq(null, ml.rec.terrain);
+  fireOn('#view-terrain', 'change', { checked: true });
+  ok(ml.rec.sources['ahm-terrain'], 'the source of the relief');
+  ok(!ml.rec.layers.some((l) => l.id === 'ahm-relief'), 'no hillshade layer: only the source');
+  eq({ source: 'ahm-terrain', exaggeration: 1 }, ml.rec.terrain);
+  fireOn('#view-exag', 'input', { value: '2.5' });
+  eq({ source: 'ahm-terrain', exaggeration: 2.5 }, ml.rec.terrain);
+  fireOn('#view-terrain', 'change', { checked: false });
+  eq(null, ml.rec.terrain);
+  fireOn('#view-terrain', 'change', { checked: true });
+  eq({ source: 'ahm-terrain', exaggeration: 2.5 }, ml.rec.terrain, 'on again: the same source, no second addSource');
+  ok(!p.el('#view-terrain-opts').hidden, 'the control is shown when tiles are configured');
+});
+
+test('map: 3D view: 3D terrain and the relief layers share one source in either order', () => {
+  const a = bootView();
+  a.fireOn('#view-terrain', 'change', { checked: true });
+  a.switchBasemap('@relief');
+  ok(a.ml.rec.layers.some((l) => l.id === 'ahm-relief'), '3D first, then the relief');
+  const b = bootView();
+  b.switchBasemap('@relief');
+  b.fireOn('#view-terrain', 'change', { checked: true });
+  eq({ source: 'ahm-terrain', exaggeration: 1 }, b.ml.rec.terrain, 'relief first, then 3D');
+});
+
+test('map: 3D view: without terrain tiles in the config the 3D terrain control is hidden, tilt and rotation stay', () => {
+  const { p } = bootView({ terrain: { ...TERRAIN, tiles: [] } });
+  ok(p.el('#view-terrain-opts').hidden);
+});
+
+test('map: 3D view: the settings are saved and read again at the start', () => {
+  const store = [];
+  const a = bootView({ store });
+  a.fireOn('#view-pitch', 'input', { value: '50' });
+  eq('ahm-view3d', store.at(-1)[0]);
+  eq(50, JSON.parse(store.at(-1)[1]).pitch);
+  a.fireOn('#view-terrain', 'change', { checked: true });
+  eq(true, JSON.parse(store.at(-1)[1]).terrain);
+  const b = bootView({ saved: { pitch: 50, bearing: 90, terrain: true, exag: 2 } });
+  eq(50, b.ml.rec.pitch);
+  eq(90, b.ml.rec.bearing);
+  eq({ source: 'ahm-terrain', exaggeration: 2 }, b.ml.rec.terrain);
+  eq(50, b.p.el('#view-pitch').value);
+  eq(90, b.p.el('#view-bearing').value);
+  eq(true, b.p.el('#view-terrain').checked);
+  eq(2, b.p.el('#view-exag').value);
+});
+
+test('map: 3D view: bad saved values are ignored', () => {
+  const b = bootView({ saved: { pitch: 'high', bearing: 9999, terrain: 'yes', exag: -3 } });
+  eq(0, b.ml.rec.pitch);
+  eq(0, b.ml.rec.bearing);
+  eq(null, b.ml.rec.terrain);
+});
+
+// ---- River size (T-055): one slider in More > Maps & base map widens the rivers; the base-map waterways get one extra line layer above 1x ----
+const bootRiver = (saved) => {
+  const handlers = {};
+  const b = boot({
+    before: (p) => {
+      p.ctx.localStorage = { getItem: (k) => (k === 'ahm-river-size' ? saved : null), setItem: (k, v) => (p.ctx.__saved = [k, v]) };
+      p.el('#river-size').addEventListener = (name, fn) => (handlers[name] = fn);
+    },
+  });
+  const slide = (v) => {
+    b.p.el('#river-size').value = String(v);
+    handlers.input({ target: b.p.el('#river-size') });
+  };
+  return { ...b, slide, boost: () => b.ml.rec.layers.find((l) => l.id === 'ahm-waterway-boost'), widths: () => b.p.ctx.__river };
+};
+
+test('map: river size: at the start the factor is 1x and there is no boost layer', () => {
+  const { p, boost, widths } = bootRiver(null);
+  eq(1, Number(p.el('#river-size').value));
+  eq([1], widths());
+  ok(!boost(), 'no layer at 1x');
+});
+
+test('map: river size: the slider sets the factor for the river shapes and saves it', () => {
+  const { p, slide, widths } = bootRiver(null);
+  slide(2.5);
+  eq(2.5, widths()[widths().length - 1]);
+  eq(['ahm-river-size', '2.5'], p.ctx.__saved);
+});
+
+test('map: river size: above 1x one line layer on the waterway layer of the base style; width by zoom times the slider; removed at 1x', () => {
+  const { ml, slide, boost } = bootRiver(null);
+  slide(2);
+  const l = boost();
+  ok(l && l.type === 'line', 'a line layer');
+  eq('openmaptiles', l.source);
+  eq('waterway', l['source-layer']);
+  eq('base-label', ml.rec.before['ahm-waterway-boost'], 'below the labels');
+  eq(3, l.paint['line-width'][6], 'width at zoom 10 is 1.5 x 2');
+  slide(4);
+  eq(1, ml.rec.layers.filter((x) => x.id === 'ahm-waterway-boost').length, 'still one layer');
+  eq(6, boost().paint['line-width'][6], 'the width follows the slider');
+  slide(1);
+  ok(!boost(), 'gone at 1x');
+  slide(0.5);
+  ok(!boost(), 'no boost below 1x');
+});
+
+test('map: river size: a saved value is read again; a bad one is ignored', () => {
+  const a = bootRiver('3');
+  eq(3, Number(a.p.el('#river-size').value));
+  ok(a.boost(), 'the boost layer is back');
+  eq([3], a.widths());
+  for (const bad of ['9', '0', 'x', '']) eq([1], bootRiver(bad).widths(), 'saved ' + JSON.stringify(bad));
+});
+
+test('map: river size: a satellite base map hides the boost layer', () => {
+  const { slide, boost, switchBasemap } = bootRiver(null);
+  slide(2);
+  switchBasemap('sat1');
+  eq('none', boost().layout.visibility);
+  switchBasemap('');
+  eq('visible', boost().layout.visibility);
+});
+
+test('map: river size: river shapes are drawn with width x factor, others unchanged (shapes.js with the stand-in map)', () => {
+  const p = load(['typeicons.js', 'map.js', 'map/shapes.js']);
+  const ml = makeMapLibre();
+  Object.assign(p.ctx, { maplibregl: ml.maplibregl, AHM_CONFIG: CONFIG, esc: String, registerTypeIcons() {}, overlaysInit() {}, syncOverlays() {}, console: { log() {}, warn() {}, error() {} } });
+  const m = new ml.maplibregl.Map(); // the stand-in map; only shapesInit runs here
+  m.getCanvas = () => ({ style: {}, addEventListener() {} });
+  ml.rec.loaded = true;
+  p.X('map = __0', m);
+  p.X('shapesInit()');
+  const line = () => ml.rec.layers.find((l) => l.id === 'ahm-shape-line-solid').paint['line-width'];
+  const factor = (e) => JSON.stringify(e).match(/"case",\["==",\["get","river"\],true\],([0-9.]+),1/);
+  eq('1', factor(line())[1], 'starts at 1');
+  p.X('setRiverSize(2.5)');
+  eq('2.5', factor(line())[1]);
+  for (const id of ['ahm-shape-halo', 'ahm-shape-shadow', 'ahm-shape-casing']) eq('2.5', factor(ml.rec.layers.find((l) => l.id === id).paint['line-width'])[1], id);
+  p.X('setRiverSize(1)');
+  eq('1', factor(line())[1], '1x gives the old widths');
 });
