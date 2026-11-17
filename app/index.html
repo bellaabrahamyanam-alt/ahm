@@ -77,6 +77,18 @@
           <div class="sn">Base map</div>
           <select id="basemap"></select>
           <div id="base-credit" hidden></div>
+          <div class="label">3D view</div>
+          <label>Tilt <input type="range" id="view-pitch" min="0" max="85" step="1" value="0" /></label>
+          <label>Rotation <input type="range" id="view-bearing" min="0" max="359" step="1" value="0" /></label>
+          <div class="rbtns">
+            <button type="button" id="view-flat">Flat</button>
+            <button type="button" id="view-tilt60">Tilt 60</button>
+            <button type="button" id="view-north">North up</button>
+          </div>
+          <div id="view-terrain-opts">
+            <label><input type="checkbox" id="view-terrain" /> 3D terrain</label>
+            <label>Height <input type="range" id="view-exag" min="0.5" max="4" step="0.1" value="1" /></label>
+          </div>
           <div id="relief-opts" hidden>
           <div class="label">Relief</div>
           <label><input type="checkbox" id="relief-color" checked /> Colour by height</label>

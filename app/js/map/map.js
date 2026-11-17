@@ -97,8 +97,9 @@ const rampStops = () => {
 };
 // Hillshade from our own terrain tiles. Added when first chosen, so nothing is requested until then. It goes below the first base-map
 // symbol layer: labels, markers and our own layers stay above it.
-function ensureRelief() {
-  if (map.getLayer("ahm-relief")) return;
+// The source is shared by the hillshade, the colours and the 3D terrain (T-056): added once, by whichever is switched on first.
+function ensureTerrainSource() {
+  if (map.getSource("ahm-terrain")) return;
   const t = AHM_CONFIG.basemap.terrain;
   map.addSource("ahm-terrain", {
     type: "raster-dem",
@@ -109,6 +110,11 @@ function ensureRelief() {
     ...(t.bounds ? { bounds: t.bounds } : {}), // only for OWN tiles: no requests outside the built area (a missing file would reach PHP). The AWS tiles cover the world
     attribution: t.attribution,
   });
+}
+function ensureRelief() {
+  if (map.getLayer("ahm-relief")) return;
+  const t = AHM_CONFIG.basemap.terrain;
+  ensureTerrainSource();
   const layers = map.getStyle().layers;
   const before =
     layers.find((l) => l.type === "symbol" && !l.id.startsWith("ahm-")) ||
@@ -180,6 +186,7 @@ function initMap() {
     style: b.style,
     center: AHM_CONFIG.center,
     zoom: AHM_CONFIG.zoom,
+    maxPitch: 85, // T-056: the default of MapLibre is 60
   });
   $("#basemap").innerHTML =
     '<option value="">Map</option>' +
@@ -188,6 +195,7 @@ function initMap() {
       .join("") +
     (terrainOn() ? `<option value="${RELIEF}">Map + relief</option>` : "");
   initReliefControls();
+  initViewControls();
   map.on("error", (e) => {
     if (e.sourceId === "ahm-terrain")
       $("#status").textContent =
@@ -512,6 +520,78 @@ function initMap() {
     $("#status").textContent = "";
     applyVis();
     scheduleAdapt();
+  });
+}
+
+// ---- 3D view: tilt, rotation and 3D terrain (T-056). A view setting, saved in the browser; no saved data changes. ----
+const VIEW_KEY = "ahm-view3d";
+const view3d = { terrain: false, exag: 1, ready: false }; // ready: the style has loaded, so sources and terrain may be set
+const wrap360 = (b) => ((Math.round(b) % 360) + 360) % 360; // MapLibre answers -180 to 180
+const inRange = (v, lo, hi) => typeof v === "number" && v >= lo && v <= hi;
+function syncView() {
+  $("#view-pitch").value = Math.round(map.getPitch());
+  $("#view-bearing").value = wrap360(map.getBearing());
+}
+function saveView() {
+  try {
+    localStorage.setItem(
+      VIEW_KEY,
+      JSON.stringify({ pitch: Number($("#view-pitch").value), bearing: Number($("#view-bearing").value), terrain: view3d.terrain, exag: view3d.exag }),
+    );
+  } catch (e) {
+    // private mode or no storage: the settings are just not kept
+  }
+}
+function applyTerrain() {
+  if (!view3d.ready || !terrainOn()) return;
+  if (view3d.terrain) {
+    ensureTerrainSource(); // the source of the relief, even when the hillshade is off
+    map.setTerrain({ source: "ahm-terrain", exaggeration: view3d.exag });
+  } else map.setTerrain(null);
+}
+function initViewControls() {
+  let sv = {};
+  try {
+    sv = JSON.parse(localStorage.getItem(VIEW_KEY) || "null") || {};
+  } catch (e) {
+    sv = {};
+  }
+  view3d.exag = inRange(sv.exag, 0.5, 4) ? sv.exag : 1;
+  view3d.terrain = sv.terrain === true && terrainOn();
+  if (inRange(sv.pitch, 0, 85)) map.setPitch(sv.pitch);
+  if (inRange(sv.bearing, 0, 359)) map.setBearing(sv.bearing);
+  $("#view-terrain-opts").hidden = !terrainOn();
+  $("#view-terrain").checked = view3d.terrain;
+  $("#view-exag").value = view3d.exag;
+  syncView();
+  const set = (fn, v) => {
+    fn.call(map, v);
+    syncView();
+    saveView();
+  };
+  $("#view-pitch").addEventListener("input", (e) => set(map.setPitch, Number(e.target.value)));
+  $("#view-bearing").addEventListener("input", (e) => set(map.setBearing, Number(e.target.value)));
+  $("#view-flat").addEventListener("click", () => set(map.setPitch, 0));
+  $("#view-tilt60").addEventListener("click", () => set(map.setPitch, 60));
+  $("#view-north").addEventListener("click", () => set(map.setBearing, 0));
+  $("#view-terrain").addEventListener("change", (e) => {
+    view3d.terrain = e.target.checked;
+    applyTerrain();
+    saveView();
+  });
+  $("#view-exag").addEventListener("input", (e) => {
+    view3d.exag = Number(e.target.value);
+    if (view3d.terrain) applyTerrain();
+    saveView();
+  });
+  // a drag with the mouse (right button or Ctrl) or two fingers moves the sliders; the end of the gesture is saved
+  map.on("pitch", syncView);
+  map.on("rotate", syncView);
+  map.on("pitchend", saveView);
+  map.on("rotateend", saveView);
+  map.on("load", () => {
+    view3d.ready = true;
+    applyTerrain();
   });
 }
 
