@@ -128,3 +128,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 
 - **What:** the symbols (`ahm-places`) and the labels (`ahm-labels`) are drawn at opacity 0.35 and 0.45 when the feature property `faded` is `true` (I-2 [1.10]). Shapes need no change: the sidebar lowers their `opacity`.
 - **Files:** `app/js/map/map.js`, `tests/js/map.test.js`. **Verify:** `node tests/js/run.js faded --no-browser`. Not seen on a real map.
+
+## 2026-11-17 — T-056: 3D view (tilt, rotation, 3D terrain)
+
+- **What:** More > Maps & base map has a "3D view" block: tilt slider (0 to 85), rotation slider (0 to 359), buttons Flat, Tilt 60, North up, and (when `basemap.terrain.tiles` is set) a "3D terrain" checkbox with a height slider (0.5x to 4x, default 1x). The map is created with `maxPitch: 85`. Sliders call `setPitch`/`setBearing`; the `pitch` and `rotate` events move the sliders back (bearing shown as 0 to 359). 3D = `map.setTerrain({ source: "ahm-terrain", exaggeration })`, cleared with `setTerrain(null)`. The raster-dem source is now added by `ensureTerrainSource()`, shared with the hillshade and colours, so 3D works with the shading off and nothing is added twice. Saved in `localStorage` key `ahm-view3d` (`pitch`, `bearing`, `terrain`, `exag`); bad values are ignored. No saved data and no contract change.
+- **Why:** to see mountains and valleys from the side.
+- **Files:** `app/js/map/map.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (stand-in now has `setPitch`, `setBearing`, `getPitch`, `getBearing`, `setTerrain`, constructor options, and refuses a second source of the same id like MapLibre), `tests/js/browser.test.js` (stub answers `getPitch`/`getBearing`), `graph/`, `context/`, `docs/02`, `docs/08`, `docs/14`, `TODO.md`.
+- **How to verify:** `node tests/js/run.js map --no-browser`. By eye (NOT done: no real map here): tilt and rotate with the sliders and with right-button or Ctrl drag; 3D terrain on and off; the HTML place markers stay at the right spot when tilted.
+- **Follow-ups:** none new.

@@ -6,34 +6,34 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 | domain | files | lines | largest file |
 |---|---|---|---|
-| sidebar | 13 | 3673 | `app/js/sidebar/shapes.js` (734) |
-| map | 4 | 2328 | `app/js/map/map.js` (1290) |
-| core | 7 | 1108 | `app/js/core/shapes.js` (380) |
+| sidebar | 13 | 3596 | `app/js/sidebar/layers.js` (691) |
+| map | 4 | 2408 | `app/js/map/map.js` (1370) |
+| core | 7 | 1096 | `app/js/core/shapes.js` (368) |
 | state | 1 | 44 | `app/js/state/state.js` (44) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
-| data | 8 | 3900 | `service/store.php` (1922) |
+| data | 8 | 3841 | `service/store.php` (1884) |
 | shared | 5 | 258 | `app/js/config.js` (151) |
 
 ## Flags
 
-- `app/js/map/map.js` has 1290 lines (limit 600); owner: map
+- `app/js/map/map.js` has 1370 lines (limit 600); owner: map
 - `app/js/sidebar/layers.js` has 691 lines (limit 600); owner: sidebar
-- `app/js/sidebar/routes.js` has 655 lines (limit 600); owner: sidebar
-- `app/js/sidebar/shapes.js` has 734 lines (limit 600); owner: sidebar
-- `dev/save-handler.js` has 1158 lines (limit 600); owner: data
-- `service/store.php` has 1922 lines (limit 600); owner: data
+- `app/js/sidebar/routes.js` has 629 lines (limit 600); owner: sidebar
+- `app/js/sidebar/shapes.js` has 683 lines (limit 600); owner: sidebar
+- `dev/save-handler.js` has 1137 lines (limit 600); owner: data
+- `service/store.php` has 1884 lines (limit 600); owner: data
 
 ## Cross-domain uses of top-level names (not through `AHM.*`; compare with the contract)
 
 - core -> data: 2 names (path, save)
 - core -> sidebar: 2 names (edit, show)
-- data -> core: 9 names (dateBounds, dateClean, dateOrderCheck +6)
+- data -> core: 8 names (dateClean, dateOrderCheck, dateUpgrade +5)
 - data -> map: 1 name (poly)
 - data -> sidebar: 1 name (edit)
 - map -> core: 5 names (label, places, route +2)
 - map -> data: 3 names (ovDelete, ovSave, path)
 - map -> sidebar: 7 names (btns, edit, focusPlace +4)
-- sidebar -> core: 86 names (BORDER_TYPES, DATE_FORMATS, MONTHS +83)
+- sidebar -> core: 84 names (BORDER_TYPES, DATE_FORMATS, MONTHS +81)
 - sidebar -> data: 3 names (layerSave, path, save)
 - sidebar -> map: 6 names (drawShape, hideMenu, locate +3)
 - state -> core: 1 name (state)
