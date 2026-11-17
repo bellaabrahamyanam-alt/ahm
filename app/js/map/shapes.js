@@ -14,7 +14,8 @@ const SHAPE_FILL = 'ahm-shape-fill';
 const SHAPE_LINES = Object.keys(SHAPE_DASH).map((d) => 'ahm-shape-line-' + d);
 const DRAFT = '#bc2a4d'; // the colour of the shape being drawn
 const PREVIEW = '#1d6fd1'; // the colour of a search result shown before it is added
-let riverSelIds = [], // ids of the selected rivers (T-057), drawn as a glow under their lines
+let riverSelIds = [], // ids of the selected river shapes (T-057), drawn as a glow under their lines
+  riverSelNames = [], // names of the selected rivers of the base map
   boxTool = null; // the rectangle tool: { from: lngLat | null } while it is on
 let labelFont = ['Noto Sans Regular']; // map.js sets the font of the base map
 let shapesNow = null, // the last collection received (drawn as soon as the map is ready)
@@ -83,6 +84,7 @@ function shapesInit() {
       },
     })
   );
+  applyRiverSel(); // a selection asked for before the layers existed
   // the rectangle of the "select by rectangle" tool (T-057)
   map.addSource('ahm-box', { type: 'geojson', data: EMPTY });
   add({ id: 'ahm-box-fill', type: 'fill', paint: { 'fill-color': '#f5a300', 'fill-opacity': 0.12 } }, 'ahm-box');
@@ -425,6 +427,36 @@ function drawShape(opts, onChange) {
 }
 const endDraw = () => shapeDrawing && shapeDrawing.remove();
 
+// ---- the selected rivers (T-057) ----
+const BASE_RIVER_CLASSES = ['river', 'canal', 'stream']; // the classes of the "waterway" layer of the base map that count as rivers
+const waterwaySource = () => {
+  const l = map.getStyle().layers.find((x) => x['source-layer'] === 'waterway' && x.source);
+  return l && l.source;
+};
+function applyRiverSel() {
+  if (!mapReady || !map.getLayer('ahm-river-sel')) return; // shapesInit calls this again
+  map.setFilter('ahm-river-sel', ['in', ['get', 'id'], ['literal', riverSelIds]]);
+  const has = !!map.getLayer('ahm-base-river-sel'),
+    filter = ['in', ['get', 'name'], ['literal', riverSelNames]];
+  if (!riverSelNames.length) return has && map.removeLayer('ahm-base-river-sel');
+  if (has) return map.setFilter('ahm-base-river-sel', filter);
+  const src = waterwaySource();
+  if (!src) return;
+  const before = map.getStyle().layers.find((l) => l.type === 'symbol' && !l.id.startsWith('ahm-'));
+  map.addLayer(
+    {
+      id: 'ahm-base-river-sel',
+      type: 'line',
+      source: src,
+      'source-layer': 'waterway',
+      filter,
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#f5a300', 'line-width': ['interpolate', ['linear'], ['zoom'], 6, 2, 10, 4, 14, 8], 'line-opacity': 0.7 },
+    },
+    before && before.id,
+  );
+}
+
 // ---- the rectangle tool (T-057): drag a box on the map; the sidebar gets it as [west, south, east, north] ----
 const boxOf = (a, b) => [Math.min(a.lng, b.lng), Math.min(a.lat, b.lat), Math.max(a.lng, b.lng), Math.max(a.lat, b.lat)];
 function drawBox(b) {
@@ -449,10 +481,25 @@ Object.assign(AHM.map, {
     const s = mapReady && map.getSource('ahm-shapes');
     if (s) s.setData(fc);
   },
-  /** The rivers (by id) drawn as selected. */
+  /** The rivers drawn as selected: shape ids, and "b:<name>" for the rivers of that name in the base map. */
   highlightRivers(ids) {
-    riverSelIds = ids.slice();
-    if (mapReady && map.getLayer('ahm-river-sel')) map.setFilter('ahm-river-sel', ['in', ['get', 'id'], ['literal', riverSelIds]]);
+    riverSelIds = ids.filter((i) => !i.startsWith('b:'));
+    riverSelNames = ids.filter((i) => i.startsWith('b:')).map((i) => i.slice(2));
+    applyRiverSel();
+  },
+  /** The named rivers, canals and streams of the base map in the tiles that are loaded now (the view), the pieces of one river together: [{ id: 'b:<name>', name, geometry: MultiLineString }]. */
+  baseRivers() {
+    const src = waterwaySource(),
+      by = new Map();
+    if (!src) return [];
+    for (const f of map.querySourceFeatures(src, { sourceLayer: 'waterway' })) {
+      const n = f.properties && f.properties.name;
+      if (!n || !BASE_RIVER_CLASSES.includes(f.properties.class)) continue;
+      const g = f.geometry,
+        lines = g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : [];
+      by.set(n, (by.get(n) || []).concat(lines));
+    }
+    return [...by].map(([name, coordinates]) => ({ id: 'b:' + name, name, geometry: { type: 'MultiLineString', coordinates } }));
   },
   /** true: the next drag on the map draws a box (event box:select, Escape = box:cancel); false: stops the tool without an event. */
   selectBox(on) {

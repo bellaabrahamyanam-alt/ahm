@@ -15,6 +15,7 @@ const sh = {
   geo: [], // results of the OpenStreetMap search
   geoQ: '',
   rsel: new Set(), // the selected rivers (T-057), by id; this session only
+  rbase: new Map(), // the selected rivers of the base map: "b:<name>" -> { id, name, geometry }
   rOnly: false, // "Show only these": the map draws only the selected rivers
   boxOn: false, // the rectangle tool of the map is on
   river: { on: false, seen: false, q: '', lines: [], clicks: [], res: [] }, // rivers: the river lines found by name (only used for drawing and looking, never saved) and the clicks they were used for
@@ -688,28 +689,36 @@ function shSet(list) {
 }
 
 // ---- select rivers (T-057): by a rectangle on the map or by the name of an area; the selection can be zoomed to, kept alone on the map ----
-const rvMode = () => ($('#rvInside').checked ? 'inside' : 'cross');
-const rvRivers = () => shapes.filter(isRiver);
 const rvBoxBtn = () => ($('#rvBox').textContent = sh.boxOn ? 'Drag on the map (Esc cancels)' : 'Select by rectangle');
+const rvIsBase = (id) => id.startsWith('b:');
+/** The ids of every river that touches `area` (a box or a geometry): the ones you added, then the rivers of the base map that are loaded in the view. */
+function rvFound(area) {
+  const mode = $('#rvInside').checked ? 'inside' : 'cross',
+    base = AHM.map.baseRivers(),
+    own = riversTouching(shapes.filter(isRiver), area, mode),
+    ids = riversTouching(base, area, mode);
+  ids.forEach((id) => sh.rbase.set(id, base.find((b) => b.id === id)));
+  return { ids: [...own, ...ids], base: ids.length };
+}
 function rvSync() {
-  [...sh.rsel].forEach((id) => shapeById(id) || sh.rsel.delete(id)); // a river that was deleted leaves the selection
+  [...sh.rsel].forEach((id) => (rvIsBase(id) ? sh.rbase.has(id) : shapeById(id)) || sh.rsel.delete(id)); // a river that was deleted leaves the selection
   if (!sh.rsel.size) sh.rOnly = false;
-  const l = $('#lang').value;
+  const l = $('#lang').value,
+    nameOf = (id) => (rvIsBase(id) ? sh.rbase.get(id).name : shapeName(shapeById(id), l));
   $('#rvCount').textContent = sh.rsel.size + ' selected';
   $('#rvOnly').textContent = sh.rOnly ? 'Show all rivers' : 'Show only these';
   $('#rvSelList').innerHTML = [...sh.rsel]
-    .map((id) => shapeById(id))
-    .sort((a, b) => shapeName(a, l).localeCompare(shapeName(b, l)))
-    .map((r) => `<li data-sid="${r.id}"><b>${esc(shapeName(r, l))}</b> <button type="button" class="icon-btn" data-rvdel="${r.id}" title="Remove from the selection" aria-label="Remove from the selection">×</button></li>`)
+    .sort((a, b) => nameOf(a).localeCompare(nameOf(b)))
+    .map((id) => `<li data-sid="${esc(id)}"><b>${esc(nameOf(id))}</b>${rvIsBase(id) ? ' <span class="sn">map</span>' : ''} <button type="button" class="icon-btn" data-rvdel="${esc(id)}" title="Remove from the selection" aria-label="Remove from the selection">×</button></li>`)
     .join('');
-  AHM.map.highlightRivers([...sh.rsel]);
+  AHM.map.highlightRivers([...sh.rsel].sort((a, b) => rvIsBase(a) - rvIsBase(b))); // your rivers first
   shPush();
 }
-/** Adds the rivers with these ids; says how many were new. */
-function rvAdd(ids, what) {
+/** Adds the rivers found; says how many were new. */
+function rvAdd(found, what) {
   const n = sh.rsel.size;
-  ids.forEach((id) => sh.rsel.add(id));
-  $('#rvMsg').textContent = `${sh.rsel.size - n} new of ${ids.length} rivers found${what ? ' for ' + what : ''}.`;
+  found.ids.forEach((id) => sh.rsel.add(id));
+  $('#rvMsg').textContent = `${sh.rsel.size - n} new of ${found.ids.length} rivers found${what ? ' for ' + what : ''}.${found.base ? ' Base-map rivers: only those with a name that are loaded in the view; zoom to the area first.' : ''}`;
   rvSync();
 }
 $('#rvBox').addEventListener('click', () => {
@@ -720,7 +729,7 @@ $('#rvBox').addEventListener('click', () => {
 AHM.on('box:select', ({ bbox }) => {
   sh.boxOn = false;
   rvBoxBtn();
-  rvAdd(riversTouching(rvRivers(), bbox, rvMode()));
+  rvAdd(rvFound(bbox));
 });
 AHM.on('box:cancel', () => {
   sh.boxOn = false;
@@ -737,7 +746,7 @@ $('#rvAreaRes').addEventListener('click', (e) => {
   const b = e.target.closest('[data-area]'),
     a = b && shapeById(b.dataset.area);
   if (!a) return;
-  rvAdd(riversTouching(rvRivers(), a.geometry, rvMode()), shapeName(a, $('#lang').value));
+  rvAdd(rvFound(a.geometry), shapeName(a, $('#lang').value));
   $('#rvArea').value = '';
   $('#rvAreaRes').innerHTML = '';
 });
@@ -745,10 +754,11 @@ $('#rvSelList').addEventListener('click', (e) => {
   const x = e.target.closest('[data-rvdel]'),
     li = e.target.closest('li[data-sid]');
   if (x) (sh.rsel.delete(x.dataset.rvdel), rvSync());
-  else if (li) shOpen(li.dataset.sid, true);
+  else if (li && !rvIsBase(li.dataset.sid)) shOpen(li.dataset.sid, true);
 });
 $('#rvClear').addEventListener('click', () => {
   sh.rsel.clear();
+  sh.rbase.clear();
   $('#rvMsg').textContent = '';
   rvSync();
 });
@@ -757,6 +767,6 @@ $('#rvOnly').addEventListener('click', () => {
   rvSync();
 });
 $('#rvZoom').addEventListener('click', () => {
-  const pts = [...sh.rsel].flatMap((id) => bboxCorners(shBox(shapeById(id))));
+  const pts = [...sh.rsel].flatMap((id) => bboxCorners(rvIsBase(id) ? geomBBox(sh.rbase.get(id).geometry) : shBox(shapeById(id))));
   if (pts.length) AHM.map.fitTo(pts);
 });

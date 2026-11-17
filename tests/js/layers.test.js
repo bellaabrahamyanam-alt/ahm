@@ -495,14 +495,14 @@ test('select rivers: the rivers of the base map that touch the rectangle are sel
   ok(html.includes('Zangu') && html.includes('map') && !html.includes('Far'), html);
 });
 
-test('select rivers: an area adds the base-map rivers that cross it; "only fully inside" applies to them too; the message says they are only those in view', () => {
+test('select rivers: an area adds the base-map rivers that cross it; "only fully inside" applies to them too; the message says they are only those in the view', () => {
   const { p, fire, last } = rvPage();
   p.X('__base = [__0]', BASE_ZANGU);
   p.el('#rvArea').value = 'lori';
   fire('#rvArea', 'input', { target: p.el('#rvArea') });
   fire('#rvAreaRes', 'click', { target: { closest: (s) => (s === '[data-area]' ? { dataset: { area: 'a1' } } : null) } });
   eq(['hl', ['r1', 'b:Zangu']], last('hl'));
-  ok(/in view/.test(p.el('#rvMsg').textContent), p.el('#rvMsg').textContent);
+  ok(/in the view/.test(p.el('#rvMsg').textContent), p.el('#rvMsg').textContent);
   fire('#rvClear', 'click');
   p.el('#rvInside').checked = true;
   p.X("AHM.emit('box:select', { bbox: [44.1, 40.9, 44.9, 41.3] })");

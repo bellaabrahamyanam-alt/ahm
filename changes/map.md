@@ -136,3 +136,8 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Verify:** `node tests/js/run.js select --no-browser`. Not seen on the real map: drag by mouse, the glow look. Touch is not handled.
 - **Follow-ups:** T-064, T-065.
 
+## 2026-11-17 — T-057: base-map rivers in the selection
+- **What:** `AHM.map.baseRivers()` (named river/canal/stream pieces of the loaded `waterway` tiles, merged by name, ids `b:<name>`); `highlightRivers` accepts `b:` ids (layer `ahm-base-river-sel`, filter by `name`). The sidebar adds them to every rectangle or area selection, lists them with "map", zooms to them.
+- **Why:** owner, in the chat: the selection must also take rivers not added by hand. **Contract:** I-2 1.12 (Approved line in `TODO.md`).
+- **Limits:** only tiles loaded in the view, so a large area needs a zoomed-out view and the geometry may be simplified; rivers with no `name` and ditches are skipped; same-named rivers merge; a base river cannot be hidden by "Show only these" or opened.
+
