@@ -246,3 +246,51 @@ test('evidence: reading the form gives null / [] for what is empty (so a save cl
   eq({ certainty: 'disputed', sources: ['s1'] }, read(root('disputed', undefined, ['s1']), false));
   for (const bad of ['0', '2.5', 'far', '1000001']) throws(/Radius/, () => p.X('evidenceRead(__0, true)', root('', bad, [])));
 });
+
+// ---- T-043: names over time ----
+const yr = (n) => ({ fmt: 'y', ts: isoYear(n), mode: 'exact', ts_to: null });
+const named = (...names) => ({ id: 'n', names: names.map(([lang, name, a, b]) => ({ lang, name, ...(a ? { date_from: yr(a) } : {}), ...(b ? { date_to: yr(b) } : {}) })) });
+const sec = (n) => Date.parse(isoYear(n)) / 1000;
+
+test('names: nameAt takes the first name of the language whose period holds the moment, else the first name of that language', () => {
+  const p = page();
+  const at = (item, lang, a) => p.X('nameAt(__0, __1, __2)', item, lang, a === null ? null : sec(a));
+  const it = named(['en', 'Dwin'], ['en', 'Dvin', 450, 900], ['ru', 'Двин'], ['en', 'Tigranakert', 100, 400]);
+  eq('Dwin', at(it, 'en', null), 'slider off: the first name, as before');
+  eq('Dvin', at(it, 'en', 600), 'inside the period of the second name');
+  eq('Tigranakert', at(it, 'en', 200));
+  eq('Dwin', at(it, 'en', 1500), 'outside every period: the first name of the language');
+  eq('Двин', at(it, 'ru', 600), 'no period: that name');
+  eq('Dvin', at(it, 'hy', 600), 'language not present: English (as label() always did), by the same rule');
+  eq('Dvin', at(it, 'en', 900), 'the end year is included');
+  eq('Dwin', at(it, 'en', 901), 'and the year after is not');
+});
+
+test('names: label and shapeName follow the time bar; with the bar off they give the first name', () => {
+  const p = timed({ at: '0600-01-01T00:00:00Z' });
+  const it = named(['en', 'Dwin'], ['en', 'Dvin', 450, 900]);
+  eq('Dvin', p.X('label(__0, "en")', it));
+  eq('Dvin', p.X('shapeName(__0, "en")', it));
+  p.X("AHM.state.patch('time', { at: null })");
+  eq('Dwin', p.X('label(__0, "en")', it));
+});
+
+test('names: search finds an old name, and nameMatch says which name matched when it is not the shown one', () => {
+  const p = page();
+  p.X('places[0].names = __0', named(['en', 'Dwin'], ['en', 'Dvin', 450, 900]).names);
+  p.set('dvin');
+  ok(p.ids().includes('p1'), 'found by the old name');
+  eq('Dvin', p.X('nameMatch(places[0], "dvin", "")'), 'the matching name');
+  eq('', p.X('nameMatch(places[0], "dwin", "")'), 'the shown name matched: nothing to say');
+  eq('', p.X('nameMatch(places[0], "", "")'), 'no search text');
+});
+
+test('names: the name row of the place and border forms has a period (open when the name has one), the row of other forms does not', () => {
+  const p = page();
+  const dated = p.X('pfRowDated(__0)', { lang: 'en', name: 'Dvin', date_from: yr(450), date_to: yr(900) });
+  ok(dated.includes('pf-nfrom') && dated.includes('pf-nto'), 'both date fields');
+  ok(/<details class="pf-period" open>/.test(dated), 'open for a name that has a period');
+  ok(dated.endsWith('</details></div>'), 'inside the row');
+  ok(!/<details class="pf-period" open>/.test(p.X('pfRowDated(__0)', { lang: 'en', name: 'Dwin' })), 'closed for a name without one');
+  ok(!p.X('pfRow(__0)', { lang: 'en', name: 'x' }).includes('pf-period'), 'the plain row (layers, types, categories) has none');
+});

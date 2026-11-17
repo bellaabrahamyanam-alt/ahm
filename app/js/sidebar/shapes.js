@@ -161,7 +161,9 @@ function shRenderList() {
           return (
             `<li data-sid="${s.id}"${sh.open === s.id ? ' class="on"' : ''}><div class="t"><span class="tmark" title="${esc(t.label)}">${shIcon(s.type)}</span><b>${esc(shapeName(s, l))}</b>` +
             `<label class="sh-eye" title="Show on the map"><input type="checkbox" data-vis="${s.id}"${sh.hidden.has(s.id) ? '' : ' checked'} aria-label="Show on the map"></label></div>` +
-            `<div class="sn">${esc(t.label)} · ${shapeKind(s.geometry) === 'area' ? 'area' : 'line'}${when ? ' · ' + esc(when) : ''}</div></li>`
+            `<div class="sn">${esc(t.label)} · ${shapeKind(s.geometry) === 'area' ? 'area' : 'line'}${when ? ' · ' + esc(when) : ''}</div>` +
+            (nameMatch(s, sh.modes[sh.mode].q, l) ? `<div class="sn">also called ${esc(nameMatch(s, sh.modes[sh.mode].q, l))}</div>` : '') + // an old name found by the search (T-043)
+            '</li>'
           );
         })
         .join('')
@@ -391,7 +393,7 @@ function shOpenForm(f) {
   const names = f.names && f.names.length ? f.names : [{ lang: $('#lang').value || 'en', name: '' }];
   $('#shDetail').innerHTML =
     `<div class="dock-head"><span class="tmark">${shIcon(f.type || shTypeList()[0] || 'territory')}</span><h3 class="dock-title">${f.prevId ? 'New version of “' + esc(shapeName(shapeById(f.prevId), $('#lang').value)) + '”' : f.id ? 'Edit details' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)'}</h3><span class="dock-btns">${shBtn('cancel', 'close', 'Cancel')}</span></div>` +
-    `<div class="dock-body">${f.prevId ? shVersionHint(f) : ''}<div class="pf" id="shForm"><div class="label">Names</div><div class="pf-names">${names.map(pfRow).join('')}</div>` +
+    `<div class="dock-body">${f.prevId ? shVersionHint(f) : ''}<div class="pf" id="shForm"><div class="label">Names</div><div class="pf-names" data-dated="1">${names.map((n) => pfRowDated(n)).join('')}</div>` +
     `<button type="button" class="pf-add">+ Add another name</button><div class="sn">${LANG_HINT}</div>` +
     `<div class="label">Type</div><div class="chips sh-typepick">${shTypeChips(f.type || shTypeList()[0] || 'territory')}</div>` +
     `<div class="sn">The type sets the line pattern and the first colour. You can change the colour afterwards.</div>` +
@@ -408,7 +410,7 @@ function shOpenForm(f) {
 placeFormWire($('#shDetail')); // the add / remove name buttons and the date fields (once; the form is drawn many times)
 function shReadForm() {
   const root = $('#shForm'),
-    names = [...root.querySelectorAll('.pf-name')].map((r) => ({ lang: r.querySelector('.nl').value, name: r.querySelector('.nn').value.trim() })).filter((n) => n.name);
+    names = pfReadNames(root);
   if (!names.length) throw Error('Give the border at least one name.');
   names.forEach((n) => {
     if (!languages.some((l) => l.code === n.lang)) throw Error(`The language “${n.lang || '?'}” is not in the list. Ask an administrator to add it.`);

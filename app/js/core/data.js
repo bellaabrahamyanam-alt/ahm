@@ -70,7 +70,30 @@ let places = [],
   sources = [], // the dictionary of sources (T-046): [{ id, title, citation?, url? }]; editors add to it
   languages = [], // the dictionary of languages: [{ code, name, native }]; only administrators add to it
   types = []; // the dictionary of types: [{ code, geometry, names, color, style }]; only administrators add to it
-const label = (p, l) => (p.names.find((n) => n.lang === l) || p.names.find((n) => n.lang === 'en') || p.names[0]).name;
+// Names over time (T-043): a name may carry date_from / date_to (the date model). nameAt gives the name of language `lang` that is valid at the moment
+// `at` (seconds; null = no moment: the first name, as always): the first name with a period that holds it, else the first name of the language;
+// no such language: English, then the first name.
+function nameAt(item, lang, at) {
+  const live = (n) => (n.date_from || n.date_to) && ['yes', 'faded'].includes(visibleAt(n, at));
+  for (const code of [lang, 'en']) {
+    const list = item.names.filter((n) => n.lang === code);
+    if (list.length) return (at === null ? list[0] : list.find(live) || list[0]).name;
+  }
+  return item.names[0].name;
+}
+/** The moment of the time bar in seconds, null while it is off (state.js is loaded first in the page). */
+const nameMoment = () => {
+  const t = AHM.state && AHM.state.get('time');
+  return t && t.at !== null ? isoToSec(t.at) : null;
+};
+const label = (p, l) => nameAt(p, l, nameMoment());
+/** The name that matched the search text when it is not the one shown (an old name found by search), else ''. */
+function nameMatch(item, text, lang) {
+  const q = norm(text);
+  if (!q || norm(nameAt(item, lang, nameMoment())).includes(q)) return '';
+  const hit = item.names.find((n) => (!lang || n.lang === lang) && norm(n.name).includes(q));
+  return hit ? hit.name : '';
+}
 const langName = (code) => {
   const l = languages.find((x) => x.code === code);
   return l ? l.name : code;

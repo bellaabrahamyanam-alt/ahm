@@ -147,3 +147,7 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Not done:** borders, rivers and routes lists are not filtered; the route card has no fields (T-068). NOT seen in a browser.
 
 - T-046 merge with master (2026-11-17): the certainty and sources fields of the border form are now inside `#shForm` in the version form too (T-041 had closed it early, so Save failed with "Cannot read properties of null"); the existing browser test of a new border version covers it.
+## 2026-11-17 — T-043: names over time in the forms and lists
+
+- **What:** `pfRowDated` / `pfReadNames` (`placeform.js`): each name row of the place, border and route forms has "Period of this name" (from, to); list rows of places and borders say "also called …" when an old name matched the search.
+- **Files:** `placeform.js`, `shapes.js`, `routes.js`, `places.js`. NOT seen in a browser.
