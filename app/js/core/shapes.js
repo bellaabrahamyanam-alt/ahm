@@ -378,3 +378,63 @@ function geomLabelPoint(g) {
   }
   return at;
 }
+
+// ---- selecting rivers (T-057): which rivers touch a rectangle or an area; pure, no map and no DOM ----
+const ptOnRing = (p, ring) => {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i],
+      [xj, yj] = ring[j];
+    if (yi > p[1] !== yj > p[1] && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+};
+/** A polygon is a list of rings: the outer ring, then its holes. */
+const ptInPoly = (p, poly) => ptOnRing(p, poly[0]) && !poly.slice(1).some((h) => ptOnRing(p, h));
+const orient = (a, b, c) => Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+const onSeg = (a, b, c) => Math.min(a[0], b[0]) <= c[0] && c[0] <= Math.max(a[0], b[0]) && Math.min(a[1], b[1]) <= c[1] && c[1] <= Math.max(a[1], b[1]);
+/** Do the segments a-b and c-d share a point (touching counts)? */
+function segsMeet(a, b, c, d) {
+  const o1 = orient(a, b, c),
+    o2 = orient(a, b, d),
+    o3 = orient(c, d, a),
+    o4 = orient(c, d, b);
+  if (o1 !== o2 && o3 !== o4) return true;
+  return (o1 === 0 && onSeg(a, b, c)) || (o2 === 0 && onSeg(a, b, d)) || (o3 === 0 && onSeg(c, d, a)) || (o4 === 0 && onSeg(c, d, b));
+}
+/**
+ * The ids of the rivers (shapes with a line geometry) that touch `area` (mode 'cross', the default: a vertex inside, or a piece crossing or
+ * touching the border) or lie wholly inside it (mode 'inside'). `area` is a Polygon or MultiPolygon, or a box [west, south, east, north].
+ * The bounding boxes are compared first, so hundreds of rivers against a large area stay fast.
+ */
+function riversTouching(rivers, area, mode = 'cross') {
+  const box = Array.isArray(area) ? area : geomBBox(area),
+    polys = Array.isArray(area)
+      ? [[[[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]], [box[0], box[1]]]]]
+      : area.type === 'MultiPolygon' ? area.coordinates : [area.coordinates],
+    edges = polys.flatMap((poly) => poly.flatMap((ring) => ring.slice(1).map((q, i) => [ring[i], q]))),
+    inside = (p) => polys.some((poly) => ptInPoly(p, poly));
+  return rivers
+    .filter((r) => {
+      if (!r.geometry || !/LineString$/.test(r.geometry.type)) return false;
+      const b = r._box || geomBBox(r.geometry);
+      if (b[2] < box[0] || b[0] > box[2] || b[3] < box[1] || b[1] > box[3]) return false;
+      const lines = geomLines(r.geometry);
+      if (mode === 'inside') return lines.every((l) => l.every(inside));
+      return lines.some(
+        (l) =>
+          l.some(inside) ||
+          l.slice(1).some((q, i) => {
+            const p = l[i];
+            if (Math.max(p[0], q[0]) < box[0] || Math.min(p[0], q[0]) > box[2] || Math.max(p[1], q[1]) < box[1] || Math.min(p[1], q[1]) > box[3]) return false;
+            return edges.some(([c, d]) => segsMeet(p, q, c, d));
+          }),
+      );
+    })
+    .map((r) => r.id);
+}
+/** The area shapes with a name (in any language, so old names too) that contains the text; none for an empty text. */
+function areasByName(list, q) {
+  q = norm(q || '').trim();
+  return q ? list.filter((s) => s.geometry && /Polygon$/.test(s.geometry.type) && (s.names || []).some((n) => norm(n.name).includes(q))) : [];
+}

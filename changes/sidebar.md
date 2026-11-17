@@ -111,6 +111,9 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Why:** T-040. **Files:** `timebar.js`, `places.js`, `shapes.js` (opacity x 0.35 when faded), `app/index.html`, `app/css/sidebar.css`, `tests/js/sidebar.test.js`.
 - **Verify:** `node tests/js/run.js "time bar" --no-browser`. NOT seen in a browser (see docs/14).
 
+## 2026-11-17 — T-057: select rivers
+- **What:** Rivers tab: "Select rivers" block (rectangle, area name, only fully inside, list with remove, Clear, Show only these, Zoom to the selection); `sh.rsel` holds the selection; `shPush` hides the others while "Show only these" is on.
+- **Why:** T-057. **Files:** see `changes/map.md` (same item). **Verify:** `node tests/js/run.js river --no-browser`. **Follow-ups:** T-064, T-065.
 ## 2026-11-16 — T-041: versions of a border or river in the sheet
 
 - **What:** the sheet lists "Other versions" (chips, click opens that version) and has the button "Add version for another time": the form (names, type, dates) opens with a copy of the shape; Save creates it with the same `series` (the original joins the series first when it had none) and, when ticked, ends the previous version the day before. Each version can be edited and deleted alone (the normal buttons). Routes have their own card (`routes.js`): NOT done there yet.

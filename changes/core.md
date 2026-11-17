@@ -88,3 +88,7 @@ None. `search.js` and the sidebar code are out of scope.
 - **What:** `app/js/core/providers.js` unchanged. `geocode` sends `viewbox=W,N,E,S` and `bounded=1` from `AHM_CONFIG.bbox`; with the new `[32, 29, 51, 44]` the URL has `viewbox=32,44,51,29` (was `37,42.5,49,37`). Because `bounded=1` is a hard limit, places outside the box are not found; places inside the new box (Baghdad, Ankara, Tbilisi, Baku, Tehran's north-west, Kuwait) now are, and the search box is 4.3 times larger (285 against 66 square degrees), so more candidates compete for the 6 results. `geocodeShapes` (borders) is not bounded and is unaffected.
 - **Test:** `tests/js/map.test.js`, "config: bbox is ... biased to exactly that box".
 - **Follow-ups:** none.
+
+## 2026-11-17 — T-057: select rivers
+- **What:** `riversTouching(rivers, area, mode)` and `areasByName(list, q)` in `core/shapes.js`: rivers that touch/cross (or lie inside) a box or a Polygon/MultiPolygon, bounding boxes first; area shapes by any name.
+- **Why:** T-057. **Files:** see `changes/map.md` (same item). **Verify:** `node tests/js/run.js river --no-browser`. **Follow-ups:** T-064, T-065.

@@ -395,7 +395,7 @@ function initMap() {
         .catch(() => {});
     };
     map.on("click", (e) => {
-      if (shapeDrawing || prof.on) return; // the drawing tool (shapes.js) and the height profile own the clicks
+      if (shapeDrawing || boxTool || prof.on) return; // the drawing tool (shapes.js) and the height profile own the clicks
       const bubble = bubbleAt(e);
       if (bubble) {
         hideMenu();
