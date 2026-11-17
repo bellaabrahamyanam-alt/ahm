@@ -93,3 +93,8 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 
 - **What:** optional shape property `series` (UUID). Rules in `service/store.php` (`clean_shape`, `series_check`) and `dev/save-handler.js` (`cleanShape`, `seriesCheck`): UUID or absent; one kind per series (area or line); versions whose dates are all known do not overlap. 6 rows in `tests/fixtures/rules.json`, `tests/php/ShapeSeriesTest.php`, a test in `tests/js/parity.test.js`.
 - **Why:** T-041. Nothing to migrate. **Verify:** `php tests/php/run.php`, `node tests/js/run.js parity --no-browser`.
+
+## 2026-11-17 — T-043: names over time
+
+- **What:** `names[]` entries of places and borders (routes, rivers) may carry `date_from` / `date_to` of the date model (`name_period` in `service/store.php`, `namePeriod` in `dev/save-handler.js`); stored only when set; `date_to` before `date_from` is refused; a bad date is refused. Layers, categories and types are unchanged. 5 rows in `tests/fixtures/rules.json`.
+- **Verify:** `php tests/php/run.php parity`, `node tests/js/run.js parity --no-browser`. Nothing to migrate.

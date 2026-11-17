@@ -69,12 +69,38 @@ const pfRow = (n) =>
   `<button type="button" class="pf-up" title="Move up: the first name of a language is the one shown on the map">↑</button>` +
   `<button type="button" class="pf-del" title="Remove this name">✕</button></div>`;
 
+// Names over time (T-043, places and shapes): every name row has an optional period, with the date field of the period filter.
+const NAME_PERIOD = { modes: ['none', 'exact'], names: { none: 'Any' } };
+const pfRowDated = (n) =>
+  pfRow(n).replace(
+    /<\/div>$/,
+    `<details class="pf-period"${n.date_from || n.date_to ? ' open' : ''}><summary>Period of this name</summary><div class="pf-sub">From</div>${dfHTML('pf-nfrom', n.date_from || null, NAME_PERIOD)}<div class="pf-sub">To</div>${dfHTML('pf-nto', n.date_to || null, NAME_PERIOD)}</details></div>`
+  );
+/** The names of a form with their periods; throws the readable error of a bad date. */
+function pfReadNames(root) {
+  return [...root.querySelectorAll('.pf-name')]
+    .map((r) => {
+      const n = { lang: r.querySelector('.nl').value, name: r.querySelector('.nn').value.trim() },
+        f = r.querySelector('.pf-nfrom'),
+        t = r.querySelector('.pf-nto');
+      if (f && t && n.name) {
+        const a = dfRead(f, 'Name from'),
+          b = dfRead(t, 'Name to');
+        dateOrderCheck(a, b);
+        if (a) n.date_from = a;
+        if (b) n.date_to = b;
+      }
+      return n;
+    })
+    .filter((n) => n.name);
+}
+
 /** p: { names, type, date_from, date_to, height_m, lat, lon } (dates are date objects or null) */
 function placeFormHTML(p) {
   const names = p.names && p.names.length ? p.names : [{ lang: 'en', name: '' }],
     mountain = p.type === 'mountain';
   return (
-    `<div class="pf"><div class="label">Names</div><div class="pf-names">${names.map((n) => pfRow(n)).join('')}</div>` +
+    `<div class="pf"><div class="label">Names</div><div class="pf-names" data-dated="1">${names.map((n) => pfRowDated(n)).join('')}</div>` +
     `<button type="button" class="pf-add">+ Add another name</button>` +
     `<div class="sn">A place can have several names, even in one language (Ararat and Masis). The first name of each language is shown on the map. ${LANG_HINT}</div>` +
     `<div class="label">Type</div><select class="pf-type" title="${TYPE_HINT}">${typeOptions(p.type, typeof document !== 'undefined' && document.getElementById ? (document.getElementById('lang') || {}).value : 'en')}</select>` +
@@ -104,7 +130,7 @@ function placeFormWire(root) {
     const box = root.querySelector('.pf-names');
     if (b.classList.contains('pf-add')) {
       const last = box.lastElementChild;
-      box.insertAdjacentHTML('beforeend', pfRow({ lang: last ? last.querySelector('.nl').value : 'en', name: '' }));
+      box.insertAdjacentHTML('beforeend', (box.dataset.dated ? pfRowDated : pfRow)({ lang: last ? last.querySelector('.nl').value : 'en', name: '' }));
       box.lastElementChild.querySelector('.nn').focus();
       return;
     }
@@ -119,9 +145,7 @@ function placeFormWire(root) {
 /** Reads and checks the form inside root. Returns the fields the server expects, or throws a readable error. */
 function readPlaceForm(root) {
   const q = (s) => root.querySelector(s);
-  const names = [...root.querySelectorAll('.pf-name')]
-    .map((r) => ({ lang: r.querySelector('.nl').value, name: r.querySelector('.nn').value.trim() }))
-    .filter((n) => n.name);
+  const names = pfReadNames(root);
   if (!names.length) throw Error('Give the place at least one name.');
   names.forEach((n) => {
     if (!languages.some((l) => l.code === n.lang))

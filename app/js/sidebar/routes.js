@@ -405,7 +405,7 @@ function rtOpenForm(f) {
     (pend ? `<div class="sn">${pend.coords.length} points drawn, ${rtKm(lineKm(pend.coords))}.</div>` : '') +
     `<div class="label">Places on the way</div><div class="chips rt-ends">${chain}</div>` +
     (f.id ? `<div class="sn">To change the places or the course of the line, close this and use “Edit path”.</div>` : `<div class="sn">A place is a stop when a point of the line sits on it. The other points only give the line its course.</div>`) +
-    `<div class="label">Names</div><div class="pf-names">${names.map(pfRow).join('')}</div>` +
+    `<div class="label">Names</div><div class="pf-names" data-dated="1">${names.map((n) => pfRowDated(n)).join('')}</div>` +
     `<button type="button" class="pf-add">+ Add another name</button><div class="sn">${LANG_HINT}</div>` +
     `<div class="label">Type</div><div class="chips sh-typepick">${rtTypeChips(type)}</div>` +
     `<div class="sn">The type sets the line pattern, the first colour and the usual direction.</div>` +
@@ -424,7 +424,7 @@ function rtOpenForm(f) {
 placeFormWire($('#rtDetail'));
 function rtReadForm() {
   const root = $('#rtForm'),
-    names = [...root.querySelectorAll('.pf-name')].map((r) => ({ lang: r.querySelector('.nl').value, name: r.querySelector('.nn').value.trim() })).filter((n) => n.name);
+    names = pfReadNames(root);
   if (!names.length) throw Error('Give the route at least one name.');
   names.forEach((n) => {
     if (!languages.some((l) => l.code === n.lang)) throw Error(`The language “${n.lang || '?'}” is not in the list. Ask an administrator to add it.`);

@@ -2419,6 +2419,204 @@
     "series": "abc"
    },
    "expect": "UUID"
+  },
+  {
+   "name": "names over time: a place name with a period saves",
+   "via": "save",
+   "body": {
+    "place": {
+     "lat": 40.1,
+     "lon": 44.5,
+     "type": "village",
+     "names": [
+      {
+       "lang": "en",
+       "name": "Dvin",
+       "date_from": {
+        "fmt": "y",
+        "ts": "0450-01-01T00:00:00Z",
+        "mode": "exact",
+        "ts_to": null
+       },
+       "date_to": {
+        "fmt": "y",
+        "ts": "0900-01-01T00:00:00Z",
+        "mode": "exact",
+        "ts_to": null
+       }
+      },
+      {
+       "lang": "en",
+       "name": "Dwin"
+      }
+     ]
+    }
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "names over time: a place name that ends before it begins is refused",
+   "via": "save",
+   "body": {
+    "place": {
+     "lat": 40.1,
+     "lon": 44.5,
+     "type": "village",
+     "names": [
+      {
+       "lang": "en",
+       "name": "Dvin",
+       "date_from": {
+        "fmt": "y",
+        "ts": "0900-01-01T00:00:00Z",
+        "mode": "exact",
+        "ts_to": null
+       },
+       "date_to": {
+        "fmt": "y",
+        "ts": "0450-01-01T00:00:00Z",
+        "mode": "exact",
+        "ts_to": null
+       }
+      }
+     ]
+    }
+   },
+   "expect": "after"
+  },
+  {
+   "name": "names over time: a place name with a date that is not a date is refused",
+   "via": "save",
+   "body": {
+    "place": {
+     "lat": 40.1,
+     "lon": 44.5,
+     "type": "village",
+     "names": [
+      {
+       "lang": "en",
+       "name": "x",
+       "date_from": {
+        "fmt": "y",
+        "ts": "nope",
+        "mode": "exact",
+        "ts_to": null
+       }
+      }
+     ]
+    }
+   },
+   "expect": "date"
+  },
+  {
+   "name": "names over time: a shape name with a period saves",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "Dvin",
+      "date_from": {
+       "fmt": "y",
+       "ts": "0450-01-01T00:00:00Z",
+       "mode": "exact",
+       "ts_to": null
+      },
+      "date_to": {
+       "fmt": "y",
+       "ts": "0900-01-01T00:00:00Z",
+       "mode": "exact",
+       "ts_to": null
+      }
+     }
+    ],
+    "type": "kingdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    }
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "names over time: a shape name that ends before it begins is refused",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "Dvin",
+      "date_from": {
+       "fmt": "y",
+       "ts": "0900-01-01T00:00:00Z",
+       "mode": "exact",
+       "ts_to": null
+      },
+      "date_to": {
+       "fmt": "y",
+       "ts": "0450-01-01T00:00:00Z",
+       "mode": "exact",
+       "ts_to": null
+      }
+     }
+    ],
+    "type": "kingdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    }
+   },
+   "expect": "after"
   }
  ]
 }

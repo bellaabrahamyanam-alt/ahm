@@ -71,7 +71,7 @@ const normShape = (f) => ({
 const loadShapes = () => loadOpt(AHM_CONFIG.url.shapes, (fc) => fc.features.map(normShape));
 const shapeById = (id) => shapes.find((s) => s.id === id);
 const shapeKind = (g) => (/Polygon/.test(g.type) ? 'area' : 'line');
-const shapeName = (s, l) => nameIn(s.names, l);
+const shapeName = (s, l) => nameAt(s, l, nameMoment());
 const shapeWhen = (s) => spanText(s.date_from, s.date_to);
 /** The other versions of the same shape in time (T-041: same `series`), oldest first; [] for a shape with no series. */
 const shapeVersions = (s) =>

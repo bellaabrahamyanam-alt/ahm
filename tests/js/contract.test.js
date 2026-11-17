@@ -86,7 +86,7 @@ const CORE = [
   'isoToSec', 'secToIso', 'dateToTs', 'dateFromTs', 'dateClean', 'dateUpgrade', 'dateBounds', 'spanBounds', 'dateKey', 'dateOrderCheck', 'dateText', 'spanText',
   'periodEndSec', 'datePeriodEnd', 'legacyToDate', 'getJSON', 'loadPlaces', 'loadNotesIndex', 'loadNoteBody', 'loadLayers', 'loadLayerNotes', 'loadCategories',
   'loadLanguages', 'esc', 'norm', 'label', 'langName', 'run', 'byDateKey', 'periodActive', 'layerAllows', 'lyScope', 'lyHalo', 'lyNoteVisible',
-  'visibleAt', 'timeSpan', 'timeAdvance', 'timeLook',
+  'visibleAt', 'timeSpan', 'timeAdvance', 'timeLook', 'nameAt', 'nameMatch',
 ];
 
 test('contract I-3: the core functions of INTERFACES.md exist with the same names', () => {
