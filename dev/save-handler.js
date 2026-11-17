@@ -333,7 +333,7 @@ function cleanPlace(p, codes, types) {
   if (!(lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)) throw bad('bad coordinates');
   if (!types.includes(p.type)) throw bad('bad type');
   const names = (p.names || [])
-    .map((n) => ({ lang: String(n.lang || ''), name: oneLine(n.name, 200) }))
+    .map((n) => Object.assign({ lang: String(n.lang || ''), name: oneLine(n.name, 200) }, oneLine(n.name, 200) ? namePeriod(n) : {}))
     .filter((n) => n.name);
   names.forEach((n) => {
     if (!codes.includes(n.lang)) throw bad(`language "${n.lang}" is not in the list; ask an administrator to add it`);
@@ -619,14 +619,21 @@ function cleanNote(n, codes) {
   return { lang, title, text, date: D.dateClean(n.date === undefined ? null : n.date, 'note date') }; // the date is optional
 }
 // A list of {lang, name} (several per language allowed); every language must be in the dictionary.
-function cleanNames(list, codes, noneMsg) {
+// The optional period of one name (T-043): date_from / date_to of the date model, stored only when set (absent = always).
+function namePeriod(n) {
+  const from = D.dateClean(n.date_from === undefined ? null : n.date_from, 'name begin date'),
+    to = D.dateClean(n.date_to === undefined ? null : n.date_to, 'name end date');
+  D.dateOrderCheck(from, to);
+  return Object.assign({}, from ? { date_from: from } : {}, to ? { date_to: to } : {});
+}
+function cleanNames(list, codes, noneMsg, dated = false) {
   const out = [];
   (Array.isArray(list) ? list : []).forEach((n) => {
     const nm = n && typeof n === 'object' ? oneLine(n.name, 200) : '',
       lg = n && typeof n === 'object' ? String(n.lang || '') : '';
     if (!nm) return;
     if (!codes.includes(lg)) throw bad(`language "${lg}" is not in the list; ask an administrator to add it`);
-    out.push({ lang: lg, name: nm });
+    out.push(Object.assign({ lang: lg, name: nm }, dated ? namePeriod(n) : {}));
   });
   if (!out.length) throw bad(noneMsg);
   return out;
@@ -896,7 +903,7 @@ function cleanGeometry(g) {
   return { type: g.type, coordinates };
 }
 function cleanShape(inp, codes, places, kinds) {
-  const names = cleanNames(inp.names, codes, 'a border needs at least one name');
+  const names = cleanNames(inp.names, codes, 'a border needs at least one name', true);
   if (!kinds[inp.type]) throw bad('unknown border type' + (typeof inp.type === 'string' ? ` “${inp.type}” (it is not a line, area or river type in the types dictionary)` : ''));
   if (typeof inp.color !== 'string' || !COLOR.test(inp.color)) throw bad('the colour must look like #aa3344');
   const opacity = Number(inp.opacity);

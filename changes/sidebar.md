@@ -130,3 +130,8 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Why:** the old way needed five steps (add, copy saved with the same outline, find it in the list, edit, save) and did not show that the copy is a version.
 - **Files:** `app/js/sidebar/shapes.js`, `service/store.php`, `dev/save-handler.js`, `tests/js/browser.test.js` (2 scenarios), `tests/fixtures/rules.json`, `app/dist/`.
 - **How to verify:** `node tests/js/run.js browser`. NOT verified: the real drawing tool on the real map (MapLibre is a stand-in in tests): moving points with the mouse.
+
+## 2026-11-17 — T-043: names over time in the forms and lists
+
+- **What:** `pfRowDated` / `pfReadNames` (`placeform.js`): each name row of the place, border and route forms has "Period of this name" (from, to); list rows of places and borders say "also called …" when an old name matched the search.
+- **Files:** `placeform.js`, `shapes.js`, `routes.js`, `places.js`. NOT seen in a browser.

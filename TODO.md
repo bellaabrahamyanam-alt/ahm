@@ -21,7 +21,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 **Next (builder)**, in this order (`builder: next` takes the first open item of the first group)
 - 1. Rivers and 3D: T-055, T-056, T-057, T-058, T-059, T-061, T-062
-- 2. History and time: T-043, T-063, T-046, T-042
+- 2. History and time: T-063, T-046, T-042
 - 3. Analysis and sharing: T-044, T-045, T-047
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
@@ -133,11 +133,6 @@ View and selection tools for rivers, and the 3D map. Rivers are shapes of geomet
 
 Owner, in the chat, 2026-11-15. The date model already exists (`core/dates.js`: exact, approximate, range; `date_from` / `date_to` on places, shapes and layers), so none of this needs old data to be changed. Order: T-040 -> T-041 -> T-043 -> T-046 -> T-042 (T-042 needs T-041 and the decision T-052). Decisions: T-049 to T-052.
 
-- [ ] T-043 Names over time
-  What: a place or shape can have names that are valid only in a period (a name per era and language). The map and the lists show the name of the chosen language that is valid at the slider date. Search finds every name, old ones too, and shows which name matched when it is not the shown one.
-  Logic: `names[]` entries get optional `date_from` and `date_to` (date model); absent = always. Rule: with the slider off nothing changes (the first name of a language, as today). With it on: the first name of that language whose period contains `at`, else the first name of that language. Core function `nameAt(item, lang, at)`. Rules in `store.php` and `save-handler.js` (parity table rows). The place form (`placeform.js`) and the shape form get "from / to" per name row with `datefield.js`. Applies to places and shapes first.
-  Done when: tests cover `nameAt` (period inside, outside, no period, unknown language), the server accepts and refuses the new fields, search finds an old name, the forms save and show them.
-  Contract: yes (I-1 property, I-3 `nameAt`). Works without T-040 (shows the first name).
 - [ ] T-046 Certainty and sources per object
   What: phase 1: a dictionary of sources (title, citation, link; like languages and categories, editors add). Places and shapes get an optional certainty (exact, approximate, disputed), an optional radius in metres (drawn as a faded circle around approximate and disputed points) and a list of sources. Filters by source and certainty. Phase 2: competing claims: the same object at two places or two shapes according to two sources, each with its sources; the sheet lists "Other claims" and a source toggle shows one author's version or all.
   Logic: every new property is optional and absent = unchanged, so adding this later changes no data; nothing needs migrating now. `shapes.geojson` already has a free-text `source`; it stays. New file `sources.json` (id, title, citation, url) with the usual store rules. Phase 2 uses the same link idea as `series` in T-041 (a `claim_of` id); the builder checks if one mechanism fits both.
@@ -222,6 +217,7 @@ Waits for T-003 and T-001.
 
 ## Done
 
+- [x] T-043 Names over time (2026-11-17, branch `feat/names-over-time`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-3`, `tests/js/contract.test.js`). Optional `date_from` / `date_to` on names of places and borders, core `nameAt`, forms and \"also called\" rows. Not seen in a browser.
 - [x] T-041 Versions of one border, route or river in time (2026-11-16, branch `feat/shape-versions`, stacked on `feat/time-slider`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042, all in it's PR" (covers `interfaces/I-9`). Property `series`, 3 server rules, rows in `rules.json`; the sheet lists other versions and adds one. Not done: the \"Add version\" button on the routes card (new item T-063). Not seen in a browser.
 - [x] T-040 Time slider: the map at one moment, with play (2026-11-16, branch `feat/time-slider`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042, all in it's PR" (covers `interfaces/I-2`, `I-3`, `I-6` and `tests/js/contract.test.js`). `AHM.state` key `time`, core `visibleAt`/`timeLook`, bar in `sidebar/timebar.js`, `faded` property for the map. Undated objects: option 3 of T-049 assumed. Not seen in a browser.
 - [x] T-060 Map area enlarged to Mesopotamia + Anatolia edge + Caucasus, relief tool and guide made correct for it (2026-11-15, branch `feat/bbox-mesopotamia-caucasus`; owner, in the chat). `bbox` [32, 29, 51, 44]; 285 squares, 15,812 tiles at zoom 0-11; only HTTP 404 means "no tile"; `check` shows void shares and 30/90 borders; `preview --at`; at most 64 open files; docs/10 numbers and the Armenia/Azerbaijan 90 m caveat.
