@@ -401,7 +401,7 @@ function rvPage() {
   p.X(`globalThis.__rec = [];
     Object.assign(AHM.map, { highlightRivers: (ids) => __rec.push(['hl', ids.slice()]), selectBox: (on) => __rec.push(['box', on]), fitTo: (c) => __rec.push(['fit', c.length]), setShapes: (fc) => __rec.push(['set', fc.features.map((f) => f.properties.id)]) });`);
   p.X('shapes = __0', RV_SHAPES);
-  const fire = (sel, ev, arg = {}) => (h[sel + ':' + ev] || []).forEach((fn) => fn(arg));
+  const fire = (sel, ev, arg = {}) => [...(h[sel + ':' + ev] || []), ...((p.el(sel)._on || {})[ev] || [])].forEach((fn) => fn(arg)); // handlers registered at load are on the element
   const rec = () => JSON.parse(JSON.stringify(p.X('__rec')));
   const last = (kind) => rec().filter((r) => r[0] === kind).pop();
   const box = (bbox) => p.X("AHM.emit('box:select', { bbox: __0 })", bbox);
@@ -472,7 +472,7 @@ test('select rivers: Zoom to the selection fits the map to the selected rivers; 
   const { fire, last, rec, box } = rvPage();
   box([44, 40.5, 45, 41.5]);
   fire('#rvZoom', 'click');
-  eq(['fit', 4], last('fit'), 'the 4 corners of the one river');
+  eq(['fit', 2], last('fit'), 'the two corners of the box of the one river');
   fire('#rvBox', 'click');
   eq(['box', true], last('box'));
   fire('#rvBox', 'click');

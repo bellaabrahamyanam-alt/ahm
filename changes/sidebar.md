@@ -110,3 +110,7 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **What:** a "Time" button and a bar over the map (play / pause, slider over the earliest and latest date of the places and shapes, date field, speed 1 to 500 years per second, "Show undated", "Off"), `app/js/sidebar/timebar.js`. A chip "Time: <year>" among the active filters. Places and shapes outside their life are not listed or drawn; the "only possible" ones get `faded`.
 - **Why:** T-040. **Files:** `timebar.js`, `places.js`, `shapes.js` (opacity x 0.35 when faded), `app/index.html`, `app/css/sidebar.css`, `tests/js/sidebar.test.js`.
 - **Verify:** `node tests/js/run.js "time bar" --no-browser`. NOT seen in a browser (see docs/14).
+
+## 2026-11-17 — T-057: select rivers
+- **What:** Rivers tab: "Select rivers" block (rectangle, area name, only fully inside, list with remove, Clear, Show only these, Zoom to the selection); `sh.rsel` holds the selection; `shPush` hides the others while "Show only these" is on.
+- **Why:** T-057. **Files:** see `changes/map.md` (same item). **Verify:** `node tests/js/run.js river --no-browser`. **Follow-ups:** T-064, T-065.

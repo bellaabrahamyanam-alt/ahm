@@ -197,6 +197,23 @@
             <span id="shCount"></span>
             <button id="shFit" title="Zoom the map to the borders in the list">Fit map</button>
           </div>
+          <div id="rvSel" hidden>
+            <div class="label">Select rivers</div>
+            <div class="bar">
+              <button type="button" id="rvBox" title="Drag a rectangle on the map: every river that touches it is added">Select by rectangle</button>
+              <label><input type="checkbox" id="rvInside" /> only fully inside</label>
+            </div>
+            <input type="text" id="rvArea" placeholder="Select by area: type a name (Lori, Syunik …)" autocomplete="off" />
+            <div id="rvAreaRes" class="chips"></div>
+            <div id="rvMsg" class="sn"></div>
+            <div class="bar">
+              <span id="rvCount">0 selected</span>
+              <button type="button" id="rvOnly">Show only these</button>
+              <button type="button" id="rvZoom">Zoom to the selection</button>
+              <button type="button" id="rvClear">Clear</button>
+            </div>
+            <ul id="rvSelList"></ul>
+          </div>
           <ul id="shList"></ul>
           <div id="shAdd"></div>
         </section>

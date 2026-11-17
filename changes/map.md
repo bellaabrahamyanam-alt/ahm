@@ -128,3 +128,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 
 - **What:** the symbols (`ahm-places`) and the labels (`ahm-labels`) are drawn at opacity 0.35 and 0.45 when the feature property `faded` is `true` (I-2 [1.10]). Shapes need no change: the sidebar lowers their `opacity`.
 - **Files:** `app/js/map/map.js`, `tests/js/map.test.js`. **Verify:** `node tests/js/run.js faded --no-browser`. Not seen on a real map.
+
+## 2026-11-17 — T-057: rectangle tool and river highlight
+- **What:** `AHM.map.selectBox(on)` (drag a box instead of moving the map; mouse up emits `box:select { bbox: [w, s, e, n] }`, Escape emits `box:cancel`; the map ignores the click after the drag) and `AHM.map.highlightRivers(ids)` (layer `ahm-river-sel`, a glow under the river lines; kept when asked before the map is ready). Box drawn by `ahm-box`, `ahm-box-fill`, `ahm-box-line`.
+- **Why:** T-057 (owner, in the chat). **Contract:** I-2 1.11 (Approved line in `TODO.md`), `tests/js/contract.test.js`.
+- **Files:** `app/js/map/shapes.js`, `app/js/map/map.js` (clicks), `interfaces/I-2-sidebar-map.md`, `tests/js/map.test.js`, `tests/js/contract.test.js`.
+- **Verify:** `node tests/js/run.js select --no-browser`. Not seen on the real map: drag by mouse, the glow look. Touch is not handled.
+- **Follow-ups:** T-064, T-065.
+
