@@ -130,3 +130,10 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Why:** the old way needed five steps (add, copy saved with the same outline, find it in the list, edit, save) and did not show that the copy is a version.
 - **Files:** `app/js/sidebar/shapes.js`, `service/store.php`, `dev/save-handler.js`, `tests/js/browser.test.js` (2 scenarios), `tests/fixtures/rules.json`, `app/dist/`.
 - **How to verify:** `node tests/js/run.js browser`. NOT verified: the real drawing tool on the real map (MapLibre is a stand-in in tests): moving points with the mouse.
+
+## 2026-11-17 — T-063: a new version of a route in one go
+
+- **What:** `app/js/sidebar/routes.js`. The route card has "New version…" (next to "Edit path"): it opens the path in the drawing tool (mode `version`, banner "New version: move the points", button "Next: dates"); Next opens the route form titled "New version of “name”" (names, type, direction and look taken over, only the dates are new; "End the previous version the day before" is ticked when the first has no end); Save creates the second version and joins the first to the series (`series` made now when it has none). Back to the map returns to the drawing step with the path kept. Cancel returns to the first version, which is never changed. The card lists "Versions in time (n)" with the open one marked: `shVersionChips(s, act)` of `shapes.js` is shared with borders. `rtCreate(body, close)`; `rtStartDraw` takes the pending points before the route's own line.
+- **Why:** owner: the same simple flow as for borders (T-041 simplified).
+- **Files:** `app/js/sidebar/routes.js`, `app/js/sidebar/shapes.js`, `tests/js/browser.test.js` (1 scenario), `TODO.md`, `app/dist/`.
+- **How to verify:** `node tests/js/run.js browser`. NOT verified: the real drawing tool (stops, "follow roads") on the real map; the stand-in hands back a moved path.

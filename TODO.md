@@ -21,7 +21,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 **Next (builder)**, in this order (`builder: next` takes the first open item of the first group)
 - 1. Rivers and 3D: T-055, T-056, T-057, T-058, T-059, T-061, T-062
-- 2. History and time: T-043, T-063, T-046, T-042
+- 2. History and time: T-043, T-046, T-042
 - 3. Analysis and sharing: T-044, T-045, T-047
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
@@ -150,10 +150,6 @@ Owner, in the chat, 2026-11-15. The date model already exists (`core/dates.js`: 
   Contract: maybe (a new `AHM.map` command in I-2); the builder says which in the item before the code.
   Needs: T-040, T-041, T-052.
 
-- [ ] T-063 "New version…" and "Versions in time" on the route card (`app/js/sidebar/routes.js`), as T-041 did for borders and rivers
-  Done when: the route card lists the other versions of its series and can add one (same form logic as `shOpenForm` with `prevId`); a test shows it.
-  Contract: no.
-
 ### 3. Analysis and sharing
 
 Owner, in the chat, 2026-11-15. T-044 can start now (the relief code is merged); T-045 needs the terrain reader that T-044 moves into `app/js/map/terrain.js`.
@@ -222,6 +218,7 @@ Waits for T-003 and T-001.
 
 ## Done
 
+- [x] T-063 A new version of a ROUTE in one go, like T-041 + the simplification for borders and rivers (2026-11-17, branch `feat/route-versions`; owner, in the chat). "New version…" on the route card opens the path for editing, Next asks the dates (names, type, direction, look taken over), Save adds the second version of the series, the first stays and may end the day before; the card lists all versions.
 - [x] T-041 Versions of one border, route or river in time (2026-11-16, branch `feat/shape-versions`, stacked on `feat/time-slider`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042, all in it's PR" (covers `interfaces/I-9`). Property `series`, 3 server rules, rows in `rules.json`; the sheet lists other versions and adds one. Not done: the \"Add version\" button on the routes card (new item T-063). Not seen in a browser.
 - [x] T-040 Time slider: the map at one moment, with play (2026-11-16, branch `feat/time-slider`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042, all in it's PR" (covers `interfaces/I-2`, `I-3`, `I-6` and `tests/js/contract.test.js`). `AHM.state` key `time`, core `visibleAt`/`timeLook`, bar in `sidebar/timebar.js`, `faded` property for the map. Undated objects: option 3 of T-049 assumed. Not seen in a browser.
 - [x] T-060 Map area enlarged to Mesopotamia + Anatolia edge + Caucasus, relief tool and guide made correct for it (2026-11-15, branch `feat/bbox-mesopotamia-caucasus`; owner, in the chat). `bbox` [32, 29, 51, 44]; 285 squares, 15,812 tiles at zoom 0-11; only HTTP 404 means "no tile"; `check` shows void shares and 30/90 borders; `preview --at`; at most 64 open files; docs/10 numbers and the Armenia/Azerbaijan 90 m caveat.

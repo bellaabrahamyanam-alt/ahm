@@ -341,11 +341,11 @@ $('#shDetail').addEventListener('click', async (e) => {
   }
 });
 
-/** The chips of all versions of a series, the open one marked (oldest first, by the start date). */
-function shVersionChips(s) {
+/** The chips of all versions of a series, the open one marked (oldest first, by the start date); `act` is the data attribute of the click (borders and rivers: shact, routes: rtact). */
+function shVersionChips(s, act = 'data-shact="version"') {
   const all = [...shapeVersions(s), s].sort((a, b) => (dateKey(a.date_from) < dateKey(b.date_from) ? -1 : dateKey(a.date_from) > dateKey(b.date_from) ? 1 : 0));
   return all
-    .map((v) => (v.id === s.id ? `<span class="chip on" aria-current="true">${esc(shapeWhen(v) || 'no dates')}</span>` : `<button type="button" class="chip" data-shact="version" data-sid="${v.id}">${esc(shapeWhen(v) || 'no dates')}</button>`))
+    .map((v) => (v.id === s.id ? `<span class="chip on" aria-current="true">${esc(shapeWhen(v) || 'no dates')}</span>` : `<button type="button" class="chip" ${act} data-sid="${v.id}">${esc(shapeWhen(v) || 'no dates')}</button>`))
     .join('');
 }
 /**

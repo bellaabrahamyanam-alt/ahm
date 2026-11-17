@@ -310,3 +310,45 @@ scenario('browser: the server names the unknown type in its error', null, async 
   });
   ok(r.status === 400 && /unknown border type “nonsense”/.test(r.error), 'the error names the type: ' + r.error);
 });
+
+scenario('browser: a new version of a route in one go: the path opens for editing, Next asks the dates, Save adds a second version of the series, the first is unchanged and ends the day before', null, async (pg, S) => {
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
+  const old = await pg.evaluate(async () => {
+    const line = [[44.0, 40.0], [44.5, 40.2], [45.0, 40.1]];
+    const x = await fetch('/api/shape/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: [{ lang: 'en', name: 'Test road' }], type: 'trade', color: '#aa5500', opacity: 0.8, label: true, source: '', twoway: true, stops: [], date_from: null, date_to: null, geometry: { type: 'LineString', coordinates: line } }) });
+    if (x.status !== 200) return { status: x.status, error: (await x.json()).error };
+    await shReload();
+    // the drawing tool needs the real map: a stand-in that hands back a moved path
+    AHM.map.drawShape = ({ coords, ids }) => { let pts = coords.map((c) => [c[0] + 0.5, c[1] + 0.25]); return { remove() {}, undo() {}, count: () => pts.length, points: () => pts, ids: () => ids, flags: () => [], ready: async () => {} }; };
+    const s = shapes.find((r) => r.names.some((n) => n.name === 'Test road'));
+    rtOpen(s.id);
+    return { id: s.id, geometry: JSON.stringify(s.geometry), n: shapes.length };
+  });
+  ok(old.id, 'the route was saved: ' + JSON.stringify(old));
+  ok((await pg.locator('[data-rtact=addversion]').innerText()).startsWith('New version'), 'the route card has the button');
+  await pg.click('[data-rtact=addversion]');
+  ok(await pg.evaluate(() => rts.draw && rts.draw.mode === 'version'), 'the button opens the path for editing (version mode), no form yet');
+  ok(/Next: dates/.test(await pg.locator('#rtFinish').innerText()) && /New version: move the points/.test(await pg.locator('#rtAdd').innerText()), 'banner and button say what to do');
+  eq(old.n, await pg.evaluate(() => shapes.length), 'nothing is saved yet');
+  await pg.click('#rtFinish');
+  ok(/New version of/.test(await pg.locator('#rtDetail .dock-title').innerText()) && /stays as it is/.test(await pg.locator('#rtDetail').innerText()), 'Next opens the form titled as a new version');
+  eq('Test road', await pg.locator('#rtForm .nn').first().inputValue(), 'the name is taken over');
+  // the dates: began in the year 1200
+  await pg.selectOption('#rtForm .pf-from .df-mode', 'exact'); await pg.selectOption('#rtForm .pf-from .df-fmt', 'y'); await pg.fill('#rtForm .pf-from .df-y', '1200');
+  await pg.click('[data-rtact=save]'); await pg.waitForTimeout(900);
+  const after = await pg.evaluate(() => shapes.map((s) => ({ id: s.id, series: s.series || null, geometry: JSON.stringify(s.geometry), color: s.color, to: s.date_to })));
+  eq(old.n + 1, after.length, 'one route was added');
+  const first = after.find((s) => s.id === old.id), added = after.find((s) => s.id !== old.id && s.series === first.series);
+  ok(first.series && added, 'both are versions of one series');
+  eq(old.geometry, first.geometry, 'the first version keeps its path');
+  ok(added.geometry !== first.geometry, 'the new version has the moved path');
+  eq('#aa5500', added.color, 'the look is taken over');
+  ok(first.to !== null, 'the first version now ends before the new one: ' + JSON.stringify(first.to));
+  ok(/Versions in time \(2\)/i.test(await pg.locator('#rtDetail').innerText()), 'the route card lists both versions');
+  // Cancel in the drawing step returns to the route
+  await pg.evaluate((id) => rtOpen(id), old.id);
+  await pg.click('[data-rtact=addversion]');
+  await pg.click('[data-rtadd=canceldraw]');
+  ok(await pg.evaluate((id) => !rts.draw && rts.open === id, old.id), 'cancelling returns to the route we started from');
+  eq(old.n + 1, await pg.evaluate(() => shapes.length), 'cancelling saves nothing');
+});
