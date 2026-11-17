@@ -41,6 +41,7 @@ function makeMapLibre() {
   const base = [
     { id: 'base-bg', type: 'background' },
     { id: 'base-water', type: 'fill', 'source-layer': 'water' },
+    { id: 'base-waterway', type: 'line', source: 'openmaptiles', 'source-layer': 'waterway' },
     { id: 'base-label', type: 'symbol', 'source-layer': 'place' },
   ];
   const own = (id) => rec.layers.find((l) => l.id === id);
@@ -75,6 +76,7 @@ function makeMapLibre() {
       rec.layers.push({ ...def });
     },
     getLayer: any,
+    querySourceFeatures: (src, o) => ((rec.qsf = [src, o]), rec.waterway || []), // the rivers of the base map that are loaded: tests set rec.waterway
     dragPan: { enable: () => (rec.pan = true), disable: () => (rec.pan = false) },
     hasImage: () => false,
     addImage() {},
@@ -1733,4 +1735,40 @@ test('map: select rivers: Escape cancels the tool (box:cancel); selectBox(false)
   eq(true, b.ml.rec.pan);
   b.esc();
   eq(1, b.events().length, 'Escape with no tool sends nothing');
+});
+
+// ---- Select rivers (T-057): the rivers of the base map, not added by hand ----
+const WW = (name, cls, ...lines) => ({ properties: { name, class: cls }, geometry: lines.length === 1 ? { type: 'LineString', coordinates: lines[0] } : { type: 'MultiLineString', coordinates: lines } });
+
+test('map: select rivers: baseRivers() gives the named rivers of the base map that are loaded, the pieces of one river together', () => {
+  const b = shapesPage();
+  b.ml.rec.waterway = [
+    WW('Debed', 'river', [[44, 41], [44.5, 41]]),
+    WW('Debed', 'river', [[44.5, 41], [45, 41.1]], [[45, 41.1], [45.5, 41.2]]),
+    WW('Dzoraget', 'stream', [[44, 40.8], [44.2, 40.9]]),
+    WW('Kanal', 'canal', [[46, 40], [46.1, 40]]),
+    WW('', 'river', [[47, 40], [47.1, 40]]),
+    WW('Ditch', 'ditch', [[48, 40], [48.1, 40]]),
+  ];
+  const r = JSON.parse(JSON.stringify(b.p.X('AHM.map.baseRivers()')));
+  eq(['b:Debed', 'b:Dzoraget', 'b:Kanal'], r.map((x) => x.id), 'unnamed ones and ditches are left out');
+  eq('Debed', r[0].name);
+  eq({ type: 'MultiLineString', coordinates: [[[44, 41], [44.5, 41]], [[44.5, 41], [45, 41.1]], [[45, 41.1], [45.5, 41.2]]] }, r[0].geometry);
+  eq(['openmaptiles', { sourceLayer: 'waterway' }], b.ml.rec.qsf);
+});
+
+test('map: select rivers: highlightRivers draws "b:" ids as the base-map rivers of that name in their own layer, and removes the layer when none is left', () => {
+  const b = shapesPage();
+  b.p.X("AHM.map.highlightRivers(['r1', 'b:Debed', 'b:Zangu'])");
+  const own = b.ml.rec.layers.find((l) => l.id === 'ahm-river-sel');
+  eq('["in",["get","id"],["literal",["r1"]]]', JSON.stringify(own.filter), 'only the shape ids go to the shape layer');
+  const l = b.ml.rec.layers.find((x) => x.id === 'ahm-base-river-sel');
+  eq('["in",["get","name"],["literal",["Debed","Zangu"]]]', JSON.stringify(l.filter));
+  eq('waterway', l['source-layer']);
+  eq('openmaptiles', l.source);
+  eq('base-label', b.ml.rec.before['ahm-base-river-sel']);
+  b.p.X("AHM.map.highlightRivers(['b:Debed'])");
+  eq('["in",["get","name"],["literal",["Debed"]]]', JSON.stringify(b.ml.rec.layers.find((x) => x.id === 'ahm-base-river-sel').filter), 'one layer, new filter');
+  b.p.X("AHM.map.highlightRivers(['r1'])");
+  ok(!b.ml.rec.layers.some((x) => x.id === 'ahm-base-river-sel'), 'gone');
 });

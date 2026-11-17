@@ -398,8 +398,8 @@ const RV_SHAPES = [
 ];
 function rvPage() {
   const { p, h } = uiPage();
-  p.X(`globalThis.__rec = [];
-    Object.assign(AHM.map, { highlightRivers: (ids) => __rec.push(['hl', ids.slice()]), selectBox: (on) => __rec.push(['box', on]), fitTo: (c) => __rec.push(['fit', c.length]), setShapes: (fc) => __rec.push(['set', fc.features.map((f) => f.properties.id)]) });`);
+  p.X(`globalThis.__rec = []; globalThis.__base = [];
+    Object.assign(AHM.map, { baseRivers: () => __base, highlightRivers: (ids) => __rec.push(['hl', ids.slice()]), selectBox: (on) => __rec.push(['box', on]), fitTo: (c) => __rec.push(['fit', c.length]), setShapes: (fc) => __rec.push(['set', fc.features.map((f) => f.properties.id)]) });`);
   p.X('shapes = __0', RV_SHAPES);
   const fire = (sel, ev, arg = {}) => [...(h[sel + ':' + ev] || []), ...((p.el(sel)._on || {})[ev] || [])].forEach((fn) => fn(arg)); // handlers registered at load are on the element
   const rec = () => JSON.parse(JSON.stringify(p.X('__rec')));
@@ -481,4 +481,43 @@ test('select rivers: Zoom to the selection fits the map to the selected rivers; 
   box([44, 40.5, 45, 41.5]);
   fire('#rvBox', 'click');
   eq(['box', true], rec().filter((r) => r[0] === 'box').pop(), 'after a box the button starts the tool again (the map ended it)');
+});
+
+const BASE_ZANGU = { id: 'b:Zangu', name: 'Zangu', geometry: { type: 'MultiLineString', coordinates: [[[44.2, 41], [44.8, 41.2]]] } };
+
+test('select rivers: the rivers of the base map that touch the rectangle are selected too, listed as "map", and sent to the map as b: ids', () => {
+  const { p, last, box } = rvPage();
+  p.X('__base = [__0, { id: "b:Far", name: "Far", geometry: { type: "MultiLineString", coordinates: [[[60, 10], [61, 11]]] } }]', BASE_ZANGU);
+  box([44, 40.5, 45, 41.5]);
+  eq(['hl', ['r1', 'b:Zangu']], last('hl'), 'your rivers first, then the base-map ones');
+  eq('2 selected', p.el('#rvCount').textContent);
+  const html = p.el('#rvSelList').innerHTML;
+  ok(html.includes('Zangu') && html.includes('map') && !html.includes('Far'), html);
+});
+
+test('select rivers: an area adds the base-map rivers that cross it; "only fully inside" applies to them too; the message says they are only those in view', () => {
+  const { p, fire, last } = rvPage();
+  p.X('__base = [__0]', BASE_ZANGU);
+  p.el('#rvArea').value = 'lori';
+  fire('#rvArea', 'input', { target: p.el('#rvArea') });
+  fire('#rvAreaRes', 'click', { target: { closest: (s) => (s === '[data-area]' ? { dataset: { area: 'a1' } } : null) } });
+  eq(['hl', ['r1', 'b:Zangu']], last('hl'));
+  ok(/in view/.test(p.el('#rvMsg').textContent), p.el('#rvMsg').textContent);
+  fire('#rvClear', 'click');
+  p.el('#rvInside').checked = true;
+  p.X("AHM.emit('box:select', { bbox: [44.1, 40.9, 44.9, 41.3] })");
+  eq(['hl', ['b:Zangu']], last('hl'), 'Zangu lies wholly inside this box, the Debed does not');
+});
+
+test('select rivers: a base-map river can be removed, zoomed to, and Clear removes it', () => {
+  const { p, fire, last, box } = rvPage();
+  p.X('__base = [__0]', BASE_ZANGU);
+  box([44, 40.5, 45, 41.5]);
+  fire('#rvZoom', 'click');
+  eq(['fit', 4], last('fit'), 'two corners for each of the two rivers');
+  fire('#rvSelList', 'click', { target: { closest: (s) => (s === '[data-rvdel]' ? { dataset: { rvdel: 'b:Zangu' } } : null) } });
+  eq(['hl', ['r1']], last('hl'));
+  box([44, 40.5, 45, 41.5]);
+  fire('#rvClear', 'click');
+  eq(['hl', []], last('hl'));
 });
