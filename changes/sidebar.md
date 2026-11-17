@@ -110,3 +110,30 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **What:** a "Time" button and a bar over the map (play / pause, slider over the earliest and latest date of the places and shapes, date field, speed 1 to 500 years per second, "Show undated", "Off"), `app/js/sidebar/timebar.js`. A chip "Time: <year>" among the active filters. Places and shapes outside their life are not listed or drawn; the "only possible" ones get `faded`.
 - **Why:** T-040. **Files:** `timebar.js`, `places.js`, `shapes.js` (opacity x 0.35 when faded), `app/index.html`, `app/css/sidebar.css`, `tests/js/sidebar.test.js`.
 - **Verify:** `node tests/js/run.js "time bar" --no-browser`. NOT seen in a browser (see docs/14).
+
+## 2026-11-16 — T-041: versions of a border or river in the sheet
+
+- **What:** the sheet lists "Other versions" (chips, click opens that version) and has the button "Add version for another time": the form (names, type, dates) opens with a copy of the shape; Save creates it with the same `series` (the original joins the series first when it had none) and, when ticked, ends the previous version the day before. Each version can be edited and deleted alone (the normal buttons). Routes have their own card (`routes.js`): NOT done there yet.
+- **Files:** `app/js/sidebar/shapes.js`. NOT seen in a browser.
+
+## 2026-11-16 — Fix: "Add version for another time" failed with `crypto.randomUUID is not a function`
+
+- **What:** `app/js/sidebar/shapes.js`: new `shNewUuid()` (v4 UUID from `crypto.getRandomValues` when `crypto.randomUUID` is missing); the `addversion` action uses it for a shape without a series.
+- **Why:** `crypto.randomUUID` exists only in a secure context (https or localhost). On a plain-http forum the button threw and the form did not open.
+- **Files:** `app/js/sidebar/shapes.js`, `tests/js/layers.test.js` (1 test), `app/dist/`.
+- **How to verify:** `node tests/js/run.js "shNewUuid"`. Chromium, `randomUUID` removed: the button opens the "New version" form without a page error.
+
+## 2026-11-17 — A new version of a border in one go (T-041 simplified)
+
+- **What:** `app/js/sidebar/shapes.js`. The button "Add version for another time" is now "New version…". It opens the outline of the open shape in the drawing tool at once (mode `version`, banner "New version: move the points", button "Next: dates"); Next opens the form (titled "New version of “name”", names, type, look taken over, only the dates are new); Save creates the second version and joins the first to the series. The first version is not changed. Cancel in either step returns to the first version. An outline the tool cannot edit (several parts) skips the drawing step. The sheet now lists ALL versions in time ("Versions in time (n)") with the open one marked. New: `shStartVersion`, `shVersionChips`, `shVersionHint`; `shStartDraw(kind, existing, version)`.
+- **Also:** the server error `unknown border type` now names the type (`service/store.php`, `dev/save-handler.js`); parity case in `tests/fixtures/rules.json` tightened.
+- **Why:** the old way needed five steps (add, copy saved with the same outline, find it in the list, edit, save) and did not show that the copy is a version.
+- **Files:** `app/js/sidebar/shapes.js`, `service/store.php`, `dev/save-handler.js`, `tests/js/browser.test.js` (2 scenarios), `tests/fixtures/rules.json`, `app/dist/`.
+- **How to verify:** `node tests/js/run.js browser`. NOT verified: the real drawing tool on the real map (MapLibre is a stand-in in tests): moving points with the mouse.
+
+## 2026-11-17 — T-063: a new version of a route in one go
+
+- **What:** `app/js/sidebar/routes.js`. The route card has "New version…" (next to "Edit path"): it opens the path in the drawing tool (mode `version`, banner "New version: move the points", button "Next: dates"); Next opens the route form titled "New version of “name”" (names, type, direction and look taken over, only the dates are new; "End the previous version the day before" is ticked when the first has no end); Save creates the second version and joins the first to the series (`series` made now when it has none). Back to the map returns to the drawing step with the path kept. Cancel returns to the first version, which is never changed. The card lists "Versions in time (n)" with the open one marked: `shVersionChips(s, act)` of `shapes.js` is shared with borders. `rtCreate(body, close)`; `rtStartDraw` takes the pending points before the route's own line.
+- **Why:** owner: the same simple flow as for borders (T-041 simplified).
+- **Files:** `app/js/sidebar/routes.js`, `app/js/sidebar/shapes.js`, `tests/js/browser.test.js` (1 scenario), `TODO.md`, `app/dist/`.
+- **How to verify:** `node tests/js/run.js browser`. NOT verified: the real drawing tool (stops, "follow roads") on the real map; the stand-in hands back a moved path.

@@ -263,6 +263,7 @@ function rtRenderView() {
     `</span></div><div class="dock-body">` +
     (others.length ? `<div class="sn">${others.map((n) => `${esc(n.name)} <span class="sn">(${esc(n.lang)})</span>`).join(' · ')}</div>` : '') +
     `<div class="sn">${esc(t.label)}${geomLengthKm(s.geometry) >= 1 ? ' · ' + rtKm(geomLengthKm(s.geometry)) : ''}${when ? ' · ' + esc(when) : ''}</div>` +
+    (shapeVersions(s).length ? `<div class="label">Versions in time (${shapeVersions(s).length + 1})</div><div class="chips">${shVersionChips(s, 'data-rtact="open"')}</div>` : '') +
     `<div class="label">Places on the way</div><div class="chips rt-ends">${rtChainHTML(s)}</div>` +
     (free_pts ? `<div class="sn">and ${free_pts} free waypoint${free_pts > 1 ? 's' : ''} that only give the line its course.</div>` : '') +
     `<label class="sh-check"><input type="checkbox" id="rtTwo"${s.twoway ? ' checked' : ''}${dis}> Usable both ways${s.twoway ? '' : ' (now: only from the first place to the last)'}</label>` +
@@ -282,7 +283,7 @@ function rtRenderView() {
     (rts.note ? `<div class="sn">${esc(rts.note)}</div>` : '') +
     `<div class="err-line" id="rtErr"></div></div><div class="dock-foot">` +
     `<button type="button" data-rtact="fit">Fit map</button>` +
-    (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-rtact="editpath">Edit path</button>' : ''}<button type="button" data-rtact="reverse" title="Run the other way: the places and the line are reversed">Reverse</button><button type="button" class="danger" data-rtact="delete">Delete</button>` : '') +
+    (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-rtact="editpath">Edit path</button><button type="button" data-rtact="addversion" title="Move the points to the path for another time. The path you see now stays as it is.">New version…</button>' : ''}<button type="button" data-rtact="reverse" title="Run the other way: the places and the line are reversed">Reverse</button><button type="button" class="danger" data-rtact="delete">Delete</button>` : '') +
     `</div>`;
   rts.note = '';
   rtShow(true);
@@ -349,7 +350,11 @@ $('#rtDetail').addEventListener('click', async (e) => {
   }
   if (act === 'save') return rtSaveForm();
   if (act === 'cancel') return rtDiscardForm();
-  if (act === 'back') return rtStartDraw({ mode: 'new', pending: rts.pending });
+  if (act === 'back') {
+    const prevId = rts.form && rts.form.prevId;
+    rts.form = null; // not through rtCancelForm: it would go back to the card
+    return rtStartDraw({ mode: prevId ? 'version' : 'new', id: prevId, pending: rts.pending });
+  }
   if (act === 'open') return rtOpen(b.dataset.sid, true);
   if (act === 'place') {
     const p = placeById(b.dataset.pid);
@@ -362,6 +367,7 @@ $('#rtDetail').addEventListener('click', async (e) => {
   else if (act === 'editnote') lyOpenNoteDlg(s, layerNotes.find((n) => n.id === b.dataset.id), 'route');
   else if (act === 'edit') rtOpenForm({ ...s });
   else if (act === 'editpath') rtStartDraw({ mode: 'edit', id: s.id });
+  else if (act === 'addversion') rtStartDraw({ mode: 'version', id: s.id });
   else if (act === 'reverse') {
     try {
       await postJSON(shUrl().shapeSave, rtBody(s, { geometry: geomReverse(s.geometry), stops: (s.stops || []).slice().reverse() }));
@@ -393,6 +399,7 @@ function rtOpenForm(f) {
     stops = pend ? rtStopsOf(pend.ids) : [],
     names = f.names && f.names.length ? f.names : [{ lang: $('#lang').value || 'en', name: stops.length > 1 ? `${rtName(stops[0])} – ${rtName(stops[stops.length - 1])}` : '' }],
     type = f.type || 'trade',
+    prev = f.prevId && shapeById(f.prevId),
     chain = pend
       ? stops.length
         ? stops.map((id) => `<span class="chip">${esc(rtName(id))}</span>`).join(' <span class="sn">→</span> ')
@@ -400,20 +407,21 @@ function rtOpenForm(f) {
       : rtChainHTML(f);
   rtKeys();
   $('#rtDetail').innerHTML =
-    `<div class="dock-head"><span class="tmark">${shIcon(type)}</span><h3 class="dock-title">${f.id ? 'Edit route' : 'New route'}</h3><span class="dock-btns">${rtBtn('cancel', 'close', 'Cancel')}</span></div>` +
+    `<div class="dock-head"><span class="tmark">${shIcon(type)}</span><h3 class="dock-title">${f.id ? 'Edit route' : prev ? 'New version of “' + esc(shapeName(prev, $('#lang').value)) + '”' : 'New route'}</h3><span class="dock-btns">${rtBtn('cancel', 'close', 'Cancel')}</span></div>` +
     `<div class="dock-body"><div class="pf" id="rtForm">` +
     (pend ? `<div class="sn">${pend.coords.length} points drawn, ${rtKm(lineKm(pend.coords))}.</div>` : '') +
+    (prev ? `<div class="sn">The path you just drew is saved as a new version of the same route. “${esc(shapeWhen(prev) || 'no dates')}” stays as it is. Give the dates of the new one; names, type and direction are taken over, change them if they differ.</div>` : '') +
     `<div class="label">Places on the way</div><div class="chips rt-ends">${chain}</div>` +
     (f.id ? `<div class="sn">To change the places or the course of the line, close this and use “Edit path”.</div>` : `<div class="sn">A place is a stop when a point of the line sits on it. The other points only give the line its course.</div>`) +
     `<div class="label">Names</div><div class="pf-names">${names.map(pfRow).join('')}</div>` +
     `<button type="button" class="pf-add">+ Add another name</button><div class="sn">${LANG_HINT}</div>` +
     `<div class="label">Type</div><div class="chips sh-typepick">${rtTypeChips(type)}</div>` +
     `<div class="sn">The type sets the line pattern, the first colour and the usual direction.</div>` +
-    `<label class="sh-check"><input type="checkbox" id="rtTwo"${f.id ? (f.twoway ? ' checked' : '') : SHAPE_TYPES[type].twoway ? ' checked' : ''}> Usable both ways</label>` +
+    `<label class="sh-check"><input type="checkbox" id="rtTwo"${f.id || prev ? (f.twoway ? ' checked' : '') : SHAPE_TYPES[type].twoway ? ' checked' : ''}> Usable both ways</label>` +
     `<div class="sn">Switched off, the route is drawn with arrows and a path only follows it from A to B.</div>` +
     `<div class="label">Dates (optional)</div><div class="sn">When the route was used. Routes with dates follow the period filter.</div>` +
-    `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}</div>` +
-    `<div class="err-line" id="rtErr"></div></div><div class="dock-foot"><button type="button" class="primary" data-rtact="save">${f.id ? 'Save' : 'Save route'}</button>` +
+    `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}${prev && !prev.date_to ? '<label class="sh-check"><input type="checkbox" id="rtClosePrev" checked> End the previous version the day before</label>' : ''}</div>` +
+    `<div class="err-line" id="rtErr"></div></div><div class="dock-foot"><button type="button" class="primary" data-rtact="save">${f.id ? 'Save' : prev ? 'Save version' : 'Save route'}</button>` +
     (pend ? '<button type="button" data-rtact="back">Back to the map</button>' : '') +
     `<button type="button" data-rtact="cancel">${pend ? 'Discard' : 'Cancel'}</button></div>`;
   rtShow(true);
@@ -446,21 +454,29 @@ async function rtSaveForm() {
       await rtReload();
       return rtOpen(f.id);
     }
-    const p = rts.pending;
-    await rtCreate({
-      ...shapeDefaults(fields.type, 'line'),
-      ...fields,
-      source: p.road ? 'osrm:driving' : '',
-      stops: rtStopsOf(p.ids),
-      geometry: { type: 'LineString', coordinates: p.coords },
-    });
+    const p = rts.pending,
+      prev = f.prevId && shapeById(f.prevId);
+    if (prev && !prev.series) await postJSON(shUrl().shapeSave, rtBody(prev, { series: f.series })); // the route we started from joins the series first (T-041)
+    await rtCreate(
+      {
+        ...shapeDefaults(fields.type, 'line'),
+        ...fields,
+        ...(f.look || {}),
+        ...(f.series ? { series: f.series } : {}),
+        source: p.road ? 'osrm:driving' : '',
+        stops: rtStopsOf(p.ids),
+        geometry: { type: 'LineString', coordinates: p.coords },
+      },
+      prev && $('#rtClosePrev') && $('#rtClosePrev').checked ? { prev, end: versionEndBefore(prev, fields.date_from) } : null,
+    );
   } catch (e) {
     btn.disabled = false;
     rtErr(e.message);
   }
 }
-async function rtCreate(body) {
+async function rtCreate(body, close = null) {
   const id = (await postJSON(shUrl().shapeSave, body)).id;
+  if (close && close.end) await postJSON(shUrl().shapeSave, rtBody(close.prev, { date_to: close.end })); // the version before ends the day before the new one
   rts.form = null;
   rts.pending = null;
   await rtReload();
@@ -469,14 +485,16 @@ async function rtCreate(body) {
 }
 function rtCancelForm() {
   if (!rts.form) return;
+  const back = rts.form.prevId;
   rts.form = null;
   rts.pending = null;
   rtRenderView();
   rtRenderAdd();
+  if (back && shapeById(back)) rtOpen(back);
 }
 /** The person closes the form: a line that was just drawn is only lost after a confirmation. */
 function rtDiscardForm() {
-  if (rts.pending && !confirm('Discard this route? The line you drew is lost.')) return;
+  if (rts.pending && !confirm(rts.form && rts.form.prevId ? 'Discard this version? The path you drew is lost.' : 'Discard this route? The line you drew is lost.')) return;
   rtCancelForm();
 }
 
@@ -505,15 +523,15 @@ function rtDrawInfo() {
       ? 'Start set. Click the map to add the next point.'
       : `${n} points · ${rtKm(lineKm(d.ctl.points())) || '< 1 km'}. The last point is the destination (B): keep clicking to continue the route.`;
 }
-/** mode 'new': a fresh line (pending: the points of a line that came back from the form; startPlace: a place to start from); mode 'edit': the line of route `id`. */
+/** mode 'version': the line of route `id` as the start of a new version of it (T-041); mode 'new': a fresh line (pending: the points of a line that came back from the form; startPlace: a place to start from); mode 'edit': the line of route `id`. */
 function rtStartDraw({ mode, id, pending, startPlace }) {
   rtCancelForm();
   if (rts.draw) rts.draw.ctl.remove();
   if (sh.draw) shCancelDraw();
   const s = id && shapeById(id),
     sp = startPlace && placeById(startPlace),
-    coords = s ? (geomLines(s.geometry)[0] || []).map((c) => c.slice()) : pending ? pending.coords : sp ? [[sp.lon, sp.lat]] : [],
-    ids = s ? rtVertexIds(coords) : pending ? pending.ids : sp ? [sp.id] : [],
+    coords = pending ? pending.coords : s ? (geomLines(s.geometry)[0] || []).map((c) => c.slice()) : sp ? [[sp.lon, sp.lat]] : [],
+    ids = pending ? pending.ids : s ? rtVertexIds(coords) : sp ? [sp.id] : [],
     ctl = AHM.map.drawShape({ kind: 'line', coords, ids, snap: true, locate: (pid) => (placeById(pid) ? [placeById(pid).lon, placeById(pid).lat] : null), labels: true, expand: rtRoad }, () => {
       const f = $('#rtFinish');
       if (f) f.disabled = ctl.count() < 2;
@@ -541,6 +559,12 @@ async function rtFinishDraw() {
     rts.pending = { coords, ids, road };
     rtRenderAdd();
     return rtOpenForm({ id: null });
+  }
+  if (d.mode === 'version') {
+    const prev = shapeById(d.id);
+    rts.pending = { coords, ids, road };
+    rtRenderAdd();
+    return rtOpenForm({ id: null, prevId: prev.id, series: prev.series || shNewUuid(), names: prev.names, type: prev.type, twoway: prev.twoway, look: { color: prev.color, opacity: prev.opacity, label: prev.label, ...(prev.width ? { width: prev.width } : {}) } });
   }
   const s = shapeById(d.id);
   try {
@@ -573,11 +597,13 @@ function rtRenderAdd() {
   if (rts.draw) {
     const d = rts.draw;
     box.innerHTML =
-      `<div class="sh-banner"><b>${d.mode === 'edit' ? 'Editing the path' : 'Drawing the route'}</b>` +
+      `<div class="sh-banner"><b>${d.mode === 'version' ? 'New version: move the points' : d.mode === 'edit' ? 'Editing the path' : 'Drawing the route'}</b>` +
+      (d.mode === 'version' ? `<div class="sn">The path you started from is not changed. Move the points to the path for the other time, then press Next to give its dates.</div>` : '') +
+      `` +
       `<div class="sn" id="rtDrawInfo"></div>` +
       `<label class="sh-check"><input type="checkbox" id="rtRoads"${rts.roads ? ' checked' : ''}> Follow modern roads between the points I click</label>` +
       `<div class="sn">Click a place to make it a stop (green), or anywhere else for a free point. Drag a point to move it (drop it on a place to make it a stop), drag the small handle in the middle of a segment to insert a point, right-click a point to remove it, Backspace undoes. Enter or a double click finishes, Esc cancels.</div>` +
-      `<div class="row"><button type="button" data-rtadd="undo">Undo</button><button type="button" class="primary" id="rtFinish" data-rtadd="finish"${d.ctl.count() < 2 ? ' disabled' : ''}>${d.mode === 'edit' ? 'Save path' : 'Finish'}</button>` +
+      `<div class="row"><button type="button" data-rtadd="undo">Undo</button><button type="button" class="primary" id="rtFinish" data-rtadd="finish"${d.ctl.count() < 2 ? ' disabled' : ''}>${d.mode === 'version' ? 'Next: dates' : d.mode === 'edit' ? 'Save path' : 'Finish'}</button>` +
       `<button type="button" data-rtadd="canceldraw">Cancel</button></div><div class="err-line" id="rtAddMsg"></div></div>`;
     rtDrawInfo();
   } else box.innerHTML = rts.pending ? '' : `<button type="button" class="wide" data-rtadd="new">+ Add route</button>`;

@@ -78,7 +78,12 @@ None. `search.js` and the sidebar code are out of scope.
 - **Why:** T-040. **Files:** `app/js/core/dates.js`, `layer-rules.js`, `search.js`, `shapes.js`, `tests/js/dates.test.js`, `search.test.js`.
 - **Verify:** `node tests/js/run.js time --no-browser`. **Follow-ups:** T-041 (versions), T-043 (names at the moment) use the same moment.
 
-## 2026-11-15 — T-055: place search bias is the larger area
+## 2026-11-16 — T-041: shape versions (core)
+
+- **What:** `shapeVersions(shape)` and `versionEndBefore(prev, from)` in `core/shapes.js`; `series` comes through `normShape` as it is. With T-040 the time rule picks the valid version by itself (each version has its own dates).
+- **Files:** `app/js/core/shapes.js`, `tests/js/search.test.js`. **Verify:** `node tests/js/run.js "series:" --no-browser`.
+
+## 2026-11-15 — T-060: place search bias is the larger area
 
 - **What:** `app/js/core/providers.js` unchanged. `geocode` sends `viewbox=W,N,E,S` and `bounded=1` from `AHM_CONFIG.bbox`; with the new `[32, 29, 51, 44]` the URL has `viewbox=32,44,51,29` (was `37,42.5,49,37`). Because `bounded=1` is a hard limit, places outside the box are not found; places inside the new box (Baghdad, Ankara, Tbilisi, Baku, Tehran's north-west, Kuwait) now are, and the search box is 4.3 times larger (285 against 66 square degrees), so more candidates compete for the 6 results. `geocodeShapes` (borders) is not bounded and is unaffected.
 - **Test:** `tests/js/map.test.js`, "config: bbox is ... biased to exactly that box".

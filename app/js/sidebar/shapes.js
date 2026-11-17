@@ -239,6 +239,9 @@ function shRenderView() {
     `</span></div><div class="dock-body">` +
     (others.length ? `<div class="sn">${others.map((n) => `${esc(n.name)} <span class="sn">(${esc(n.lang)})</span>`).join(' · ')}</div>` : '') +
     `<div class="sn">${esc(t.label)} · ${kind === 'area' ? 'area' : 'line'}${when ? ' · ' + esc(when) : ''}</div>` +
+    (shapeVersions(s).length
+      ? `<div class="label">Versions in time (${shapeVersions(s).length + 1})</div><div class="chips">${shVersionChips(s)}</div>`
+      : '') +
     `<div class="label">Look</div><div class="sh-look">` +
     `<label>Colour <input type="color" id="shColor" value="${esc(s.color)}"${dis}></label>` +
     `<label>${kind === 'area' ? 'Fill opacity' : 'Line opacity'} <input type="range" id="shOp" min="0" max="1" step="0.05" value="${s.opacity}"${dis}> <span id="shOpVal">${Math.round(s.opacity * 100)}%</span></label>` +
@@ -252,7 +255,7 @@ function shRenderView() {
     (osm ? `<div class="sn">Outline © <a href="https://www.openstreetmap.org/${osm[1]}/${osm[2]}" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL).</div>` : '') +
     `<div class="err-line" id="shErr"></div></div><div class="dock-foot">` +
     `<button type="button" data-shact="fit">Fit map</button>` +
-    (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-shact="editshape">Edit shape</button>' : ''}<button type="button" class="danger" data-shact="delete">Delete</button>` : '') +
+    (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-shact="editshape">Edit shape</button>' : ''}<button type="button" data-shact="addversion" title="Move the points to the outline for another time. The outline you see now stays as it is.">New version…</button><button type="button" class="danger" data-shact="delete">Delete</button>` : '') +
     `</div>`;
   shShow(true);
   if (li) revealRow(li);
@@ -322,6 +325,8 @@ $('#shDetail').addEventListener('click', async (e) => {
   else if (act === 'editnote') lyOpenNoteDlg(s, layerNotes.find((n) => n.id === b.dataset.id), 'border');
   else if (act === 'edit') shOpenForm({ id: s.id, kind: shapeKind(s.geometry), ...s });
   else if (act === 'editshape') shStartDraw(shapeKind(s.geometry), s);
+  else if (act === 'version') shOpen(b.dataset.sid, true);
+  else if (act === 'addversion') shStartVersion(s);
   else if (act === 'delete') {
     if (!confirm(`Delete “${shapeName(s, $('#lang').value)}”? It also leaves its layers. A copy of the old file stays in the archive on the server.`)) return;
     try {
@@ -336,21 +341,54 @@ $('#shDetail').addEventListener('click', async (e) => {
   }
 });
 
+/** The chips of all versions of a series, the open one marked (oldest first, by the start date); `act` is the data attribute of the click (borders and rivers: shact, routes: rtact). */
+function shVersionChips(s, act = 'data-shact="version"') {
+  const all = [...shapeVersions(s), s].sort((a, b) => (dateKey(a.date_from) < dateKey(b.date_from) ? -1 : dateKey(a.date_from) > dateKey(b.date_from) ? 1 : 0));
+  return all
+    .map((v) => (v.id === s.id ? `<span class="chip on" aria-current="true">${esc(shapeWhen(v) || 'no dates')}</span>` : `<button type="button" class="chip" ${act} data-sid="${v.id}">${esc(shapeWhen(v) || 'no dates')}</button>`))
+    .join('');
+}
+/**
+ * A new version of a shape for another time (T-041), in one go: the outline opens in the drawing tool, you move the points, press Next, give
+ * the dates (names and type are taken over) and save. The version we start from is not changed (except that it ends the day before, if asked).
+ * An outline the tool cannot edit (several parts) is taken over as it is and only the details are asked.
+ */
+function shStartVersion(s) {
+  const kind = shapeKind(s.geometry),
+    v = { kind, prevId: s.id, series: s.series || shNewUuid(), names: s.names, type: s.type, source: s.source || '', look: { color: s.color, opacity: s.opacity, label: s.label, ...(s.width ? { width: s.width } : {}) } };
+  if (!geomToDraw(s.geometry)) return shOpenForm({ ...v, geometry: s.geometry });
+  shStartDraw(kind, s, v);
+}
+// A new UUID (v4) for a series. crypto.randomUUID exists only in a secure context (https or localhost): on a plain-http forum it is undefined,
+// which broke "Add version for another time". crypto.getRandomValues works everywhere.
+function shNewUuid() {
+  if (globalThis.crypto.randomUUID) return globalThis.crypto.randomUUID();
+  const b = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 15) | 64;
+  b[8] = (b[8] & 63) | 128;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 // ---- the form: names, type, dates (new shape or details of an existing one) ----
 const shTypeChips = (cur) =>
   shTypeList().map((t) => `<button type="button" class="chip${t === cur ? ' on' : ''}" data-shact="typepick" data-t="${t}" title="${esc(SHAPE_TYPES[t].label)}">${shIcon(t)}${esc(SHAPE_TYPES[t].label)}</button>`)
     .join('');
+const shVersionHint = (f) => {
+  const p = shapeById(f.prevId);
+  return `<div class="sn">The outline you just drew is saved as a new version of the same ${f.kind === 'area' ? 'border' : 'line'}. “${esc(shapeWhen(p) || 'no dates')}” stays as it is. Give the dates of the new one; names and type are taken over, change them if they differ.</div>`;
+};
 function shOpenForm(f) {
   sh.form = f;
   const names = f.names && f.names.length ? f.names : [{ lang: $('#lang').value || 'en', name: '' }];
   $('#shDetail').innerHTML =
-    `<div class="dock-head"><span class="tmark">${shIcon(f.type || shTypeList()[0] || 'territory')}</span><h3 class="dock-title">${f.id ? 'Edit details' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)'}</h3><span class="dock-btns">${shBtn('cancel', 'close', 'Cancel')}</span></div>` +
-    `<div class="dock-body"><div class="pf" id="shForm"><div class="label">Names</div><div class="pf-names">${names.map(pfRow).join('')}</div>` +
+    `<div class="dock-head"><span class="tmark">${shIcon(f.type || shTypeList()[0] || 'territory')}</span><h3 class="dock-title">${f.prevId ? 'New version of “' + esc(shapeName(shapeById(f.prevId), $('#lang').value)) + '”' : f.id ? 'Edit details' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)'}</h3><span class="dock-btns">${shBtn('cancel', 'close', 'Cancel')}</span></div>` +
+    `<div class="dock-body">${f.prevId ? shVersionHint(f) : ''}<div class="pf" id="shForm"><div class="label">Names</div><div class="pf-names">${names.map(pfRow).join('')}</div>` +
     `<button type="button" class="pf-add">+ Add another name</button><div class="sn">${LANG_HINT}</div>` +
     `<div class="label">Type</div><div class="chips sh-typepick">${shTypeChips(f.type || shTypeList()[0] || 'territory')}</div>` +
     `<div class="sn">The type sets the line pattern and the first colour. You can change the colour afterwards.</div>` +
     `<div class="label">Dates (optional)</div><div class="sn">Leave “Unknown” for a modern border or when you do not know. Borders with dates follow the period filter.</div>` +
-    `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}</div>` +
+    `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}${f.prevId && !shapeById(f.prevId).date_to ? '<label class="sh-check"><input type="checkbox" id="shClosePrev" checked> End the previous version the day before</label>' : ''}</div>` +
     `<div class="err-line" id="shErr"></div></div><div class="dock-foot"><button type="button" class="primary" data-shact="save">Save</button><button type="button" data-shact="cancel">Cancel</button></div>`;
   shShow(true);
   tab(sh.mode === 'rivers' ? 'rivers' : 'shapes');
@@ -382,8 +420,12 @@ async function shSaveForm() {
       const s = shapeById(id);
       await postJSON(shUrl().shapeSave, shBody(s, v));
     } else {
-      const d = shapeDefaults(v.type, f.kind);
-      id = (await postJSON(shUrl().shapeSave, { ...v, ...d, source: f.source || '', geometry: f.geometry })).id;
+      const d = shapeDefaults(v.type, f.kind),
+        prev = f.prevId && shapeById(f.prevId);
+      if (prev && !prev.series) await postJSON(shUrl().shapeSave, shBody(prev, { series: f.series })); // the shape the copy was made from joins the series first (T-041)
+      id = (await postJSON(shUrl().shapeSave, { ...v, ...d, ...(f.look || {}), ...(f.series ? { series: f.series } : {}), source: f.source || '', geometry: f.geometry })).id;
+      const end = prev && $('#shClosePrev') && $('#shClosePrev').checked ? versionEndBefore(prev, v.date_from) : null;
+      if (end) await postJSON(shUrl().shapeSave, shBody(prev, { date_to: end }));
     }
     sh.form = null;
     AHM.map.showPreview(null);
@@ -395,13 +437,15 @@ async function shSaveForm() {
 }
 function shCancelForm() {
   if (!sh.form) return;
+  const back = sh.form.prevId;
   sh.form = null;
   AHM.map.showPreview(null);
   shRenderView();
+  if (back && shapeById(back)) shOpen(back);
 }
 
 // ---- drawing ----
-function shStartDraw(kind, existing) {
+function shStartDraw(kind, existing, version = null) {
   sh.river.clicks = [];
   shCancelForm();
   if (rts.draw) rtCancelDraw();
@@ -416,7 +460,7 @@ function shStartDraw(kind, existing) {
       const f = $('#shFinish');
       if (f) f.disabled = !g;
     });
-  sh.draw = { mode: existing ? 'edit' : 'new', kind, id: existing && existing.id, ctl };
+  sh.draw = { mode: version ? 'version' : existing ? 'edit' : 'new', kind, id: existing && !version ? existing.id : null, version, ctl };
   shPush();
   shRenderAdd();
   if (existing) AHM.map.fitTo(bboxCorners(shBox(existing)));
@@ -492,6 +536,11 @@ async function shFinishDraw() {
   }
   d.ctl.remove();
   sh.draw = null;
+  if (d.mode === 'version') {
+    shRenderAdd();
+    AHM.map.showPreview(g);
+    return shOpenForm({ ...d.version, geometry: g });
+  }
   if (d.mode === 'new') {
     shRenderAdd();
     AHM.map.showPreview(g);
@@ -514,6 +563,7 @@ function shCancelDraw() {
   shPush();
   shRenderAdd();
   if (d.id) shOpen(d.id);
+  else if (d.version && shapeById(d.version.prevId)) shOpen(d.version.prevId);
 }
 AHM.on('draw:finish', () => sh.draw && shFinishDraw());
 AHM.on('draw:cancel', () => sh.draw && shCancelDraw());
@@ -529,7 +579,8 @@ function shRenderAdd() {
   if (sh.draw) {
     const d = sh.draw;
     box.innerHTML =
-      `<div class="sh-banner"><b>${d.mode === 'edit' ? 'Editing the shape' : d.kind === 'area' ? 'Drawing an area' : sh.mode === 'rivers' ? 'Drawing a river' : 'Drawing a line'}</b>` +
+      `<div class="sh-banner"><b>${d.mode === 'version' ? 'New version: move the points' : d.mode === 'edit' ? 'Editing the shape' : d.kind === 'area' ? 'Drawing an area' : sh.mode === 'rivers' ? 'Drawing a river' : 'Drawing a line'}</b>` +
+      (d.mode === 'version' ? `<div class="sn">The outline you started from is not changed. Move the points to the outline for the other time, then press Next to give its dates.</div>` : '') +
       `<div class="sn">Click the map to add points. Drag a point to move it, right-click to remove it, Backspace undoes. Enter or a double click finishes, Esc cancels.</div>` +
       (d.kind === 'line' && d.mode === 'new'
         ? `<label class="sh-check"><input type="checkbox" id="shRiverOn"${sh.river.on ? ' checked' : ''}> Follow a river between the points I click</label>` +
@@ -538,7 +589,7 @@ function shRenderAdd() {
               `<div class="sn" id="shRiverMsg">${sh.river.lines.length ? sh.river.lines.length + ' river line(s) loaded (blue). Click near the start, then near the end.' : 'Type the river name and press Find.'}</div>`
             : '')
         : '') +
-      `<div class="row"><button type="button" data-shadd="undo">Undo</button><button type="button" class="primary" id="shFinish" data-shadd="finish"${d.ctl.getGeometry() ? '' : ' disabled'}>${d.mode === 'edit' ? 'Save shape' : 'Finish'}</button>` +
+      `<div class="row"><button type="button" data-shadd="undo">Undo</button><button type="button" class="primary" id="shFinish" data-shadd="finish"${d.ctl.getGeometry() ? '' : ' disabled'}>${d.mode === 'version' ? 'Next: dates' : d.mode === 'edit' ? 'Save shape' : 'Finish'}</button>` +
       `<button type="button" data-shadd="canceldraw">Cancel</button></div><div class="err-line" id="shAddMsg"></div></div>`;
   } else if (sh.mode === 'rivers') {
     box.innerHTML =
