@@ -15,6 +15,7 @@ forum controller through `window.AHM_BACKEND` in production). Names are fixed:
 
 ### Request bodies (the keys the front end may send)
 - `save`: one of `place_add`, `place_update`, `note_add`, `note_update`, as implemented in `service/store.php`.
+- **[1.10]** `names[]` entries of places and shapes (`placeSave`, `shapeSave`, and what the files hold) may carry `date_from` and `date_to` (date model objects, stored only when set; `date_to` before `date_from` is refused). Layers, categories and types do not take them (T-043).
 - `languageSave`: `{ code, name, native, edit? }` (`edit: true` changes the names of an existing code; the code never changes).
 - `layerSave`: `layer_add`, `layer_update`, `layer_members` (`{ id, add?, remove?, order? }`), `layer_note_add`,
   `layer_note_update`. `categorySave`: `{ id?, names: [{ lang, name }] }`. **[1.5]** `layer_members` also accepts `add_shapes` and `remove_shapes` (I-9); `typeSave` and `typeDelete` are described in I-8, `shapeSave` (`shape_add`, `shape_update`, `shape_delete`) in I-9.

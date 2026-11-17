@@ -96,3 +96,8 @@ None. `search.js` and the sidebar code are out of scope.
 ## 2026-11-17 — T-057: select rivers
 - **What:** `riversTouching(rivers, area, mode)` and `areasByName(list, q)` in `core/shapes.js`: rivers that touch/cross (or lie inside) a box or a Polygon/MultiPolygon, bounding boxes first; area shapes by any name.
 - **Why:** T-057. **Files:** see `changes/map.md` (same item). **Verify:** `node tests/js/run.js river --no-browser`. **Follow-ups:** T-064, T-065.
+
+## 2026-11-17 — T-043: names over time (core)
+
+- **What:** `nameAt(item, lang, at)`, `nameMoment()`, `nameMatch(item, text, lang)` in `core/data.js`; `label()` and `shapeName()` use them, so the lists and the map show the name valid at the moment of the time bar (the first name of the language while it is off, as before).
+- **Files:** `app/js/core/data.js`, `shapes.js`, `tests/js/search.test.js`. **Verify:** `node tests/js/run.js names --no-browser`.

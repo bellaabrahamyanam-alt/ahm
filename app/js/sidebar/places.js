@@ -72,6 +72,7 @@ function placeRowHTML(p, hits, l, q) {
   return (
     `<li data-id="${p.id}"><div class="t"><span class="tmark" title="${esc(typeLabel(p.type, l))}">${typeIcon(p.type)}</span><b>${esc(label(p, l))}</b></div>` +
     (placeWhen(p) ? `<div class="sn">${esc(placeWhen(p))}</div>` : "") +
+    (nameMatch(p, q, l) ? `<div class="sn">also called ${esc(nameMatch(p, q, l))}</div>` : "") + // an old name found by the search (T-043)
     (hits[0] ? `<div class="sn">${mark(hits[0].text, q)}</div>` : "") +
     "</li>"
   );
