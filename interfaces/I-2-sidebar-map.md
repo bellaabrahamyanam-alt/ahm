@@ -8,7 +8,7 @@ The sidebar and the map talk only through this object. Neither side may touch th
 ### Commands, provided by the map (`AHM.map.*`), called by the sidebar
 | Call | Meaning |
 |---|---|
-| `setFeatures(featureCollection)` | the places to draw now. Feature properties: `id, name, type, type_code, dates, halo`; **[1.10]** `faded` (boolean, optional: draw the symbol and its label at a lower opacity because the place is only possible at the moment of the time bar, T-040). Replaces everything. |
+| `setFeatures(featureCollection)` | the places to draw now. Feature properties: `id, name, type, type_code, dates, halo`; **[1.10]** `certainty` and `radius_m` (**[1.11]**, optional, as in I-1: the map draws a faded circle of `radius_m` metres around a place whose `certainty` is `approximate` or `disputed`; a dashed outline for `disputed`), `faded` (boolean, optional: draw the symbol and its label at a lower opacity because the place is only possible at the moment of the time bar, T-040). Replaces everything. |
 | `hidePlace(id \| null)` | hide one place's symbol while its pin is being edited (`null` shows all) |
 | `focusPlace(id)` | move the map to the place (zoom at least 8; the place must be among the features last set). The only call that moves the map to a place. |
 | `focusPoint({lon, lat}, zoom)` **[1.1]** | move the map to a point (a result of the place search) |

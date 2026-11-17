@@ -109,6 +109,8 @@ class main
             'layerDelete' => $this->helper->route('ahm_map_layer_delete', [], false),
             'categorySave' => $this->helper->route('ahm_map_category_save', [], false),
             'canLayerAdmin' => $this->can_admin(), // delete layers, manage categories
+            'sources' => $this->helper->route('ahm_map_data', ['f' => 'sources'], false),
+            'sourceSave' => $this->helper->route('ahm_map_source_save', [], false),
             'shapes' => $this->helper->route('ahm_map_data', ['f' => 'shapes'], false),
             'shapeSave' => $this->helper->route('ahm_map_shape_save', [], false),
             'shapeDelete' => $this->helper->route('ahm_map_shape_delete', [], false)
@@ -155,7 +157,7 @@ class main
 
     public function data($f)
     {
-        $lists = ['overlays', 'languages', 'layers', 'layer-notes-index', 'categories', 'shapes', 'types'];
+        $lists = ['overlays', 'languages', 'layers', 'layer-notes-index', 'categories', 'shapes', 'types', 'sources'];
         if (in_array($f, $lists, true)) {
             $d = [
                 'overlays' => 'overlays',
@@ -164,7 +166,8 @@ class main
                 'layer-notes-index' => 'layer_notes_index',
                 'categories' => 'categories',
                 'shapes' => 'shapes',
-                'types' => 'types'
+                'types' => 'types',
+                'sources' => 'sources'
             ][$f];
             return new Response(
                 json_encode($this->store->$d(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
@@ -332,6 +335,23 @@ class main
         }
         return $this->overlay_run(function () use ($in) {
             return ['ok' => $this->store->delete_layer((string) ($in['id'] ?? ''))];
+        });
+    }
+
+    /** POST JSON {id?, title, citation?, url?}: adds a source or changes one. Editors, like places (T-046). */
+    public function source_save()
+    {
+        if ($g = $this->editor_guard()) {
+            return $g;
+        }
+        if (!$this->is_json()) {
+            return $this->json(['error' => 'JSON required'], 415);
+        }
+        if (($in = $this->json_body()) === null) {
+            return $this->json(['error' => 'bad request'], 400);
+        }
+        return $this->overlay_run(function () use ($in) {
+            return ['ok' => true, 'id' => $this->store->save_source($in)];
         });
     }
 

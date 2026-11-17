@@ -46,6 +46,11 @@ const loadLayerNotes = () =>
     j.notes.map((n) => ({ ...n, date: n.date && typeof n.date === 'object' ? dateUpgrade(n.date) : null }))
   );
 const loadCategories = () => loadOpt(AHM_CONFIG.url.categories, (j) => j.categories);
+// The dictionary of sources (T-046). An optional file: a store without it has no sources.
+const loadSources = () => loadOpt(AHM_CONFIG.url.sources, (j) => j.sources);
+const sourceById = (id) => sources.find((s) => s.id === id);
+/** The certainty and source filters (Sets, empty = no filter). An object with no certainty, or no source, never matches a chosen one. */
+const evidenceAllows = (x, certainty, srcs) => (!certainty.size || certainty.has(x.certainty)) && (!srcs.size || (x.sources || []).some((s) => srcs.has(s)));
 const loadLanguages = () => getJSON(AHM_CONFIG.url.languages).then((j) => j.languages);
 // The dictionary of place types (like languages and categories). A store without types.json still works: no types, codes are shown as text.
 const loadTypes = () => loadOpt(AHM_CONFIG.url.types, (j) => j.types);
@@ -62,6 +67,7 @@ let places = [],
   layers = [],
   layerNotes = [],
   categories = [],
+  sources = [], // the dictionary of sources (T-046): [{ id, title, citation?, url? }]; editors add to it
   languages = [], // the dictionary of languages: [{ code, name, native }]; only administrators add to it
   types = []; // the dictionary of types: [{ code, geometry, names, color, style }]; only administrators add to it
 const label = (p, l) => (p.names.find((n) => n.lang === l) || p.names.find((n) => n.lang === 'en') || p.names[0]).name;

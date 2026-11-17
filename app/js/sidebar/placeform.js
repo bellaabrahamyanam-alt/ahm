@@ -69,6 +69,73 @@ const pfRow = (n) =>
   `<button type="button" class="pf-up" title="Move up: the first name of a language is the one shown on the map">↑</button>` +
   `<button type="button" class="pf-del" title="Remove this name">✕</button></div>`;
 
+// ---- certainty, radius and sources of a place or a border (T-046 phase 1) ----
+const CERT_LABELS = { exact: 'Exact', approximate: 'Approximate', disputed: 'Disputed' };
+const MAX_RADIUS_M = 1000000;
+const radiusText = (m) => (m < 1000 ? `${m} m` : `${Math.round(m / 100) / 10} km`);
+/** What the sheet of a place or border says about certainty, radius and sources; '' when there is nothing. A link is shown only for http(s). */
+function evidenceHTML(x) {
+  const srcs = (x.sources || []).map(sourceById).filter(Boolean),
+    cert = [x.certainty ? CERT_LABELS[x.certainty] : '', x.radius_m ? 'about ' + radiusText(x.radius_m) : ''].filter(Boolean).join(', ');
+  const link = (s) =>
+    /^https?:\/\//i.test(s.url || '')
+      ? `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" title="${esc(s.citation || '')}">${esc(s.title)}</a>`
+      : `<span title="${esc(s.citation || '')}">${esc(s.title)}</span>`;
+  return (cert ? `<p class="sn">Certainty: ${esc(cert)}</p>` : '') + (srcs.length ? `<p class="sn">Sources: ${srcs.map(link).join('; ')}</p>` : '');
+}
+const evidenceSources = (ticked) =>
+  sources.map((s) => `<label class="pf-src"><input type="checkbox" value="${esc(s.id)}"${ticked.includes(s.id) ? ' checked' : ''}> ${esc(s.title)}</label>`).join('') ||
+  '<div class="sn">No sources yet. Add the first one below.</div>';
+/** The form part: certainty, (places) radius, sources with "New source". x = the place or border being edited, or {}. */
+function evidenceFormHTML(x, withRadius) {
+  return (
+    `<div class="pf-ev"><div class="label">Certainty (optional)</div><select class="pf-cert"><option value="">Not stated</option>` +
+    Object.keys(CERT_LABELS).map((k) => `<option value="${k}"${x.certainty === k ? ' selected' : ''}>${CERT_LABELS[k]}</option>`).join('') +
+    `</select>` +
+    (withRadius
+      ? `<div class="label">Radius (optional)</div><input class="pf-rad" type="number" min="1" max="${MAX_RADIUS_M}" step="1" value="${x.radius_m ?? ''}" placeholder="metres: a circle is drawn when approximate or disputed" aria-label="Radius in metres">`
+      : '') +
+    `<div class="label">Sources (optional)</div><div class="pf-srcs">${evidenceSources(x.sources || [])}</div>` +
+    `<details class="pf-newsrc"><summary>New source</summary><input class="pf-st" placeholder="Title" aria-label="Source title"><input class="pf-sc" placeholder="Citation (optional)" aria-label="Source citation">` +
+    `<input class="pf-su" placeholder="Link, https://… (optional)" aria-label="Source link"><button type="button" class="pf-srcadd">Add source</button><div class="sn pf-srcerr" role="alert"></div></details></div>`
+  );
+}
+/** certainty, sources and (places) radius from the form. null / [] mean "none": a save with them removes what was there. */
+function evidenceRead(root, withRadius) {
+  const out = {
+    certainty: root.querySelector('.pf-cert').value || null,
+    sources: [...root.querySelectorAll('.pf-srcs input')].filter((i) => i.checked).map((i) => i.value),
+  };
+  if (withRadius) {
+    const r = root.querySelector('.pf-rad').value.trim();
+    if (r === '') out.radius_m = null;
+    else {
+      const n = Number(r);
+      if (!Number.isInteger(n) || n < 1 || n > MAX_RADIUS_M) throw Error(`Radius must be a whole number of metres from 1 to ${MAX_RADIUS_M}.`);
+      out.radius_m = n;
+    }
+  }
+  return out;
+}
+/** "Add source" inside a form: saves it, lists it ticked, keeps the other ticks. */
+async function evidenceAddSource(root) {
+  const box = root.querySelector('.pf-newsrc'),
+    err = box.querySelector('.pf-srcerr'),
+    title = box.querySelector('.pf-st').value.trim();
+  err.textContent = '';
+  try {
+    if (!title) throw Error('Give the source a title.');
+    const r = await postJSON(AHM_CONFIG.url.sourceSave, { title, citation: box.querySelector('.pf-sc').value.trim(), url: box.querySelector('.pf-su').value.trim() });
+    sources = (await loadSources()).slice();
+    const ticked = [...root.querySelectorAll('.pf-srcs input')].filter((i) => i.checked).map((i) => i.value).concat(r.id);
+    root.querySelector('.pf-srcs').innerHTML = evidenceSources(ticked);
+    box.querySelectorAll('input').forEach((i) => (i.value = ''));
+    box.open = false;
+  } catch (e) {
+    err.textContent = e.message;
+  }
+}
+
 /** p: { names, type, date_from, date_to, height_m, lat, lon } (dates are date objects or null) */
 function placeFormHTML(p) {
   const names = p.names && p.names.length ? p.names : [{ lang: 'en', name: '' }],
@@ -84,6 +151,7 @@ function placeFormHTML(p) {
     `<div class="pf-sub">Ended / abandoned</div>${dfHTML('pf-to', p.date_to)}</div>` +
     `<div class="pf-height"${mountain ? '' : ' hidden'}><div class="label">Height (optional)</div>` +
     `<input class="pf-h" type="number" min="0" max="${MAX_HEIGHT_M}" step="1" value="${p.height_m ?? ''}" placeholder="metres above sea level" aria-label="Height in metres"></div>` +
+    evidenceFormHTML(p, true) +
     `<div class="label">Position (latitude, longitude)</div><div class="row">` +
     `<input class="pf-lat" type="number" step="any" value="${p.lat}"><input class="pf-lon" type="number" step="any" value="${p.lon}"></div></div>`
   );
@@ -99,6 +167,7 @@ function placeFormWire(root) {
     root.querySelector('.pf-height').hidden = !mountain;
   });
   root.addEventListener('click', (e) => {
+    if (e.target.closest('.pf-srcadd')) return evidenceAddSource(root); // T-046
     const b = e.target.closest('.pf-add, .pf-del, .pf-up');
     if (!b) return;
     const box = root.querySelector('.pf-names');
@@ -148,5 +217,5 @@ function readPlaceForm(root) {
     lon = parseFloat(q('.pf-lon').value);
   if (!(lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180))
     throw Error('Latitude must be between −90 and 90, longitude between −180 and 180.');
-  return { lat, lon, type, names, date_from: from, date_to: to, height_m: height };
+  return { lat, lon, type, names, date_from: from, date_to: to, height_m: height, ...evidenceRead(root, true) };
 }

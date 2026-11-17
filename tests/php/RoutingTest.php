@@ -48,7 +48,7 @@ test('routing: the data route offers exactly the lists the controller serves', f
     preg_match("/f:\s*'([^']+)'/", file_get_contents(dirname(__DIR__, 2) . '/config/routing.yml'), $m);
     $offered = explode('|', $m[1]);
     sort($offered);
-    same(['categories', 'languages', 'layer-notes-index', 'layers', 'notes-index', 'overlays', 'places', 'shapes', 'types'], $offered);
+    same(['categories', 'languages', 'layer-notes-index', 'layers', 'notes-index', 'overlays', 'places', 'shapes', 'sources', 'types'], $offered);
 });
 
 test('routing: id requirements accept UUIDs only (the same rule as the store)', function () {

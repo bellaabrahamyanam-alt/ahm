@@ -2419,6 +2419,349 @@
     "series": "abc"
    },
    "expect": "UUID"
+  },
+  {
+   "name": "certainty and sources: a place with certainty, radius and sources saves",
+   "via": "save",
+   "body": {
+    "place": {
+     "lat": 40.2,
+     "lon": 44.6,
+     "type": "village",
+     "names": [
+      {
+       "lang": "en",
+       "name": "Cert"
+      }
+     ],
+     "certainty": "approximate",
+     "radius_m": 5000,
+     "sources": [
+      "@S0",
+      "@S1"
+     ]
+    }
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "certainty and sources: a certainty that is not exact, approximate or disputed is refused",
+   "via": "save",
+   "body": {
+    "place": {
+     "lat": 40.2,
+     "lon": 44.6,
+     "type": "village",
+     "names": [
+      {
+       "lang": "en",
+       "name": "Cert"
+      }
+     ],
+     "certainty": "maybe"
+    }
+   },
+   "expect": "certainty"
+  },
+  {
+   "name": "certainty and sources: a radius of 0 is refused",
+   "via": "save",
+   "body": {
+    "place": {
+     "lat": 40.2,
+     "lon": 44.6,
+     "type": "village",
+     "names": [
+      {
+       "lang": "en",
+       "name": "Cert"
+      }
+     ],
+     "certainty": "approximate",
+     "radius_m": 0
+    }
+   },
+   "expect": "radius"
+  },
+  {
+   "name": "certainty and sources: a radius that is not a whole number is refused",
+   "via": "save",
+   "body": {
+    "place": {
+     "lat": 40.2,
+     "lon": 44.6,
+     "type": "village",
+     "names": [
+      {
+       "lang": "en",
+       "name": "Cert"
+      }
+     ],
+     "radius_m": 2.5
+    }
+   },
+   "expect": "radius"
+  },
+  {
+   "name": "certainty and sources: a radius that is not a number is refused",
+   "via": "save",
+   "body": {
+    "place": {
+     "lat": 40.2,
+     "lon": 44.6,
+     "type": "village",
+     "names": [
+      {
+       "lang": "en",
+       "name": "Cert"
+      }
+     ],
+     "radius_m": "far"
+    }
+   },
+   "expect": "radius"
+  },
+  {
+   "name": "certainty and sources: a radius above 1000000 metres is refused",
+   "via": "save",
+   "body": {
+    "place": {
+     "lat": 40.2,
+     "lon": 44.6,
+     "type": "village",
+     "names": [
+      {
+       "lang": "en",
+       "name": "Cert"
+      }
+     ],
+     "radius_m": 1000001
+    }
+   },
+   "expect": "radius"
+  },
+  {
+   "name": "certainty and sources: a source that is not in the dictionary is refused",
+   "via": "save",
+   "body": {
+    "place": {
+     "lat": 40.2,
+     "lon": 44.6,
+     "type": "village",
+     "names": [
+      {
+       "lang": "en",
+       "name": "Cert"
+      }
+     ],
+     "sources": [
+      "99999999-9999-4999-8999-999999999999"
+     ]
+    }
+   },
+   "expect": "unknown source"
+  },
+  {
+   "name": "certainty and sources: sources that are not a list are refused",
+   "via": "save",
+   "body": {
+    "place": {
+     "lat": 40.2,
+     "lon": 44.6,
+     "type": "village",
+     "names": [
+      {
+       "lang": "en",
+       "name": "Cert"
+      }
+     ],
+     "sources": "@S0"
+    }
+   },
+   "expect": "sources"
+  },
+  {
+   "name": "certainty and sources: a border with certainty and sources saves",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "C"
+     }
+    ],
+    "type": "kingdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    },
+    "certainty": "disputed",
+    "sources": [
+     "@S0"
+    ]
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "certainty and sources: a border with a radius is refused",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "C"
+     }
+    ],
+    "type": "kingdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    },
+    "radius_m": 100
+   },
+   "expect": "radius"
+  },
+  {
+   "name": "certainty and sources: a border with an unknown source is refused",
+   "via": "shape",
+   "body": {
+    "names": [
+     {
+      "lang": "en",
+      "name": "C"
+     }
+    ],
+    "type": "kingdom",
+    "color": "#336699",
+    "opacity": 0.5,
+    "label": false,
+    "source": "",
+    "date_from": null,
+    "date_to": null,
+    "geometry": {
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        44.0,
+        40.0
+       ],
+       [
+        44.5,
+        40.0
+       ],
+       [
+        44.5,
+        40.5
+       ],
+       [
+        44.0,
+        40.0
+       ]
+      ]
+     ]
+    },
+    "sources": [
+     "99999999-9999-4999-8999-999999999999"
+    ]
+   },
+   "expect": "unknown source"
+  },
+  {
+   "name": "certainty and sources: a source with a title, a citation and a link saves",
+   "via": "source",
+   "body": {
+    "title": "Plutarch, Life of Lucullus",
+    "citation": "Plutarch, Lucullus 21-32",
+    "url": "https://example.org/lucullus"
+   },
+   "expect": "ok"
+  },
+  {
+   "name": "certainty and sources: a source needs a title",
+   "via": "source",
+   "body": {
+    "title": "  ",
+    "citation": "x"
+   },
+   "expect": "title"
+  },
+  {
+   "name": "certainty and sources: a link that is not http or https is refused",
+   "via": "source",
+   "body": {
+    "title": "T",
+    "url": "javascript:alert(1)"
+   },
+   "expect": "link"
+  },
+  {
+   "name": "certainty and sources: a link without a scheme is refused",
+   "via": "source",
+   "body": {
+    "title": "T",
+    "url": "example.org/a"
+   },
+   "expect": "link"
+  },
+  {
+   "name": "certainty and sources: a source that does not exist cannot be changed",
+   "via": "source",
+   "body": {
+    "id": "99999999-9999-4999-8999-999999999999",
+    "title": "T"
+   },
+   "expect": "unknown source"
   }
  ]
 }

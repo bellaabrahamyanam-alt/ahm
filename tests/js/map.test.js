@@ -1889,3 +1889,52 @@ test('map: river size: river shapes are drawn with width x factor, others unchan
   p.X('setRiverSize(1)');
   eq('1', factor(line())[1], '1x gives the old widths');
 });
+
+// ---- T-046: a faded circle of radius_m metres around approximate and disputed places ----
+const uncertain = (...rows) => ({
+  type: 'FeatureCollection',
+  features: rows.map(([id, lon, lat, certainty, radius_m]) => ({
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [lon, lat] },
+    properties: { id, name: id, type: 'City', type_code: 'city', dates: '', halo: '', certainty, radius_m },
+  })),
+});
+const metres = (a, b) => {
+  const R = 6371008.8,
+    rad = (d) => (d * Math.PI) / 180,
+    dLat = rad(b[1] - a[1]),
+    dLon = rad(b[0] - a[0]),
+    h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a[1])) * Math.cos(rad(b[1])) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+
+test('map: certainty circles: an approximate or disputed place with a radius gets a circle of that radius; exact, not stated or no radius get none', () => {
+  const { p, ml } = boot();
+  setFeatures(p, uncertain(['a', 44.5, 40.2, 'approximate', 5000], ['b', 45, 41, 'disputed', 20000], ['c', 44, 40, 'exact', 3000], ['d', 44.1, 40.1, '', 3000], ['e', 44.2, 40.3, 'approximate', 0]));
+  const src = ml.rec.sources['ahm-uncertain'];
+  ok(src, 'the source of circles exists');
+  const fs = src.data.features;
+  eq(['a', 'b'], fs.map((f) => f.properties.id).sort());
+  for (const f of fs) {
+    const ring = f.geometry.coordinates[0],
+      c = f.properties.id === 'a' ? [44.5, 40.2] : [45, 41],
+      r = f.properties.id === 'a' ? 5000 : 20000;
+    ok(f.geometry.type === 'Polygon' && ring.length >= 33, 'a polygon with enough points to look round');
+    ok(ring.every((pt) => Math.abs(metres(c, pt) - r) / r < 0.01), `every point is ${r} m from the place, within 1%`);
+    eq(ring[0], ring[ring.length - 1], 'the ring is closed');
+  }
+  eq([false, true], fs.map((f) => f.properties.disputed), 'disputed circles are marked so they get a dashed outline');
+});
+
+test('map: certainty circles follow setFeatures (a new collection replaces them; the selected place keeps its circle) and have a fill and a line layer under the symbols', () => {
+  const { p, ml } = boot();
+  setFeatures(p, uncertain(['a', 44.5, 40.2, 'approximate', 5000]));
+  eq(1, ml.rec.sources['ahm-uncertain'].data.features.length);
+  setFeatures(p, uncertain(['a', 44.5, 40.2, 'approximate', 5000], ['b', 45, 41, 'disputed', 1000]));
+  eq(2, ml.rec.sources['ahm-uncertain'].data.features.length);
+  setFeatures(p, uncertain(['a', 44.5, 40.2, 'exact', 5000]));
+  eq(0, ml.rec.sources['ahm-uncertain'].data.features.length);
+  const ids = ml.rec.layers.map((l) => l.id);
+  ok(ids.includes('ahm-uncertain-fill') && ids.includes('ahm-uncertain-line'), 'both layers');
+  ok(ids.indexOf('ahm-uncertain-fill') < ids.indexOf('ahm-places'), 'drawn under the place symbols');
+});

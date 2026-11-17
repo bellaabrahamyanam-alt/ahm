@@ -52,10 +52,13 @@ class DataCheck
         $layers = $this->json('layers.json', true);
         $over = $this->json('overlays.json', true);
         $types = $this->json('types.json', true);
+        $src = $this->json('sources.json', true);
         $codes = $langs ? array_column($langs['languages'] ?? [], 'code') : [];
         $this->languages($langs);
         $typeCodes = $types ? $this->types($types, $codes) : store::TYPES; // no types.json yet: the seed list
-        $placeIds = $places ? $this->places($places, $codes, $typeCodes) : [];
+        $srcIds = $src ? $this->sources($src) : [];
+        $placeIds = $places ? $this->places($places, $codes, $typeCodes, $srcIds) : [];
+        $this->shapeEvidence($srcIds);
         $shapeIds = $this->shapeIds();
         $notes = $this->notes($placeIds, $codes);
         $catIds = $cats ? $this->categories($cats, $codes) : [];
@@ -152,7 +155,7 @@ class DataCheck
         return array_keys($seen);
     }
 
-    private function places($fc, $codes, $typeCodes)
+    private function places($fc, $codes, $typeCodes, $srcIds = [])
     {
         $ids = [];
         if (($fc['type'] ?? '') !== 'FeatureCollection') {
@@ -166,6 +169,7 @@ class DataCheck
                 $this->bad('place-id', "$w: id is not a UUID");
                 continue;
             }
+            $this->evidence($p, $srcIds, $w, 'place', true);
             if (isset($ids[$id])) {
                 $this->bad('place-id-duplicate', "$w: id used twice");
             }
@@ -317,6 +321,59 @@ class DataCheck
     }
 
     /** ids of the borders; shapes.geojson is optional (no file, no borders) */
+    /** sources.json (T-046): ids are UUIDs and unique, every source has a title, a link starts with http(s). Returns the ids. */
+    private function sources($d)
+    {
+        $ids = [];
+        foreach ($d['sources'] ?? [] as $i => $s) {
+            $w = "source #$i";
+            if (!$this->uuid($s['id'] ?? null)) {
+                $this->bad('source-id', "$w: id is not a UUID");
+                continue;
+            }
+            if (isset($ids[$s['id']])) {
+                $this->bad('source-id-duplicate', "$w: id used twice");
+            }
+            $ids[$s['id']] = true;
+            if (!is_string($s['title'] ?? null) || trim($s['title']) === '') {
+                $this->bad('source-title', "$w: a source needs a title");
+            }
+            if (isset($s['url']) && !preg_match('~^https?://[^\s<>"\']{1,490}$~i', (string) $s['url'])) {
+                $this->bad('source-url', "$w: the link must start with http:// or https://");
+            }
+        }
+        return $ids;
+    }
+
+    /** certainty, radius_m and sources of a place or a border (T-046): known values, sources that exist, a radius only on places. */
+    private function evidence($p, $srcIds, $w, $kind, $radiusOk)
+    {
+        if (isset($p['certainty']) && !in_array($p['certainty'], store::CERTAINTY, true)) {
+            $this->bad("$kind-certainty", "$w: certainty is not exact, approximate or disputed");
+        }
+        if (array_key_exists('radius_m', $p)) {
+            $r = $p['radius_m'];
+            if (!$radiusOk) {
+                $this->bad("$kind-radius", "$w: only a place has a radius");
+            } elseif (!is_int($r) || $r < 1 || $r > store::MAX_RADIUS_M) {
+                $this->bad("$kind-radius", "$w: radius must be a whole number of metres from 1 to " . store::MAX_RADIUS_M);
+            }
+        }
+        foreach ($p['sources'] ?? [] as $s) {
+            if (!is_string($s) || !isset($srcIds[$s])) {
+                $this->bad("$kind-source", "$w: a source does not exist in sources.json");
+            }
+        }
+    }
+
+    private function shapeEvidence($srcIds)
+    {
+        $fc = $this->json('shapes.geojson', true);
+        foreach ($fc['features'] ?? [] as $i => $f) {
+            $this->evidence($f['properties'] ?? [], $srcIds, "border #$i", 'shape', false);
+        }
+    }
+
     private function shapeIds()
     {
         $fc = $this->json('shapes.geojson', true);

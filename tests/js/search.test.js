@@ -1,4 +1,4 @@
-const { test, ok, eq, J } = require('./lib/harness');
+const { test, ok, eq, J, throws } = require('./lib/harness');
 const { load, UI_STANDINS, SAMPLE } = require('./lib/ctx');
 
 // astronomical year -> ISO text (years below 0 use the expanded form)
@@ -174,4 +174,75 @@ test('series: versionEndBefore closes an open version the day before the new one
   eq(null, end(mkShape('a', 'S', y(100), y(150)), y(200)), 'already has an end');
   eq(null, end(mkShape('a', 'S', y(200), null), y(200)), 'starts at or after the new version');
   eq(null, end(mkShape('a', 'S', y(100), null), null), 'the new version has no start');
+});
+
+// ---- T-046: certainty and source filters ----
+test('evidence: run filters by certainty and by source; empty sets filter nothing; an object without them never matches a chosen one', () => {
+  const p = page();
+  p.X("places[0].certainty = 'approximate'; places[0].sources = ['s1', 's2']; places[1].certainty = 'disputed'; places[1].sources = ['s2']; places[2].certainty = 'exact'");
+  const ids = (o) => p.X('run(__0).map((r) => r.p.id)', o).slice().sort();
+  eq(['p1', 'p2', 'p3', 'p4'], ids({}));
+  eq(['p1'], ids({ certainty: new Set(['approximate']) }));
+  eq(['p1', 'p2'], ids({ certainty: new Set(['approximate', 'disputed']) }));
+  eq(['p1', 'p2'], ids({ sources: new Set(['s2']) }));
+  eq(['p1'], ids({ sources: new Set(['s1']), certainty: new Set(['approximate']) }), 'both filters must hold');
+  eq([], ids({ sources: new Set(['s1']), certainty: new Set(['disputed']) }));
+});
+
+test('evidence: shapesRun filters the same way', () => {
+  const p = page();
+  const mk = (id, c, s) => ({ ...mkShape(id, null, null, null), certainty: c, sources: s });
+  p.X('shapes = __0', [mk('a', 'approximate', ['s1']), mk('b', 'disputed', ['s2']), mk('c', undefined, undefined)]);
+  const ids = (o) => p.X('shapesRun(__0).map((s) => s.id)', o).slice().sort();
+  eq(['a', 'b', 'c'], ids({}));
+  eq(['b'], ids({ certainty: new Set(['disputed']) }));
+  eq(['a'], ids({ sources: new Set(['s1']) }));
+});
+
+test('evidence: sourceById finds a source of the dictionary, loadSources reads sources.json, a missing file means no sources', async () => {
+  const p = page();
+  p.X("sources = [{ id: 's1', title: 'Strabo' }]");
+  eq('Strabo', p.X("sourceById('s1').title"));
+  eq(undefined, p.X("sourceById('nope')"));
+});
+
+// ---- T-046: certainty, radius and sources in the sheet and the forms ----
+const withSources = () => {
+  const p = page();
+  p.X("sources = [{ id: 's1', title: 'Strabo', citation: 'book 11', url: 'https://example.org/s' }, { id: 's2', title: 'Khorenatsi' }]");
+  return p;
+};
+
+test('evidence: the sheet says certainty, radius and sources, links only http(s) urls, and is empty when there is nothing to say', () => {
+  const p = withSources();
+  eq('', p.X('evidenceHTML(__0)', {}));
+  const h = p.X('evidenceHTML(__0)', { certainty: 'approximate', radius_m: 5000, sources: ['s1', 's2', 'gone'] });
+  ok(h.includes('Approximate') && h.includes('about 5 km'), h);
+  ok(h.includes('<a href="https://example.org/s"') && h.includes('rel="noopener noreferrer"') && h.includes('>Strabo</a>'), 'the source with a link is a link');
+  ok(h.includes('Khorenatsi') && !h.includes('gone'), 'a source without a link is text; an id that is not in the dictionary is left out');
+  ok(p.X('evidenceHTML(__0)', { certainty: 'disputed', radius_m: 800 }).includes('about 800 m'));
+  ok(!p.X('evidenceHTML(__0)', { sources: [] }).includes('Sources'));
+  ok(p.X('evidenceHTML(__0)', { certainty: 'exact' }).includes('Exact'));
+});
+
+test('evidence: the form has certainty, sources (ticked as saved) and, for places only, the radius', () => {
+  const p = withSources();
+  const f = p.X('evidenceFormHTML(__0, true)', { certainty: 'disputed', radius_m: 1200, sources: ['s2'] });
+  ok(/<option value="disputed" selected>/.test(f), 'certainty selected');
+  ok(/class="pf-rad"[^>]*value="1200"/.test(f), 'radius filled');
+  ok(/value="s2" checked/.test(f) && !/value="s1" checked/.test(f), 'only the saved source is ticked');
+  ok(!p.X('evidenceFormHTML(__0, false)', {}).includes('pf-rad'), 'a border has no radius');
+});
+
+test('evidence: reading the form gives null / [] for what is empty (so a save clears it), checks the radius, and leaves the radius out for borders', () => {
+  const p = withSources();
+  const root = (cert, rad, ticked) => ({
+    querySelector: (s) => ({ '.pf-cert': { value: cert }, '.pf-rad': rad === undefined ? null : { value: rad } }[s] || null),
+    querySelectorAll: () => ['s1', 's2'].map((v) => ({ value: v, checked: ticked.includes(v) })),
+  });
+  const read = (r, rad) => J(p.X('evidenceRead(__0, __1)', r, rad));
+  eq({ certainty: 'approximate', sources: ['s2'], radius_m: 300 }, read(root('approximate', '300', ['s2']), true));
+  eq({ certainty: null, sources: [], radius_m: null }, read(root('', '', []), true));
+  eq({ certainty: 'disputed', sources: ['s1'] }, read(root('disputed', undefined, ['s1']), false));
+  for (const bad of ['0', '2.5', 'far', '1000001']) throws(/Radius/, () => p.X('evidenceRead(__0, true)', root('', bad, [])));
 });

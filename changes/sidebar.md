@@ -137,3 +137,8 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Why:** owner: the same simple flow as for borders (T-041 simplified).
 - **Files:** `app/js/sidebar/routes.js`, `app/js/sidebar/shapes.js`, `tests/js/browser.test.js` (1 scenario), `TODO.md`, `app/dist/`.
 - **How to verify:** `node tests/js/run.js browser`. NOT verified: the real drawing tool (stops, "follow roads") on the real map; the stand-in hands back a moved path.
+
+## 2026-11-17 — T-046: certainty and sources in forms, sheets and filters
+
+- **What:** `placeform.js` (`evidenceHTML`, `evidenceFormHTML`, `evidenceRead`, `evidenceAddSource`, "New source" inside the form); the place and border sheets show certainty, radius and sources (links only for http(s)); the place and border forms save them; Filters has Certainty and Source chips (places list and map). Features sent to the map carry `certainty` and `radius_m`.
+- **Not done:** borders, rivers and routes lists are not filtered; the route card has no fields (T-066). NOT seen in a browser.

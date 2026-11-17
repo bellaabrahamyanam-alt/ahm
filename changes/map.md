@@ -144,3 +144,8 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Contract:** no change to a contract file. The optional feature property `river` is new next to the ones `sidebar/shapes.js` already sends (comment of `map/shapes.js` updated).
 - **Verify:** `node tests/js/run.js river --no-browser`. By eye (not done here): slide to 3x, rivers and base-map rivers get thicker; 1x restores them.
 - **Follow-ups:** T-064 (scope selected or filtered).
+
+## 2026-11-17 — T-046: certainty circles
+
+- **What:** source `ahm-uncertain` and layers `ahm-uncertain-fill`, `-line`, `-dash` (under the symbols): a 64-point circle of `radius_m` metres (on the sphere) around places whose `certainty` is `approximate` or `disputed`; dashed when disputed (I-2 [1.11]).
+- **Files:** `app/js/map/map.js`, `tests/js/map.test.js`. **Verify:** `node tests/js/run.js "certainty circles" --no-browser`. Not seen on a real map.

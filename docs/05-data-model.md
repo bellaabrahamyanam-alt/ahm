@@ -108,6 +108,8 @@ Generated from the note files after every save. It holds `id`, `place`, `lang`, 
 
 ### Layers and categories
 
+**Sources, certainty and radius (T-046, phase 1).** `sources.json` is a dictionary like categories: `{ "version": 1, "sources": [ { "id": "<uuid>", "title": "…", "citation": "…", "url": "https://…" } ] }`; `citation` and `url` are optional, `url` must be http or https. Editors add and change sources; none is deleted, because places point to them by id. A place or a border may have the optional properties `certainty` (`exact`, `approximate` or `disputed`) and `sources` (a list of source ids, each in the dictionary, no duplicates, at most 20); a place may also have `radius_m` (whole metres, 1 to 1,000,000), drawn as a faded circle around an approximate or disputed point (dashed outline when disputed). A border has no radius. All are optional and absent means not stated, so no data changes. The free-text `source` of a border stays as it is. `tests/data` checks the ids, the values and that every source exists.
+
 `categories.json`: `{ "version": 1, "categories": [ { "id": "<uuid>", "names": [ { "lang", "name" } ] } ] }`.
 
 `layers.json` (one file for all layers; chosen over one file per layer because the list is small and is read whole):

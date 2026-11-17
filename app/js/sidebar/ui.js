@@ -12,9 +12,10 @@ AHM.on("map:click", (p) => {
 });
 // ---- start ----
 renderRoute();
-Promise.all([loadPlaces(), loadNotesIndex(), loadLanguages(), loadLayers(), loadLayerNotes(), loadCategories(), loadShapes(), loadTypes()])
-  .then(([p, n, l, ly, ln, cs, sp, ty]) => {
+Promise.all([loadPlaces(), loadNotesIndex(), loadLanguages(), loadLayers(), loadLayerNotes(), loadCategories(), loadShapes(), loadTypes(), loadSources()])
+  .then(([p, n, l, ly, ln, cs, sp, ty, so]) => {
     languages = l;
+    sources = so;
     renderLangs();
     types = ty;
     setShapeTypes(types);

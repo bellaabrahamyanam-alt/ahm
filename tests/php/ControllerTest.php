@@ -138,6 +138,16 @@ namespace ahm\map\tests {
         same(200, status(call(visitor($root, 'admins', 2, true), 'save', $PLACE)));
     });
 
+    test('source_save (T-046): guest 401, member 200 (editors=members), member 403 (editors=admins); a title is required (400)', function () {
+        $root = forum_root();
+        $src = ['title' => 'Strabo, Geography', 'citation' => 'book 11'];
+        same(401, status(call(visitor($root, 'members', ANONYMOUS, false), 'source_save', $src)));
+        same(200, status(call(visitor($root, 'members', 5, false), 'source_save', $src)));
+        same(403, status(call(visitor($root, 'admins', 5, false), 'source_save', $src)));
+        same(400, status(call(visitor($root, 'members', 5, false), 'source_save', ['title' => ''])));
+        same(415, status(call(visitor($root, 'members', 5, false, 'text/plain'), 'source_save', $src)));
+    });
+
     test('write routes: a form post (not JSON) is refused with 415, a broken body with 400', function () use ($PLACE, $LAYER) {
         $root = forum_root();
         foreach (['save' => $PLACE, 'layer_save' => $LAYER] as $m => $body) {
@@ -223,7 +233,7 @@ namespace ahm\map\tests {
     // ---- reading ----
     test('data: guests can read every list as JSON', function () {
         $c = visitor(forum_root(), 'members', ANONYMOUS, false);
-        foreach (['places', 'notes-index', 'overlays', 'languages', 'layers', 'layer-notes-index', 'categories', 'types'] as $f) {
+        foreach (['places', 'notes-index', 'overlays', 'languages', 'layers', 'layer-notes-index', 'categories', 'types', 'sources'] as $f) {
             $r = $c->data($f);
             same(200, status($r), $f);
             ok(is_array(json_decode($r->content, true)), "$f is JSON");
@@ -248,7 +258,7 @@ namespace ahm\map\tests {
         $root = forum_root();
         $html = visitor($root, 'members', 2, true)->page()->content;
         foreach (['"places"', '"notesIndex"', '"save"', '"languages"', '"languageSave"', '"layers"', '"layerSave"', '"layerDelete"', '"categories"',
-            '"categorySave"', '"layerNotesIndex"', '"canLayerAdmin":true', '"canEdit":true', '"types"', '"typeSave"', '"typeDelete"', '"canTypeAdmin":true'] as $k) {
+            '"categorySave"', '"sources"', '"sourceSave"', '"layerNotesIndex"', '"canLayerAdmin":true', '"canEdit":true', '"types"', '"typeSave"', '"typeDelete"', '"canTypeAdmin":true'] as $k) {
             ok(strpos($html, $k) !== false, "admin page has $k");
         }
         $m = visitor($root, 'members', 5, false)->page()->content;

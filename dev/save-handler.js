@@ -393,6 +393,7 @@ function save(inp) {
   let pid = inp.place_id || null;
   if (inp.place) {
     const c = cleanPlace(inp.place, codes, types);
+    Object.assign(c.props, cleanEvidence(inp.place, true).set);
     pid = crypto.randomUUID();
     fs.copyFileSync(GEO, archivePath('places', 'geojson'));
     fc.features.push({
@@ -406,12 +407,14 @@ function save(inp) {
     // change an existing place: position, names, type, dates (its id never changes)
     const u = inp.place_update,
       c = cleanPlace(u, codes, types),
+      ev = cleanEvidence(u, true),
       f = fc.features.find((x) => x.properties.id === String(u.id || ''));
+    Object.assign(c.props, ev.set);
     if (!f) throw bad('unknown place');
     pid = f.properties.id;
     fs.copyFileSync(GEO, archivePath('places', 'geojson'));
     f.geometry = { type: 'Point', coordinates: [c.lon, c.lat] };
-    f.properties = Object.assign({}, f.properties, c.props);
+    f.properties = omit(Object.assign({}, f.properties, c.props), ev.clear);
     writeAtomic(GEO, JSON.stringify(fc, null, 1));
   } else if (!fc.features.some((f) => f.properties.id === pid)) throw bad('unknown place');
   if (inp.note) {
@@ -604,6 +607,74 @@ const putList = (file, stem, d) => {
   if (fs.existsSync(file)) fs.copyFileSync(file, archivePath(stem, 'json'));
   writeAtomic(file, JSON.stringify(d, null, 1));
 };
+// ---------------- sources, certainty (T-046 phase 1): same rules as service/store.php ----------------
+const SOURCES_FILE = path.join(DATA, 'sources.json'),
+  MAX_RADIUS_M = 1000000,
+  MAX_SOURCES = 20,
+  CERTAINTY = ['exact', 'approximate', 'disputed'];
+const sourcesData = () => listData(SOURCES_FILE, 'sources');
+// Editors: adds a source, or changes one (all three fields are replaced; a missing citation or link is removed). Returns its id.
+function saveSource(inp) {
+  const title = oneLine(inp.title === undefined ? '' : inp.title, 200);
+  if (!title) throw bad('a source needs a title');
+  const src = { title },
+    cit = oneLine(inp.citation === undefined ? '' : inp.citation, 1000),
+    url = String(inp.url === undefined || inp.url === null ? '' : inp.url).trim();
+  if (cit) src.citation = cit;
+  if (url) {
+    if (!/^https?:\/\/[^\s<>"']{1,490}$/i.test(url)) throw bad('the link must start with http:// or https:// and have no spaces');
+    src.url = url;
+  }
+  const d = sourcesData();
+  let id = String(inp.id || '');
+  if (id) {
+    const i = d.sources.findIndex((x) => x.id === id);
+    if (!UUID.test(id) || i < 0) throw bad('unknown source');
+    d.sources[i] = Object.assign({ id }, src);
+  } else {
+    id = crypto.randomUUID();
+    d.sources.push(Object.assign({ id }, src));
+  }
+  putList(SOURCES_FILE, 'sources', d);
+  return id;
+}
+// certainty, radius_m and sources of a place or a border: { set, clear }. A key that is not sent is left alone (absent = unchanged);
+// null, '' or [] removes it. radiusOk is false for borders (a radius is drawn around a point).
+function cleanEvidence(inp, radiusOk) {
+  const set = {},
+    clear = [],
+    has = (k) => Object.prototype.hasOwnProperty.call(inp, k);
+  if (has('certainty')) {
+    const c = inp.certainty;
+    if (c === null || c === '') clear.push('certainty');
+    else if (!CERTAINTY.includes(c)) throw bad('certainty must be exact, approximate or disputed');
+    else set.certainty = c;
+  }
+  if (has('radius_m')) {
+    const r = inp.radius_m;
+    if (r === null || r === '') clear.push('radius_m');
+    else {
+      if (!radiusOk) throw bad('only a place has a radius');
+      if (typeof r === 'boolean' || r === '' || !Number.isFinite(Number(r)) || Number(r) !== Math.floor(Number(r)) || Number(r) < 1 || Number(r) > MAX_RADIUS_M)
+        throw bad('radius must be a whole number of metres from 1 to ' + MAX_RADIUS_M);
+      set.radius_m = Number(r);
+    }
+  }
+  if (has('sources')) {
+    const s = inp.sources === null ? [] : inp.sources;
+    if (!Array.isArray(s) || s.length > MAX_SOURCES) throw bad('sources must be a list of at most ' + MAX_SOURCES + ' source ids');
+    const known = sourcesData().sources.map((x) => x.id),
+      out = [];
+    s.forEach((x) => {
+      if (typeof x !== 'string' || !known.includes(x)) throw bad('unknown source');
+      if (!out.includes(x)) out.push(x);
+    });
+    if (out.length) set.sources = out;
+    else clear.push('sources');
+  }
+  return { set, clear };
+}
+const omit = (o, keys) => Object.fromEntries(Object.entries(o).filter(([k]) => !keys.includes(k)));
 const categoriesData = () => listData(CAT_FILE, 'categories'),
   layersData = () => listData(LAYERS_FILE, 'layers'),
   layerIndex = (d, id) => d.layers.findIndex((l) => l.id === id);
@@ -953,15 +1024,17 @@ const routeGeomCheck = (type, g, kinds) => {
 function saveShape(inp) {
   const kinds = shapeKinds(),
     c = cleanShape(inp, langLoad().map((l) => l.code), placeIds(), kinds),
+    ev = cleanEvidence(inp, false),
     d = readShapes(),
     now = nowUtc();
+  Object.assign(c, ev.set);
   let id = String(inp.id || '');
   if (id) {
     const f = UUID.test(id) ? d.features.find((x) => x.properties.id === id) : null;
     if (!f) throw bad('unknown border');
     if (inp.geometry !== undefined) f.geometry = cleanGeometry(inp.geometry);
     routeGeomCheck(c.type, f.geometry, kinds);
-    f.properties = Object.assign({}, f.properties, c, { updated: now });
+    f.properties = omit(Object.assign({}, f.properties, c, { updated: now }), ev.clear);
     seriesCheck(f.properties, d.features, kinds);
   } else {
     id = crypto.randomUUID();
@@ -1132,6 +1205,7 @@ module.exports = (req, res, next) => {
   if (url === '/api/type/delete') return jsonPost(req, res, (inp) => ({ ok: deleteType(String(inp.code || '')) })); // admins only in the forum
   if (url === '/api/layer/save') return jsonPost(req, res, (inp) => layerSave(inp)); // editors in the forum
   if (url === '/api/layer/delete') return jsonPost(req, res, (inp) => (deleteLayer(String(inp.id || '')), {})); // admins only in the forum
+  if (url === '/api/source/save') return jsonPost(req, res, (inp) => ({ id: saveSource(inp) })); // editors in the forum
   if (url === '/api/shape/save') return jsonPost(req, res, (inp) => ({ id: saveShape(inp) })); // editors in the forum
   if (url === '/api/shape/delete') return jsonPost(req, res, (inp) => (deleteShape(String(inp.id || '')), {})); // editors in the forum
   if (url === '/api/category/save') return jsonPost(req, res, (inp) => ({ id: saveCategory(inp) })); // admins only in the forum

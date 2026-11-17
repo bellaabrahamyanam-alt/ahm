@@ -13,8 +13,8 @@ const uniq = (a) => [...new Set(a)].sort();
 const READ = ['places', 'notesIndex', 'note', 'languages', 'overlays', 'overlayImage', 'layers', 'layerNotesIndex', 'categories'];
 const WRITE = ['save', 'languageSave', 'overlaySave', 'overlayUpload', 'overlayDelete', 'layerSave', 'layerDelete', 'categorySave'];
 // Names added by proposal 010 (INTERFACES.md 1.5): accepted before they exist, not required yet (tightened after tasks 010, 011 and 013 are merged; the owner decides).
-const NEW_READ = ['types', 'shapes'];
-const NEW_WRITE = ['typeSave', 'typeDelete', 'shapeSave', 'shapeDelete'];
+const NEW_READ = ['types', 'shapes', 'sources'];
+const NEW_WRITE = ['typeSave', 'typeDelete', 'shapeSave', 'shapeDelete', 'sourceSave'];
 /** `have` must hold every name of `need` and may hold others only from `optional`. */
 const within = (need, optional, have, what) => {
   const missing = need.filter((k) => !have.includes(k)),
@@ -41,7 +41,7 @@ test('contract I-1: the forum controller hands out every endpoint name, and the 
       const j = await r.json().catch(() => null);
       ok(j && typeof j.error === 'string', `${url}: the error is {"error": "..."}`);
     }
-    for (const f of ['places.geojson', 'languages.json', 'overlays.json', 'layers.json', 'categories.json', 'notes/index.json', 'layer-notes/index.json']) {
+    for (const f of ['places.geojson', 'languages.json', 'overlays.json', 'layers.json', 'categories.json', 'sources.json', 'notes/index.json', 'layer-notes/index.json']) {
       const r = await fetch(S.base + '/data/' + f);
       ok(r.status === 200 && JSON.parse(await r.text()), 'data/' + f + ' is readable JSON');
     }
@@ -86,7 +86,7 @@ const CORE = [
   'isoToSec', 'secToIso', 'dateToTs', 'dateFromTs', 'dateClean', 'dateUpgrade', 'dateBounds', 'spanBounds', 'dateKey', 'dateOrderCheck', 'dateText', 'spanText',
   'periodEndSec', 'datePeriodEnd', 'legacyToDate', 'getJSON', 'loadPlaces', 'loadNotesIndex', 'loadNoteBody', 'loadLayers', 'loadLayerNotes', 'loadCategories',
   'loadLanguages', 'esc', 'norm', 'label', 'langName', 'run', 'byDateKey', 'periodActive', 'layerAllows', 'lyScope', 'lyHalo', 'lyNoteVisible',
-  'visibleAt', 'timeSpan', 'timeAdvance', 'timeLook',
+  'loadSources', 'sourceById', 'evidenceAllows', 'visibleAt', 'timeSpan', 'timeAdvance', 'timeLook',
 ];
 
 test('contract I-3: the core functions of INTERFACES.md exist with the same names', () => {
