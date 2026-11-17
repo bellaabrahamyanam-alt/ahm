@@ -143,6 +143,7 @@ function boot({ ready = true, before } = {}) {
     shapeLineAt: () => null,
     shapesAt: () => [],
     shapeDrawing: null,
+    boxTool: null,
     console: { log() {}, warn() {}, error: (...a) => errors.push(a.map(String).join(' ')) },
   });
   let onBasemap = null;
@@ -479,6 +480,7 @@ function bootUx({ ready = true, glyphs = true } = {}) {
     shapeLineAt: () => null,
     shapesAt: () => [],
     shapeDrawing: null,
+    boxTool: null,
     performance: { now: () => 100000 + clock.now() }, // map.js times double clicks with it; a large start: lastDblAt = 0 means long ago
     setTimeout: clock.setTimeout,
     clearTimeout: clock.clearTimeout,
@@ -1663,4 +1665,69 @@ test('config: bbox is [32, 29, 51, 44] and the place search is biased to exactly
   await ctx.geocode('Baghdad', 'en');
   ok(url.includes('&bounded=1&'), 'the search stays bounded');
   ok(url.includes('&viewbox=32,44,51,29&'), 'viewbox = west,north,east,south of the config: ' + url);
+});
+
+// ---- Select rivers (T-057): the rectangle tool (AHM.map.selectBox, events box:select and box:cancel) and the highlight (AHM.map.highlightRivers) ----
+function shapesPage({ init = true } = {}) {
+  const p = load(['typeicons.js', 'map.js', 'map/shapes.js']);
+  const ml = makeMapLibre();
+  const keys = [];
+  Object.assign(p.ctx, { maplibregl: ml.maplibregl, AHM_CONFIG: CONFIG, esc: String, registerTypeIcons() {}, overlaysInit() {}, syncOverlays() {}, console: { log() {}, warn() {}, error() {} } });
+  p.ctx.document.addEventListener = (name, fn) => name === 'keydown' && keys.push(fn);
+  p.X('globalThis.__ev = []; for (const n of ["box:select", "box:cancel"]) AHM.on(n, (d) => __ev.push([n, d]))');
+  const m = new ml.maplibregl.Map();
+  m.getCanvas = () => ({ style: {}, addEventListener() {} });
+  ml.rec.loaded = true;
+  p.X('map = __0; mapReady = true', m);
+  if (init) p.X('shapesInit()');
+  const fire = (name, lng, lat) => (ml.rec.handlers[name] || []).forEach((fn) => fn({ lngLat: { lng, lat }, preventDefault() {} }));
+  return { p, ml, fire, esc: () => keys.forEach((fn) => fn({ key: 'Escape' })), events: () => JSON.parse(JSON.stringify(p.X('__ev'))) };
+}
+
+test('map: select rivers: highlightRivers draws the given ids in one layer above the river lines and keeps them for a map that is not ready', () => {
+  const early = shapesPage({ init: false });
+  early.p.X("AHM.map.highlightRivers(['r1'])");
+  early.p.X('shapesInit()');
+  const f = (b) => JSON.stringify(b.ml.rec.layers.find((l) => l.id === 'ahm-river-sel').filter);
+  eq('["in",["get","id"],["literal",["r1"]]]', f(early), 'asked before the layers existed');
+  early.p.X("AHM.map.highlightRivers(['r2', 'r3'])");
+  eq('["in",["get","id"],["literal",["r2","r3"]]]', f(early));
+  early.p.X('AHM.map.highlightRivers([])');
+  eq('["in",["get","id"],["literal",[]]]', f(early), 'nothing is drawn for an empty list');
+  const ids = early.ml.rec.layers.map((l) => l.id);
+  ok(ids.indexOf('ahm-river-sel') < ids.indexOf('ahm-shape-line-solid'), 'the highlight is a glow under the river line');
+});
+
+test('map: select rivers: selectBox(true) turns the drag into a box: the map does not pan, the box is drawn, mouse up reports it as [west, south, east, north]', () => {
+  const b = shapesPage();
+  b.p.X('AHM.map.selectBox(true)');
+  eq(false, b.ml.rec.pan, 'dragging the map is off while the tool is on');
+  b.fire('mousedown', 45, 41);
+  b.fire('mousemove', 44, 40);
+  const box = b.ml.rec.sources['ahm-box'].data;
+  eq([44, 45, 40, 41], [Math.min(...box.geometry.coordinates[0].map((c) => c[0])), Math.max(...box.geometry.coordinates[0].map((c) => c[0])), Math.min(...box.geometry.coordinates[0].map((c) => c[1])), Math.max(...box.geometry.coordinates[0].map((c) => c[1]))], 'the box is drawn between the press and the pointer');
+  b.fire('mouseup', 44, 40);
+  eq([['box:select', { bbox: [44, 40, 45, 41] }]], b.events());
+  eq(true, b.ml.rec.pan, 'the map pans again');
+  eq([], b.ml.rec.sources['ahm-box'].data.features || [], 'the box is gone');
+  eq(true, b.p.X('!!boxTool'), 'the click that follows the mouse up is still ignored by the map');
+});
+
+test('map: select rivers: Escape cancels the tool (box:cancel); selectBox(false) ends it quietly; a move without a press draws nothing; no tool, no event', () => {
+  const b = shapesPage();
+  b.fire('mousedown', 1, 1);
+  b.fire('mouseup', 2, 2);
+  eq([], b.events(), 'the tool was never on');
+  b.p.X('AHM.map.selectBox(true)');
+  b.fire('mousemove', 3, 3);
+  ok(!b.ml.rec.sources['ahm-box'].data.geometry, 'nothing drawn before the press');
+  b.esc();
+  eq([['box:cancel', null]], b.events());
+  eq(true, b.ml.rec.pan);
+  b.p.X('AHM.map.selectBox(true)');
+  b.p.X('AHM.map.selectBox(false)');
+  eq(1, b.events().length, 'switching off by command sends nothing');
+  eq(true, b.ml.rec.pan);
+  b.esc();
+  eq(1, b.events().length, 'Escape with no tool sends nothing');
 });
