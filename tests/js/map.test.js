@@ -41,6 +41,7 @@ function makeMapLibre() {
   const base = [
     { id: 'base-bg', type: 'background' },
     { id: 'base-water', type: 'fill', 'source-layer': 'water' },
+    { id: 'base-waterway', type: 'line', source: 'openmaptiles', 'source-layer': 'waterway' },
     { id: 'base-label', type: 'symbol', 'source-layer': 'place' },
   ];
   const own = (id) => rec.layers.find((l) => l.id === id);
@@ -140,6 +141,7 @@ function boot({ ready = true, before } = {}) {
     overlaysInit() {},
     syncOverlays() {},
     shapesInit() {}, // shapes.js is not loaded here: no borders to draw
+    setRiverSize: (k) => (p.ctx.__river ||= []).push(k), // T-055: shapes.js sets the river widths
     shapeLineAt: () => null,
     shapesAt: () => [],
     shapeDrawing: null,
@@ -476,6 +478,7 @@ function bootUx({ ready = true, glyphs = true } = {}) {
     overlaysInit() {},
     syncOverlays() {},
     shapesInit() {}, // shapes.js is not loaded here: no borders to draw
+    setRiverSize: (k) => (p.ctx.__river ||= []).push(k), // T-055: shapes.js sets the river widths
     shapeLineAt: () => null,
     shapesAt: () => [],
     shapeDrawing: null,
@@ -1663,4 +1666,85 @@ test('config: bbox is [32, 29, 51, 44] and the place search is biased to exactly
   await ctx.geocode('Baghdad', 'en');
   ok(url.includes('&bounded=1&'), 'the search stays bounded');
   ok(url.includes('&viewbox=32,44,51,29&'), 'viewbox = west,north,east,south of the config: ' + url);
+});
+
+// ---- River size (T-055): one slider in More > Maps & base map widens the rivers; the base-map waterways get one extra line layer above 1x ----
+const bootRiver = (saved) => {
+  const handlers = {};
+  const b = boot({
+    before: (p) => {
+      p.ctx.localStorage = { getItem: (k) => (k === 'ahm-river-size' ? saved : null), setItem: (k, v) => (p.ctx.__saved = [k, v]) };
+      p.el('#river-size').addEventListener = (name, fn) => (handlers[name] = fn);
+    },
+  });
+  const slide = (v) => {
+    b.p.el('#river-size').value = String(v);
+    handlers.input({ target: b.p.el('#river-size') });
+  };
+  return { ...b, slide, boost: () => b.ml.rec.layers.find((l) => l.id === 'ahm-waterway-boost'), widths: () => b.p.ctx.__river };
+};
+
+test('map: river size: at the start the factor is 1x and there is no boost layer', () => {
+  const { p, boost, widths } = bootRiver(null);
+  eq(1, Number(p.el('#river-size').value));
+  eq([1], widths());
+  ok(!boost(), 'no layer at 1x');
+});
+
+test('map: river size: the slider sets the factor for the river shapes and saves it', () => {
+  const { p, slide, widths } = bootRiver(null);
+  slide(2.5);
+  eq(2.5, widths()[widths().length - 1]);
+  eq(['ahm-river-size', '2.5'], p.ctx.__saved);
+});
+
+test('map: river size: above 1x one line layer on the waterway layer of the base style; width by zoom times the slider; removed at 1x', () => {
+  const { ml, slide, boost } = bootRiver(null);
+  slide(2);
+  const l = boost();
+  ok(l && l.type === 'line', 'a line layer');
+  eq('openmaptiles', l.source);
+  eq('waterway', l['source-layer']);
+  eq('base-label', ml.rec.before['ahm-waterway-boost'], 'below the labels');
+  eq(3, l.paint['line-width'][5], 'width at zoom 10 is 1.5 x 2');
+  slide(4);
+  eq(1, ml.rec.layers.filter((x) => x.id === 'ahm-waterway-boost').length, 'still one layer');
+  eq(6, boost().paint['line-width'][5], 'the width follows the slider');
+  slide(1);
+  ok(!boost(), 'gone at 1x');
+  slide(0.5);
+  ok(!boost(), 'no boost below 1x');
+});
+
+test('map: river size: a saved value is read again; a bad one is ignored', () => {
+  const a = bootRiver('3');
+  eq(3, Number(a.p.el('#river-size').value));
+  ok(a.boost(), 'the boost layer is back');
+  eq([3], a.widths());
+  for (const bad of ['9', '0', 'x', '']) eq([1], bootRiver(bad).widths(), 'saved ' + JSON.stringify(bad));
+});
+
+test('map: river size: a satellite base map hides the boost layer', () => {
+  const { slide, boost, switchBasemap } = bootRiver(null);
+  slide(2);
+  switchBasemap('sat1');
+  eq('none', boost().layout.visibility);
+  switchBasemap('');
+  eq('visible', boost().layout.visibility);
+});
+
+test('map: river size: river shapes are drawn with width x factor, others unchanged (shapes.js with the stand-in map)', () => {
+  const p = load(['typeicons.js', 'map.js', 'shapes.js']);
+  const ml = makeMapLibre();
+  Object.assign(p.ctx, { maplibregl: ml.maplibregl, AHM_CONFIG: CONFIG, esc: String, registerTypeIcons() {}, overlaysInit() {}, syncOverlays() {}, console: { log() {}, warn() {}, error() {} } });
+  p.X('initMap()');
+  ml.fire('load');
+  const line = () => ml.rec.layers.find((l) => l.id === 'ahm-shape-line-solid').paint['line-width'];
+  const factor = (e) => JSON.stringify(e).match(/"case",\["==",\["get","river"\],true\],([0-9.]+),1/);
+  eq('1', factor(line())[1], 'starts at 1');
+  p.X('setRiverSize(2.5)');
+  eq('2.5', factor(line())[1]);
+  for (const id of ['ahm-shape-halo', 'ahm-shape-shadow', 'ahm-shape-casing']) eq('2.5', factor(ml.rec.layers.find((l) => l.id === id).paint['line-width'])[1], id);
+  p.X('setRiverSize(1)');
+  eq('1', factor(line())[1], '1x gives the old widths');
 });
