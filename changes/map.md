@@ -136,3 +136,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `app/js/map/map.js`, `app/index.html`, `app/css/map.css`, `app/dist/`, `tests/js/map.test.js` (stand-in now has `setPitch`, `setBearing`, `getPitch`, `getBearing`, `setTerrain`, constructor options, and refuses a second source of the same id like MapLibre), `tests/js/browser.test.js` (stub answers `getPitch`/`getBearing`), `graph/`, `context/`, `docs/02`, `docs/08`, `docs/14`, `TODO.md`.
 - **How to verify:** `node tests/js/run.js map --no-browser`. By eye (NOT done: no real map here): tilt and rotate with the sliders and with right-button or Ctrl drag; 3D terrain on and off; the HTML place markers stay at the right spot when tilted.
 - **Follow-ups:** none new.
+
+## 2026-11-17 — T-055: River size slider
+- **What:** slider "River size" (0.5x to 4x, step 0.1, default 1x) in More > Maps & base map > Rivers. River features (`river: true`, sent by `sidebar/shapes.js`) are drawn with width x factor in every width layer (halo, shadow, casing, line); other shapes unchanged. Above 1x one extra line layer `ahm-waterway-boost` on the `waterway` source layer of the base style (width by zoom 0.5 / 1.5 / 4 x factor at zoom 6 / 10 / 14, colour `#4f8fd6`, below the first base symbol layer, hidden under a satellite map); removed at 1x. Saved in `localStorage` `ahm-river-size`; bad values are ignored.
+- **Why:** T-055 (owner, answer a2 of T-059: the slider also thickens the background rivers, all together).
+- **Files:** `app/js/map/map.js`, `app/js/map/shapes.js`, `app/js/sidebar/shapes.js`, `app/index.html`, `app/dist/`, `graph/`, `tests/js/map.test.js`, `docs/02`, `TODO.md`.
+- **Contract:** no change to a contract file. The optional feature property `river` is new next to the ones `sidebar/shapes.js` already sends (comment of `map/shapes.js` updated).
+- **Verify:** `node tests/js/run.js river --no-browser`. By eye (not done here): slide to 3x, rivers and base-map rivers get thicker; 1x restores them.
+- **Follow-ups:** T-064 (scope selected or filtered).

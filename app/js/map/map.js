@@ -135,6 +135,7 @@ function ensureRelief() {
   );
 }
 function applyVis() {
+  if (map.getLayer("ahm-waterway-boost")) map.setLayoutProperty("ahm-waterway-boost", "visibility", view.sat ? "none" : "visible"); // the base-map rivers are not drawn over a satellite picture
   if (view.relief) ensureRelief();
   if (map.getLayer("ahm-relief"))
     map.setLayoutProperty("ahm-relief", "visibility", view.relief && relief.shade ? "visible" : "none");
@@ -491,6 +492,7 @@ function initMap() {
       )
       .join(" ");
     shapesInit();
+    initRiverSize();
     overlaysInit();
     syncOverlays();
     applyVis();
@@ -593,6 +595,58 @@ function initViewControls() {
     view3d.ready = true;
     applyTerrain();
   });
+}
+
+// ---- river size (T-055): one slider; the river shapes are widened by shapes.js (setRiverSize), the rivers of the base map by one extra line layer ----
+const RIVER_KEY = "ahm-river-size";
+let riverSize = 1;
+function applyRiverSize() {
+  setRiverSize(riverSize);
+  const has = !!map.getLayer("ahm-waterway-boost");
+  if (riverSize <= 1) {
+    if (has) map.removeLayer("ahm-waterway-boost");
+    return;
+  }
+  const wide = ["interpolate", ["linear"], ["zoom"], 6, 0.5 * riverSize, 10, 1.5 * riverSize, 14, 4 * riverSize];
+  if (has) return map.setPaintProperty("ahm-waterway-boost", "line-width", wide);
+  const layers = map.getStyle().layers;
+  const w = layers.find((l) => l["source-layer"] === "waterway" && l.source);
+  if (!w) return; // a base style without waterways: nothing to thicken
+  const before = layers.find((l) => l.type === "symbol" && !l.id.startsWith("ahm-"));
+  map.addLayer(
+    {
+      id: "ahm-waterway-boost",
+      type: "line",
+      source: w.source,
+      "source-layer": "waterway",
+      layout: { "line-join": "round", "line-cap": "round", visibility: view.sat ? "none" : "visible" },
+      paint: { "line-color": "#4f8fd6", "line-width": wide },
+    },
+    before && before.id,
+  );
+}
+function initRiverSize() {
+  try {
+    const v = Number(localStorage.getItem(RIVER_KEY));
+    if (v >= 0.5 && v <= 4) riverSize = v;
+  } catch (e) {
+    // no storage: the value is just not kept
+  }
+  const el = $("#river-size");
+  const show = () => ($("#river-size-out").textContent = riverSize + "x");
+  el.value = riverSize;
+  show();
+  el.addEventListener("input", (e) => {
+    riverSize = Math.round(Number(e.target.value) * 10) / 10;
+    show();
+    applyRiverSize();
+    try {
+      localStorage.setItem(RIVER_KEY, String(riverSize));
+    } catch (err) {
+      // private mode: not kept
+    }
+  });
+  applyRiverSize();
 }
 
 // ---- relief colours, controls, contour lines, height profile and height readout (T-039) ----
