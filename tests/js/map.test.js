@@ -75,6 +75,9 @@ function makeMapLibre() {
       rec.layers.push({ ...def });
     },
     getLayer: any,
+    dragPan: { enable: () => (rec.pan = true), disable: () => (rec.pan = false) },
+    hasImage: () => false,
+    addImage() {},
     removeLayer(id) {
       rec.layers = rec.layers.filter((l) => l.id !== id);
     },
@@ -1680,7 +1683,7 @@ function shapesPage({ init = true } = {}) {
   ml.rec.loaded = true;
   p.X('map = __0; mapReady = true', m);
   if (init) p.X('shapesInit()');
-  const fire = (name, lng, lat) => (ml.rec.handlers[name] || []).forEach((fn) => fn({ lngLat: { lng, lat }, preventDefault() {} }));
+  const fire = (name, lng, lat) => (ml.rec.handlers[name] || []).forEach((fn) => fn({ lngLat: { lng, lat }, point: { x: 0, y: 0 }, originalEvent: {}, features: [], preventDefault() {} }));
   return { p, ml, fire, esc: () => keys.forEach((fn) => fn({ key: 'Escape' })), events: () => JSON.parse(JSON.stringify(p.X('__ev'))) };
 }
 

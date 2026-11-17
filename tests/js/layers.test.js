@@ -386,3 +386,99 @@ test('shape notes: the note dialog opens for a border or a route and names what 
   p.X('lyOpenNoteDlg(__0, null)', { id: 'A', names: [{ lang: 'en', name: 'Alpha' }] });
   eq('Note about the layer', p.X('$("#dNoteHead").textContent'));
 });
+
+// ---- Select rivers (T-057): the Rivers tab holds a selection; rectangle and area add to it; the map shows it ----
+const RV_BASE = { color: '#1e88e5', opacity: 1, width: 3, label: false, source: '', date_from: null, date_to: null };
+const RV_SHAPES = [
+  { ...RV_BASE, id: 'r1', names: [{ lang: 'en', name: 'Debed' }], type: 'waterway', geometry: { type: 'LineString', coordinates: [[43.5, 41], [45.5, 41]] } },
+  { ...RV_BASE, id: 'r2', names: [{ lang: 'en', name: 'Aghstev' }], type: 'waterway', geometry: { type: 'LineString', coordinates: [[47, 40], [48, 40]] } },
+  { ...RV_BASE, id: 'r3', names: [{ lang: 'en', name: 'Arax' }], type: 'waterway', geometry: { type: 'LineString', coordinates: [[46, 39], [46.5, 39.5]] } },
+  { ...RV_BASE, id: 'a1', names: [{ lang: 'en', name: 'Lori' }, { lang: 'ru', name: 'Лори' }], type: 'province', geometry: { type: 'Polygon', coordinates: [[[44, 40.5], [45, 40.5], [45, 41.5], [44, 41.5], [44, 40.5]]] } },
+  { ...RV_BASE, id: 'a2', names: [{ lang: 'en', name: 'Syunik' }], type: 'province', geometry: { type: 'Polygon', coordinates: [[[45.5, 38.8], [46.8, 38.8], [46.8, 39.8], [45.5, 39.8], [45.5, 38.8]]] } },
+];
+function rvPage() {
+  const { p, h } = uiPage();
+  p.X(`globalThis.__rec = [];
+    Object.assign(AHM.map, { highlightRivers: (ids) => __rec.push(['hl', ids.slice()]), selectBox: (on) => __rec.push(['box', on]), fitTo: (c) => __rec.push(['fit', c.length]), setShapes: (fc) => __rec.push(['set', fc.features.map((f) => f.properties.id)]) });`);
+  p.X('shapes = __0', RV_SHAPES);
+  const fire = (sel, ev, arg = {}) => (h[sel + ':' + ev] || []).forEach((fn) => fn(arg));
+  const rec = () => JSON.parse(JSON.stringify(p.X('__rec')));
+  const last = (kind) => rec().filter((r) => r[0] === kind).pop();
+  const box = (bbox) => p.X("AHM.emit('box:select', { bbox: __0 })", bbox);
+  return { p, h, fire, rec, last, box };
+}
+
+test('select rivers: a rectangle adds the rivers that touch it, a second one keeps the first result, and the map gets the ids', () => {
+  const { p, last, box } = rvPage();
+  box([44, 40.5, 45, 41.5]);
+  eq(['hl', ['r1']], last('hl'));
+  ok(p.el('#rvSelList').innerHTML.includes('Debed') && !p.el('#rvSelList').innerHTML.includes('Arax'), p.el('#rvSelList').innerHTML);
+  box([45.9, 38.9, 46.6, 39.6]);
+  eq(['hl', ['r1', 'r3']], last('hl'), 'the earlier result is kept');
+  eq('2 selected', p.el('#rvCount').textContent);
+  box([40, 10, 41, 11]);
+  eq('2 selected', p.el('#rvCount').textContent, 'a box with no river changes nothing');
+});
+
+test('select rivers: "only fully inside" takes a river only when all of it is in the box', () => {
+  const { p, last, box } = rvPage();
+  p.el('#rvInside').checked = true;
+  box([44, 40.5, 46, 41.5]);
+  eq('0 selected', p.el('#rvCount').textContent, 'the river reaches out of the box on the west');
+  box([43, 40.5, 46, 41.5]);
+  eq(['hl', ['r1']], last('hl'));
+});
+
+test('select rivers: an area name finds the area; choosing it adds every river that crosses it', () => {
+  const { p, fire, last } = rvPage();
+  p.el('#rvArea').value = 'syun';
+  fire('#rvArea', 'input', { target: p.el('#rvArea') });
+  ok(p.el('#rvAreaRes').innerHTML.includes('data-area="a2"') && !p.el('#rvAreaRes').innerHTML.includes('data-area="a1"'), p.el('#rvAreaRes').innerHTML);
+  fire('#rvAreaRes', 'click', { target: { closest: (s) => (s === '[data-area]' ? { dataset: { area: 'a2' } } : null) } });
+  eq(['hl', ['r3']], last('hl'));
+  eq('', p.el('#rvArea').value, 'the field is cleared');
+  ok(/1/.test(p.el('#rvMsg').textContent), p.el('#rvMsg').textContent);
+  p.el('#rvArea').value = 'Лори';
+  fire('#rvArea', 'input', { target: p.el('#rvArea') });
+  ok(p.el('#rvAreaRes').innerHTML.includes('data-area="a1"'), 'a name in another language');
+});
+
+test('select rivers: a cross removes one river, Clear removes all; the map follows', () => {
+  const { p, fire, last, box } = rvPage();
+  box([40, 38, 50, 42]);
+  eq(['hl', ['r1', 'r2', 'r3']], last('hl'));
+  fire('#rvSelList', 'click', { target: { closest: (s) => (s === '[data-rvdel]' ? { dataset: { rvdel: 'r2' } } : null) } });
+  eq(['hl', ['r1', 'r3']], last('hl'));
+  fire('#rvClear', 'click');
+  eq(['hl', []], last('hl'));
+  eq('0 selected', p.el('#rvCount').textContent);
+});
+
+test('select rivers: "Show only these" gives the map only the selected rivers; the same button shows all again; Clear ends it', () => {
+  const { fire, last, box } = rvPage();
+  const sent = () => last('set')[1].filter((id) => /^r/.test(id)).sort();
+  box([44, 40.5, 45, 41.5]);
+  fire('#rvOnly', 'click');
+  eq(['r1'], sent());
+  fire('#rvOnly', 'click');
+  eq(['r1', 'r2', 'r3'], sent());
+  fire('#rvOnly', 'click');
+  eq(['r1'], sent());
+  fire('#rvClear', 'click');
+  eq(['r1', 'r2', 'r3'], sent(), 'with nothing selected every river is shown');
+});
+
+test('select rivers: Zoom to the selection fits the map to the selected rivers; the rectangle button starts and stops the tool', () => {
+  const { fire, last, rec, box } = rvPage();
+  box([44, 40.5, 45, 41.5]);
+  fire('#rvZoom', 'click');
+  eq(['fit', 4], last('fit'), 'the 4 corners of the one river');
+  fire('#rvBox', 'click');
+  eq(['box', true], last('box'));
+  fire('#rvBox', 'click');
+  eq(['box', false], last('box'));
+  fire('#rvBox', 'click');
+  box([44, 40.5, 45, 41.5]);
+  fire('#rvBox', 'click');
+  eq(['box', true], rec().filter((r) => r[0] === 'box').pop(), 'after a box the button starts the tool again (the map ended it)');
+});
