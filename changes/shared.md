@@ -147,3 +147,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `tools/terrain/{core,terrain,geotiff_source,test_terrain}.py`, `app/js/config.js` (credit variants in the comment), `docs/10`.
 - **How to verify:** `python3 -I -m unittest discover -s tools/terrain -p "test_*.py"`.
 - **Follow-ups:** the first real `download` shows which squares GLO-30 has for Armenia/Azerbaijan. Conflicts with PR #22 in `terrain.py`, `core.py`, `geotiff_source.py`, `test_terrain.py`, docs/10: the later one is rebased.
+
+## 2026-11-18 — T-069: one asset builder for extensions and styles
+
+- **What:** new `tools/assets/` (`build.js`, `README.md`, `package.json`, `example.config.json`). One dependency-free file that joins the listed JS and CSS in the listed order and minifies them with terser (`toplevel: false`: global names stay) and lightningcss (no targets), or with Bun when those are not installed, or only joins with `--engine none`. `--check` compares a hash of the sources with `<name>.manifest.json`. Relative CSS `url()` is rewritten to the output folder; `@import` is refused; a forced `--engine terser` without the packages stops with `npm i terser lightningcss`.
+- **Why:** owner has other phpBB extensions and a style with many CSS and some JS files, forum pages, not the map: the same few bundles are wanted for all of them. The file is meant to be copied into each project.
+- **Not changed:** `tools/build.js` and `app/dist` of this repository. With the Bun engine the new tool gives byte-identical `app.min.js` / `app.min.css` (checked). Moving the map bundle to terser is a separate decision: it changes `app/dist`.
+- **Files:** `tools/assets/*`, `tests/js/assets.test.js` (5 tests, engine `none`, no minifier needed).
+- **How to verify:** `node tests/js/run.js assets`. NOT verified: terser and lightningcss output (the packages are not installed in the sandbox, network for packages is off), the size gain, the phpBB template wiring in the README (not seen on a forum).

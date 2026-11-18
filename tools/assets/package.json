@@ -1,0 +1,9 @@
+{
+  "name": "assets-build",
+  "private": true,
+  "description": "Optional minifiers of tools/assets/build.js. Install in the folder of the project that is built: npm i terser lightningcss",
+  "devDependencies": {
+    "terser": "^5.31.0",
+    "lightningcss": "^1.25.0"
+  }
+}

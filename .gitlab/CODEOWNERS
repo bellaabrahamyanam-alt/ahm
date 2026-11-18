@@ -87,6 +87,7 @@
 /tests/js/lib/ @bellaabrahamyan.am
 /tests/js/run.js @bellaabrahamyan.am
 /tests/js/lint.test.js @bellaabrahamyan.am
+/tests/js/assets.test.js @bellaabrahamyan.am
 /tests/js/build.test.js @bellaabrahamyan.am
 /tests/js/browser.test.js @bellaabrahamyan.am
 /tests/js/contract.test.js @bellaabrahamyan.am
