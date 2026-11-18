@@ -1,0 +1,11 @@
+{
+  "engine": "auto",
+  "bundles": [
+    {
+      "name": "forum",
+      "outDir": "dist",
+      "js": ["js/first.js", "js/second.js"],
+      "css": ["css/base.css", "css/pages.css"]
+    }
+  ]
+}
