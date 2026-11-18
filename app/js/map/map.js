@@ -14,7 +14,7 @@ let mapReady = false,
   pickMarker = null,
   menu = null, // the popup with the actions for a clicked empty point
   routeMarkers = {};
-const CLUSTER_RADIUS = 50; // px: places this close together become one bubble
+const CLUSTER_RADIUS = 13; // px: about the width of a symbol while clustering is on (see SIZE_STOPS), so only symbols that touch become one bubble
 const CLUSTER_MAX_ZOOM = 11; // from zoom 12 on every place is drawn on its own
 const DBL_CLICK_MS = 300; // a single click on a place waits this long, in case a double click follows
 const DBL_WINDOW_MS = 600; // two clicks on the same spot within this time are a double click
@@ -23,10 +23,10 @@ const BUBBLE = "#3a3f44";
 const BUBBLE_HOVER = "#5a6168";
 const SEL_SCALE = 1.25; // the selected symbol is this much larger than the others
 const SIZE_STOPS = [
-  [4, 0.55],
-  [8, 0.8],
-  [11, 1],
-]; // [zoom, symbol size]: small when the map is zoomed out, full size from zoom 11
+  [4, 0.5],
+  [11, 0.55],
+  [12, 1],
+]; // [zoom, symbol size]: small (about CLUSTER_RADIUS px wide) while places cluster, full size from zoom 12 where they do not
 const sizeByZoom = (k) => ["interpolate", ["linear"], ["zoom"], ...SIZE_STOPS.flatMap(([z, s]) => [z, s * k])];
 function zoomScale(z) {
   if (z <= SIZE_STOPS[0][0]) return SIZE_STOPS[0][1];

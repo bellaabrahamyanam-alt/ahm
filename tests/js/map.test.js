@@ -315,7 +315,7 @@ test('map: highlight: adds no AHM.map command (INTERFACES.md I-2 stays as it is)
 //     Point feature carries the properties of the place. Only neutral colours (no accent, no #ff9f1c); one paint
 //     `*-transition` of 100-200 ms; the layer is added after every layer of the sources `ahm-places` and `ahm-label-src`;
 //     its id starts with `ahm-`.
-//   Clusters (point 21): the source `ahm-places` has cluster true, clusterRadius 50, clusterMaxZoom 11; both numbers are
+//   Clusters (point 21): the source `ahm-places` has cluster true, clusterRadius 13, clusterMaxZoom 11; both numbers are
 //     constants in the first 40 lines of map.js (names contain CLUSTER and RADIUS / ZOOM). The selected place is NOT in
 //     that source's data (so it is never inside a bubble; it is drawn from `ahm-highlight`); `ahm-label-src` keeps all
 //     places. Layers: `ahm-clusters` (circle, filter on point_count, radius = a 3-step `step` expression, neutral dark
@@ -645,12 +645,12 @@ test('map: selected look: the new layers survive base-map switches and re-draws 
 
 // ---- clusters (point 21) ----------------------------------------------------------------------------------------
 
-test('map: clusters: ahm-places is a clustered GeoJSON source (radius 50, none from zoom 12); labels and selection are not', () => {
+test('map: clusters: ahm-places is a clustered GeoJSON source (radius 13, none from zoom 12); labels and selection are not', () => {
   const { rec } = bootUx();
   const def = rec.sources[PLACES].def;
   eq('geojson', def.type);
   eq(true, def.cluster, 'cluster: true');
-  eq(50, def.clusterRadius);
+  eq(13, def.clusterRadius);
   eq(11, def.clusterMaxZoom, 'clusters up to zoom 11, none from zoom 12');
   ok(!rec.sources['ahm-label-src'].def.cluster, 'labels are not clustered');
   ok(!rec.sources[HL].def.cluster, 'the selected place is not clustered');
@@ -658,10 +658,20 @@ test('map: clusters: ahm-places is a clustered GeoJSON source (radius 50, none f
 
 test('map: clusters: radius and last clustered zoom are named constants at the top of map.js', () => {
   const top = MAP_SRC.split('\n').slice(0, 40).join('\n');
-  ok(/^\s*(const|let)\s+\w*CLUSTER\w*RADIUS\w*\s*=\s*50\b/im.test(top), 'const ...CLUSTER...RADIUS... = 50 in the first 40 lines');
+  ok(/^\s*(const|let)\s+\w*CLUSTER\w*RADIUS\w*\s*=\s*13\b/im.test(top), 'const ...CLUSTER...RADIUS... = 13 in the first 40 lines');
   ok(/^\s*(const|let)\s+\w*CLUSTER\w*ZOOM\w*\s*=\s*(11|12)\b/im.test(top), 'const ...CLUSTER...ZOOM... = 11 (or 12) in the first 40 lines');
   ok(!/clusterRadius\s*:\s*\d/.test(MAP_SRC), 'clusterRadius is given by the constant, not a literal');
   ok(!/clusterMaxZoom\s*:\s*\d/.test(MAP_SRC), 'clusterMaxZoom is given by the constant, not a literal');
+});
+
+test('map: clusters: symbols stay about as wide as the cluster radius while clustering is on, full size from zoom 12', () => {
+  const { rec } = bootUx();
+  const size = layer(rec, PLACES).layout['icon-size']; // ['interpolate', ['linear'], ['zoom'], z, s, z, s, ...]
+  const stops = [];
+  for (let i = 3; i < size.length; i += 2) stops.push([size[i], size[i + 1]]);
+  ok(stops.length >= 2, 'zoom stops: ' + json(size));
+  ok(stops.filter(([z]) => z <= 11).every(([, s]) => s * 24 <= 13 * 1.2), 'up to zoom 11 the symbol (24 px at size 1) is at most about 13 px: ' + json(stops));
+  eq(1, stops.find(([z]) => z === 12)[1], 'full size at zoom 12, where clustering is off');
 });
 
 test('map: clusters: the selected place is never inside a bubble (it leaves the clustered data, labels keep all)', () => {
