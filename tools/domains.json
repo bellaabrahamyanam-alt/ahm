@@ -81,7 +81,6 @@
       "tests/js/lib/",
       "tests/js/run.js",
       "tests/js/lint.test.js",
-      "tests/js/assets.test.js",
       "tests/js/build.test.js",
       "tests/js/browser.test.js",
       "tests/js/contract.test.js",
