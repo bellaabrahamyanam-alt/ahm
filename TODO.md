@@ -18,6 +18,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - Place and line types, interfaces: T-026, T-002
 - Campaigns: T-003, T-001
 - Project and CI: T-054, T-004
+- Storage in SQL and notes in the forum: T-070, T-071, T-072, T-073, T-074
 
 **Next (builder)**, in this order (`builder: next` takes the first open item of the first group)
 - 1. Rivers and 3D: T-058, T-064, T-065, T-059, T-061, T-062
@@ -26,6 +27,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
 - 6. Campaigns: T-013
+- 7. SQL storage and notes in the forum (after T-070 and T-071): T-075, T-076, T-077, T-078, T-079, T-080, T-081, T-082, T-083
 
 **Done**: the last 15 below.
 
@@ -86,6 +88,31 @@ Settings and files no agent can change.
   Contract: no.
 - [ ] T-004 GitHub settings no agent can change
   Done when: (1) Settings > Branches: protect `master`, require pull request and the check `ci`; (2) Settings > General: squash merge on, "Automatically delete head branches" on; (3) secret `GRAPH_PUSH_TOKEN` (fine-grained token, repository `ahm`, Contents: read and write) in Settings > Secrets and variables > Actions; (4) delete the old branches `ci-github`, `fix-github-ci-owner`, `shared/fix-github-ci-owner`, `shared/agent-efficiency`, and decide about `feature/routes`.
+  Contract: no.
+
+### Storage in SQL and notes in the forum
+
+- [ ] T-070 Decide: keep the data in SQL and make a note a phpBB post
+  Owner, in the chat, 2026-11-19: the data of the extension leaves the files and goes to the database. A note is a post in a topic of a forum "Map" (forums Places, Layers, Shapes). One topic per object; all versions of a border (a `series`, T-041) share one topic. The first post of a topic is a card the extension writes; it is not a note. The topic is made together with the object. Forum permissions decide who may write notes. GeoJSON stays as download and upload; export of notes to Markdown comes later. The history of every object and note is kept (T-078) and only an admin may delete for good.
+  1. As above: own tables `ahm_objects`, `ahm_lists`, `ahm_note_meta`, `ahm_imports`, `ahm_revisions` (columns in T-076 and T-078) and notes as posts. 2. The same tables, but notes in an own table (no forum search, quotes, attachments or moderation for free). 3. Keep the files. Recommendation: 1.
+  Measured on phpBB 3.3.19 with SQLite (PHP 8.3), a script run as admin: forums made from code; a topic with its card and a note took 16 ms and 4 ms; 50 such topics 0.4 s; editing the first post renames the topic (so the card is the first post); `core.delete_post_after` gives `is_soft` true or false; deleting the last post of a topic deletes the topic. Not measured: MySQL, the posting form over HTTP, attachments, notifications, search.
+  Done when: you write `Approved: <date> 1`, `2` or `3`.
+  Contract: no.
+- [ ] T-071 Decide: the type of the column `data`
+  1. `MEDIUMTEXT` holding JSON text (recommended): the same on SQLite and MySQL, made by phpBB's schema tool, the text is kept as written. Measured on MySQL 8.0.46: JSON functions work on it, `JSON_SET` works, an index on a field inside can be added later (generated column), and one `ALTER ... MODIFY ... JSON` turns it into the native type. 2. Native `JSON` on MySQL and text on SQLite: the migration needs raw SQL per driver (phpBB's schema tool has no JSON type); MySQL checks the text and changes key order and spacing (the same 30 000 places read back as 14.7 MB from JSON against 10.8 MB from text, on two servers); the tests on SQLite would not see these differences.
+  Done when: you write `Approved: <date> 1` or `2`.
+  Contract: no.
+- [ ] T-072 Decide: the topic of a deleted object
+  1. Close it and leave it in its forum. 2. Close it and move it to a hidden forum "Archive" (recommended: deleted places stay out of the forum lists and out of search, and away from a new place with the same name). 3. Delete it. Restoring (T-083) opens it and moves it back. Owner, in the chat: "maybe close".
+  Done when: you write `Approved: <date> 1`, `2` or `3`.
+  Contract: no.
+- [ ] T-073 Decide: the pictures of overlays
+  1. They stay files in `store/ahm_map/overlays/` (recommended: served as plain files, up to 12 MB each, the rule "type from the first bytes" stays; back up the database and this folder). 2. They go into the database (one dump holds everything; every picture is served through PHP).
+  Done when: you write `Approved: <date> 1` or `2`.
+  Contract: no.
+- [ ] T-074 Decide: the first note typed in the "new place" dialog
+  1. It stays a normal note with language, date and layers (post 2 of the topic; recommended). 2. It becomes the text of the card (it loses language, date and layers).
+  Done when: you write `Approved: <date> 1` or `2`.
   Contract: no.
 
 ## Next (builder)
@@ -206,6 +233,50 @@ Waits for T-003 and T-001.
 - [ ] T-013 Controller sends `features: ['campaigns']` when the owner switches the feature on (needs T-003)
   Done when: a data test shows the list in the page data; the forum setting is documented in `docs/10-*.md`.
   Contract: yes (I-1).
+
+### 7. SQL storage and notes in the forum
+
+Waits for T-070 and T-071. One item = one pull request, in this order.
+
+- [ ] T-075 Development server on phpBB and SQLite
+  What: a script in `tools/dev/` installs phpBB 3.3.x on SQLite with `phpbbcli.php install`, puts the extension in `ext/ahm/map`, enables it and starts `php -S`, with the sample data. The architect ran these steps by hand on 3.3.19: the installer, `extension:enable ahm/map` and the guest requests of the map routes work.
+  Done when: one command gives a running board with the map; the steps are in `docs/`; CI runs the PHP tests on it; `dev/save-handler.js` is still there (it goes in T-077).
+  Contract: no.
+- [ ] T-076 SQL store behind an interface
+  What: the file reading and writing of `service/store.php` (66 of its 1534 lines touch files) moves behind an interface; the rules (`clean_*`, dates, languages) stay. The SQL version is made by phpBB migrations with portable types only (no ENUM, JSON type, virtual columns or driver SQL). `ahm_objects`: `id`, `kind` (place, shape, layer), `lon`, `lat` (places only), `type`, `topic_id`, `import_id`, `version`, `created_at`, `updated_at`, `data`. `ahm_lists`: `list`, `item_key`, `pos`, `version`, `updated_at`, `data` (one row per entry of languages, categories, types with their SVG `style.path`, overlays and sources). `ahm_imports`: `id`, `file_name`, `user_id`, `at`, `places`, `shapes`. `label` is not stored (it is derived). `data` is the rest of the entry as JSON text. A save with an old `version` is refused. Seed from `data/` at install.
+  Done when: all PHP tests pass on SQLite; a round-trip test (files, tables, files) is equal for the sample and for 3000 generated places with random coordinates; the download and the upload of GeoJSON give the same `places.geojson` and `shapes.geojson`; `docs/05-data-model.md` and `docs/06-http-interface.md` are updated.
+  Contract: no (the answers of the HTTP interface do not change).
+- [ ] T-077 Remove the Node development server
+  Needs: T-075, T-076.
+  Done when: `dev/save-handler.js` and its parity tests are gone; `tests/fixtures/rules.json` is read by the PHP tests only; `AGENTS.md` ("a validation rule lives in three places") and `tools/ci.sh` are updated (both are protected: this item needs an `Approved:` line).
+  Contract: no.
+- [ ] T-078 History of changes
+  What: table `ahm_revisions`: `id`, `entity_kind` (place, shape, layer, list, note), `entity_id` (a UUID, a list key or a `post_id`), `rev_no`, `action` (create, edit, delete, restore, import), `user_id`, `at`, `summary`, `label`, `import_id`, `snapshot`; unique on (`entity_kind`, `entity_id`, `rev_no`). A snapshot is the whole state after the change, as gzip JSON. It is written in the same transaction as the change. Deleting an object removes its row and keeps the last state as a `delete` revision. A note's snapshot holds the title, the text, the meta and the list of attachments (id, name, size, no file). The author is the poster; contributors are the `DISTINCT user_id` of the `edit` revisions. Nothing is shown to users yet.
+  Done when: tests show a revision for every save and delete of objects and list entries; a deleted object can be rebuilt from its last revision.
+  Contract: no.
+- [ ] T-079 Forum "Map" and the card
+  What: a migration makes a category with the forums Places, Layers, Shapes. One class (`PostGateway`) holds every call of phpBB's posting functions (make a topic with its first post, reply, edit, close, move, delete), so that only it depends on them. Making an object makes its topic with the card; a series shares the topic of its first version. The card text is made from the object: all names with languages and periods, dates, type, coordinates, height, certainty and sources; it is edit-locked (`post_edit_locked`) and rewritten when the object changes. The topic title is the object's `label`. A GeoJSON upload makes the topics in a background task; objects without `topic_id` work meanwhile.
+  Done when: tests with a fake gateway and on SQLite show a topic and a card for a new place, shape and layer; renaming a place changes the topic title and the card; the card has no row in `ahm_note_meta`.
+  Contract: no.
+- [ ] T-080 Notes as posts: reading
+  What: `ahm_note_meta`: `post_id`, `data` (`lang`, `date`, `layers`, `shape` only for a version of a series). The owner of a note is the topic of its post (no owner field). The notes of an object are the posts of its topic after the card; the server sends each post as HTML made by phpBB (BBCode, smilies, attachments) with its meta, in pages. A post without meta shows with the language "not set". The seed imports the files of `notes/` and `layer-notes/` as posts.
+  Done when: the sidebar shows the notes of a place, a layer and a border from posts; the client Markdown render of notes is removed; `docs/` are updated.
+  Contract: yes (the notes answers of `docs/06-http-interface.md`).
+- [ ] T-081 Notes as posts: writing and the gate
+  Needs: T-080.
+  What: "Add note" and "Edit" open phpBB's own posting form (`posting.php`) with our fields (language, date, layers) added by events: `core.posting_modify_template_vars`, `core.posting_modify_submission_errors` (checks them with the same functions as `store.php`), `core.posting_modify_submit_post_after` (saves `ahm_note_meta`). Attachments are phpBB's own (`f_attach`, `u_attach`). `core.modify_posting_auth` refuses posting in the forums "Map" unless it comes from that entry. The permission that lets a user make a place, shape or layer (the forum permission of its forum is the condition) and the separate one for dictionaries are written in `docs/07-*`.
+  Done when: a test posts through the form with a bad language and a bad date and gets the same errors as `store.php`; a plain reply in a topic is refused; a post with an attachment shows its file; the permission table is in `docs/07-*`.
+  Contract: yes.
+- [ ] T-082 Sources of a note
+  Needs: T-080, T-081 (T-046 gave the dictionary `sources.json`).
+  What: the note meta gets `sources: [{"source": "<id>", "locator": "p. 45"}]`; the form has a field for it; the server sends the sources expanded; the sidebar shows a block "Sources" with links only for `http` and `https` and `rel="noopener noreferrer nofollow"`; the sources are part of a note's snapshot (T-078).
+  Done when: tests for an unknown id, a locator over the limit and a `javascript:` URL; the block shows in the sidebar.
+  Contract: yes.
+- [ ] T-083 Deleting and restoring
+  Needs: T-072, T-078, T-079.
+  What: deleting an object closes its topic and moves it as T-072 says, and takes the object out of the `members` of layers (a revision on each layer); restoring undoes it from the last revision. "Delete for good" is for admins only (moderators get no `m_delete` in the forums "Map") and removes the object, its revisions, its topic, posts, `ahm_note_meta` and note revisions. `core.delete_post_after` with `is_soft = false` removes the `ahm_note_meta` and the revisions of that note; a soft delete keeps them. A nightly task removes what the events missed (meta and revisions whose post is gone, a `topic_id` whose topic is gone) and stops without deleting when phpBB's tables cannot be read.
+  Done when: tests for soft and hard delete of a note, for deleting the last note (the topic stays), for delete and restore of an object, for delete for good, and for the nightly task including the "cannot read" stop.
+  Contract: no.
 
 ## Done
 
