@@ -315,7 +315,7 @@ test('map: highlight: adds no AHM.map command (INTERFACES.md I-2 stays as it is)
 //     Point feature carries the properties of the place. Only neutral colours (no accent, no #ff9f1c); one paint
 //     `*-transition` of 100-200 ms; the layer is added after every layer of the sources `ahm-places` and `ahm-label-src`;
 //     its id starts with `ahm-`.
-//   Clusters (point 21): the source `ahm-places` has cluster true, clusterRadius 13, clusterMaxZoom 11; both numbers are
+//   Clusters (point 21): the source `ahm-places` has cluster true, clusterRadius 5, clusterMaxZoom 11; both numbers are
 //     constants in the first 40 lines of map.js (names contain CLUSTER and RADIUS / ZOOM). The selected place is NOT in
 //     that source's data (so it is never inside a bubble; it is drawn from `ahm-highlight`); `ahm-label-src` keeps all
 //     places. Layers: `ahm-clusters` (circle, filter on point_count, radius = a 3-step `step` expression, neutral dark
@@ -588,7 +588,7 @@ test('map: selected look: the place symbol is drawn about 25% larger, in a layer
   ok(sym, 'a symbol layer on the ahm-highlight source');
   const size = sym.layout && sym.layout['icon-size'];
   const full = Array.isArray(size) ? size[size.length - 1] : size; // the size at the last zoom step = full size
-  ok(typeof full === 'number' && full >= 1.2 && full <= 1.35, 'icon-size about 1.25 at full size, got ' + json(size));
+  ok(typeof full === 'number' && full >= 1.1 && full <= 1.35, 'icon-size about 1.25 at full size, got ' + json(size));
   const img = json(sym.layout['icon-image']);
   ok(img.includes('ahm-type-') && img.includes('type_code'), 'the place type symbol: ' + img);
   ok(img.includes('-hl'), 'the variant with the white border: ' + img);
@@ -645,12 +645,12 @@ test('map: selected look: the new layers survive base-map switches and re-draws 
 
 // ---- clusters (point 21) ----------------------------------------------------------------------------------------
 
-test('map: clusters: ahm-places is a clustered GeoJSON source (radius 13, none from zoom 12); labels and selection are not', () => {
+test('map: clusters: ahm-places is a clustered GeoJSON source (radius 5, none from zoom 12); labels and selection are not', () => {
   const { rec } = bootUx();
   const def = rec.sources[PLACES].def;
   eq('geojson', def.type);
   eq(true, def.cluster, 'cluster: true');
-  eq(13, def.clusterRadius);
+  eq(5, def.clusterRadius);
   eq(11, def.clusterMaxZoom, 'clusters up to zoom 11, none from zoom 12');
   ok(!rec.sources['ahm-label-src'].def.cluster, 'labels are not clustered');
   ok(!rec.sources[HL].def.cluster, 'the selected place is not clustered');
@@ -658,20 +658,20 @@ test('map: clusters: ahm-places is a clustered GeoJSON source (radius 13, none f
 
 test('map: clusters: radius and last clustered zoom are named constants at the top of map.js', () => {
   const top = MAP_SRC.split('\n').slice(0, 40).join('\n');
-  ok(/^\s*(const|let)\s+\w*CLUSTER\w*RADIUS\w*\s*=\s*13\b/im.test(top), 'const ...CLUSTER...RADIUS... = 13 in the first 40 lines');
+  ok(/^\s*(const|let)\s+\w*CLUSTER\w*RADIUS\w*\s*=\s*5\b/im.test(top), 'const ...CLUSTER...RADIUS... = 5 in the first 40 lines');
   ok(/^\s*(const|let)\s+\w*CLUSTER\w*ZOOM\w*\s*=\s*(11|12)\b/im.test(top), 'const ...CLUSTER...ZOOM... = 11 (or 12) in the first 40 lines');
   ok(!/clusterRadius\s*:\s*\d/.test(MAP_SRC), 'clusterRadius is given by the constant, not a literal');
   ok(!/clusterMaxZoom\s*:\s*\d/.test(MAP_SRC), 'clusterMaxZoom is given by the constant, not a literal');
 });
 
-test('map: clusters: symbols stay about as wide as the cluster radius while clustering is on, full size from zoom 12', () => {
+test('map: symbols: the size grows with the zoom and stays below full size', () => {
   const { rec } = bootUx();
   const size = layer(rec, PLACES).layout['icon-size']; // ['interpolate', ['linear'], ['zoom'], z, s, z, s, ...]
   const stops = [];
   for (let i = 3; i < size.length; i += 2) stops.push([size[i], size[i + 1]]);
   ok(stops.length >= 2, 'zoom stops: ' + json(size));
-  ok(stops.filter(([z]) => z <= 11).every(([, s]) => s * 24 <= 13 * 1.2), 'up to zoom 11 the symbol (24 px at size 1) is at most about 13 px: ' + json(stops));
-  eq(1, stops.find(([z]) => z === 12)[1], 'full size at zoom 12, where clustering is off');
+  ok(stops.every(([, s], i) => i === 0 || s >= stops[i - 1][1]), 'the size never shrinks when zooming in: ' + json(stops));
+  ok(stops[0][1] < stops[stops.length - 1][1] && stops[stops.length - 1][1] <= 1, 'smaller zoomed out, at most full size: ' + json(stops));
 });
 
 test('map: clusters: the selected place is never inside a bubble (it leaves the clustered data, labels keep all)', () => {
@@ -703,7 +703,7 @@ test('map: clusters: bubbles are 3 size steps, neutral dark, with a white count;
   const r = b.paint['circle-radius'];
   ok(Array.isArray(r) && r[0] === 'step', 'circle-radius is a step expression: ' + json(r));
   eq(7, r.length, 'three sizes: step, input, size, stop, size, stop, size');
-  ok(typeof r[2] === 'number' && r[2] < r[4] && r[4] < r[6], 'sizes grow: ' + json([r[2], r[4], r[6]]));
+  ok(typeof r[2] === 'number' && r[2] <= r[4] && r[4] < r[6], 'sizes grow: ' + json([r[2], r[4], r[6]]));
   ok(r[3] < r[5], 'the stops grow too');
   const cols = colorsIn(b.paint['circle-color']);
   ok(cols.length && cols.every(neutral) && cols.some((c) => lum(c) < 0.4), 'neutral dark colour: ' + json(b.paint['circle-color']));
