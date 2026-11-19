@@ -32,7 +32,7 @@ The map tasks (008, 010, 013) use these; the numbers in a task spec win if they 
 | Selected place (rule 7) | drawn about 30% larger (scale 1.3); 2 px white outline; thin dark outer ring (1 px, 50% opacity); soft shadow (the same shadow as above, blurred for the map); no accent colour; above labels and other symbols; changes with a 150 ms transition |
 | Hovered place | about 15% lighter (mixed 15% with white); pointer cursor; not applied on top of the selected look |
 | Tooltip (name and type) | top centre of the hovered marker, arrow pointing at it, offset = marker radius + 6 px; below the marker when there is no room above; one at a time |
-| Clusters | round bubble with the count; radius 50 px; none from zoom 12; three size steps (start values: about 28, 36 and 44 px); neutral dark colour, white count; lighter on hover |
+| Clusters | round bubble with the count; places cluster only when they are very close on screen (radius 5 px); none from zoom 12; three size steps (radius 8, 8 and 10 px); neutral dark colour, white count; lighter on hover |
 | Point menu (`AHM.map.showMenu`) | compact card (radius 12 px, the one shadow) with an arrow at the point, above it, below when there is no room; round icon-only buttons of 32 px with 16 px icons, 4 px apart; optional title line above the buttons |
 | Selected line (start value) | a white casing 2 px wider on each side under the line, plus the shadow |
 | Selected area (start value) | a 2 px white outline around the area outline, plus the shadow; the fill is unchanged |

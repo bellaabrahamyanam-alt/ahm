@@ -161,3 +161,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 
 - **What:** source `ahm-uncertain` and layers `ahm-uncertain-fill`, `-line`, `-dash` (under the symbols): a 64-point circle of `radius_m` metres (on the sphere) around places whose `certainty` is `approximate` or `disputed`; dashed when disputed (I-2 [1.11]).
 - **Files:** `app/js/map/map.js`, `tests/js/map.test.js`. **Verify:** `node tests/js/run.js "certainty circles" --no-browser`. Not seen on a real map.
+
+## 2026-11-19 — Smaller place symbols, fewer clusters
+- **What:** `CLUSTER_RADIUS` 50 → 5 px. `SIZE_STOPS` has a stop per zoom from 1 (0.1) to 14 (0.93): symbols grow with the zoom and are never full size (the default type is 24 px at size 1). The bubble radius is 8, 8 and 10 px (was 14, 18 and 22). `CLUSTER_MAX_ZOOM` is unchanged (11).
+- **Why:** owner, in the chat: really small symbols, clusters as little as possible.
+- **Files:** `app/js/map/map.js`, `tests/js/map.test.js` (radius 5; the bubble sizes may be equal for the first two steps; the selected symbol at full size is about 1.16; a new test of the size stops), `DESIGN.md` (clusters row), `app/dist/`.
+- **Contract:** no change.
+- **Verify:** `node tests/js/run.js "clusters" --no-browser`. Not seen on a real map.
+- **Follow-ups:** the symbol is no longer about as wide as the cluster radius, so symbols that overlap at a distance above 5 px are not clustered; a line `// "circle-radius": ...` (the old value) is left as a comment in `map.js`.
