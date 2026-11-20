@@ -39,6 +39,7 @@
       "data/",
       "service/",
       "controller/",
+      "migrations/",
       "config/",
       "event/",
       "language/",

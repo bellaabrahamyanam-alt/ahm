@@ -194,3 +194,19 @@ A GeoJSON `FeatureCollection`; every feature is one **border** (an area, `Polygo
 Before any file is replaced or an image deleted, the old version is copied here with a time stamp in the compact ISO 8601 "basic" form, local server time, which is safe in file names (`places-20261103-101500.geojson`, `note-<place>-<note>-….md`, `overlay-…`, `languages-….json`, and `legacy-…` / `…-before-dates…` copies made by the migration). Nothing in `archive/` is ever read by the application. It is the undo history, to be restored by hand.
 
 ---
+
+
+### SQL tables (made, not yet used by the map)
+
+`service/sql/schema.mysql.sql` and `schema.sqlite.sql` define five tables (prefix of the board in front, `phpbb_ahm_objects`, ...); `migrations/m001_storage.php` makes them when the extension is enabled; `service/sql_transfer.php` moves the files of a store into them and back. The files stay the format of the map until T-084.
+
+| Table | One row is | Holds |
+| --- | --- | --- |
+| `ahm_objects` | a place, a shape or a layer | `id`, `kind` (`place`, `shape`, `layer`), `pos` (order in the file), `lon` and `lat` (places only), `type`, `topic_id`, `import_id`, `version`, `created_at`, `updated_at`, `data` (JSON: the rest of the entry; a shape's geometry is in `data.geometry`; `label` is not kept, it is derived) |
+| `ahm_lists` | an entry of `languages`, `categories`, `types` (with its SVG `style.path`), `overlays` or `sources` | `list`, `item_key` (code or id), `pos`, `version`, `updated_at`, `data` (JSON) |
+| `ahm_note_meta` | the extra fields of a note that is a phpBB post | `post_id`, `data` (JSON: `uuid` of the old note file, `lang`, `date`, `layers`) |
+| `ahm_imports` | a load of files | `file_name`, `user_id`, `at`, `places`, `shapes` |
+| `ahm_revisions` | a state after a change | `entity_kind`, `entity_id`, `rev_no`, `action`, `user_id`, `at`, `summary`, `label`, `import_id`, `snapshot` (gzip JSON) |
+
+- The text of a note and its title are the post; the file `notes/<place>/<id>.md` comes back from the post and `ahm_note_meta` byte for byte (`sql_transfer::write_notes()`).
+- On MySQL the column `data` is the native `JSON` type, which keeps its own order of keys; on SQLite it is text checked by `json_valid`. Floats of a coordinate are exact on MySQL; SQLite reads a decimal text with an error of one unit in the last place now and then (0.7 nm), so its tests allow 1e-12 degree.
