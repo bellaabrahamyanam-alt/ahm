@@ -26,6 +26,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
 - 6. Campaigns: T-013
+- 7. Sidebar design v3 (owner's design, one slice = one pull request, in this order): T-070, T-071, T-072, T-073, T-074, T-075, T-076, T-077
 
 **Done**: the last 15 below.
 
@@ -207,15 +208,44 @@ Waits for T-003 and T-001.
   Done when: a data test shows the list in the page data; the forum setting is documented in `docs/10-*.md`.
   Contract: yes (I-1).
 
+### 7. Sidebar design v3
+
+The owner's design "AHM sidebar v3" (reference: `docs/design/sidebar-v3/`, screens listed in its `README.md`) applied to the existing sidebar. **Look only**: no new feature, no changed behaviour, no change of ids, `data-*` attributes or `AHM.*` calls; where the design shows something the app does not have (for example the "Show undated places" switch) it is left out and, if wanted, becomes its own item. The palette already is the design's palette (`app/css/base.css`). Each slice is checked with a screenshot of the old and the new screen (400 px wide panel) and keeps `node tests/js/run.js` green. Order matters: later slices reuse the classes of earlier ones.
+
+- [ ] T-070 Design v3, slice 1: shell (tokens, header with brand block, tabs with icons)
+  Done when: design tokens (`--ui`, `--serif`, radii, ink and line colours) are added to `app/css/base.css` without changing an existing token; the panel starts with the brand block (logo tile, title, small caps subtitle); the six tabs show an icon above the label with the underline mark of the design; clicking an icon or a label switches the tab as before; browser tests unchanged and green.
+  Contract: no.
+- [ ] T-071 Design v3, slice 2: Explore list (search field and filter button, count row with sort and fit buttons, place rows with marker tile, serif name, dates and notes count)
+  Done when: the list rows and the controls above them look like s1 and s2 of the design; sort, fit, reset, search and opening a place work as before.
+  Contract: no.
+- [ ] T-072 Design v3, slice 3: filters (chips, selects, period fields, segmented Unknown / Exact / Approx. / Range)
+  Done when: the filter panel looks like s2 of the design and every filter still narrows the list as before.
+  Contract: no.
+- [ ] T-073 Design v3, slice 4: place details inside the list (names, layers, notes with language chip, show more)
+  Done when: the open place looks like s3 and s45 of the design; opening, folding and the double click work as before.
+  Contract: no.
+- [ ] T-074 Design v3, slice 5: forms (edit place, note, name rows, date field, pills, sticky Save and Cancel)
+  Done when: the place form and the note form look like s7, s28, s46, s47 and s48; saving, cancelling and validation work as before.
+  Contract: no.
+- [ ] T-075 Design v3, slice 6: More tab (accordion sections, languages, categories, place types, type editor)
+  Done when: the More tab and the type editor look like s19, s21, s41 and s20 of the design.
+  Contract: no.
+- [ ] T-076 Design v3, slice 7: Routes, Borders, Rivers and Layers tabs (cards, forms, version form)
+  Done when: these tabs use the same classes as slices 1 to 6 and look like s33, s34, s43 and s44 of the design.
+  Contract: no.
+- [ ] T-077 Design v3, slice 8: period bar at the bottom of the panel (histogram, handles, period label)
+  Done when: the period control looks like the bar at the bottom of s1 to s3 and s45 of the design (s22 and s49 show the moment bar, which is not part of this slice); its behaviour (T-040 and T-042) is unchanged.
+  Contract: no.
+
 ## Done
 
 - [x] T-069 One asset builder for extensions and styles (2026-11-18, branch `feat/asset-builder`; owner, in the chat). `tools/assets/build.js`: one copyable file + `assets.config.json` (bundles, ordered file lists); terser (no top-level renaming) and lightningcss when installed, else Bun; `--check` for CI; CSS `url()` rewritten, `@import` refused. `tools/build.js` of this repository is NOT changed (the map bundle is unchanged, byte for byte equal to the new tool with Bun).
-- [x] T-043 Names over time (2026-11-17, PR #41, branch `feat/names-over-time`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-3`, `tests/js/contract.test.js`). Optional `date_from` / `date_to` on names of places and borders, core `nameAt`, forms and \"also called\" rows. Not seen in a browser.
+- [x] T-043 Names over time (2026-11-17, PR #41, branch `feat/names-over-time`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-3`, `tests/js/contract.test.js`). Optional `date_from` / `date_to` on names of places and borders, core `nameAt`, forms and "also called" rows. Not seen in a browser.
 - [x] T-046 Certainty and sources per object, phase 1 (2026-11-17, PR #38, branch `feat/certainty-sources`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-2`, `I-3`, `I-9`, `tests/js/contract.test.js`). `sources.json` dictionary, `certainty` / `sources` on places and borders, `radius_m` on places with a circle on the map, forms, sheets, filters for the places list. Phase 2 is T-065; the rest of the UI is T-066. Not seen in a browser.
 - [x] T-057 Select rivers by a rectangle and by area names (2026-11-17, PR #39, branch `feat/river-select`). Approved: 2026-11-17 owner, in the chat: "Also do t-057 and push on seperate branch" (covers `interfaces/I-2-sidebar-map.md` and `tests/js/contract.test.js`). Contract I-2 1.11: `highlightRivers(ids)`, `selectBox(on)`, events `box:select { bbox }` and `box:cancel`. Approved: 2026-11-17 owner, in the chat: "I wanted to select all known and unknown rivers ... cannot select also those rivers which weren't added to map manually" (covers I-2 1.12: `baseRivers()`, `b:<name>` ids in `highlightRivers`). The selection also takes the named rivers, canals and streams of the base map, but only those loaded in the view (`querySourceFeatures`), grouped by name; unnamed ones and ditches are left out; "Show only these" cannot hide base-map rivers. The selection lives in the sidebar, not in `AHM.state` (no new state key: only the sidebar reads it, and the map gets the ids). Not built: "Make bolder" (scope of T-055, now T-064) and "Add to a layer" (T-065, needs T-031). Not seen in a browser; the rectangle uses the mouse only (no touch).
 - [x] T-056 3D map: tilt, rotation and 3D terrain (2026-11-17, PR #37, branch `feat/t-056-3d-tilt`). Tilt 0 to 85, rotation 0 to 359, Flat, Tilt 60, North up, 3D terrain with a height slider; saved in the browser. Not seen on a real map.
 - [x] T-063 A new version of a ROUTE in one go, like T-041 + the simplification for borders and rivers (2026-11-17, PR #35, branch `feat/route-versions`; owner, in the chat). "New version…" on the route card opens the path for editing, Next asks the dates (names, type, direction, look taken over), Save adds the second version of the series, the first stays and may end the day before; the card lists all versions.
-- [x] T-041 Versions of one border, route or river in time (2026-11-16, PR #35, branch `feat/shape-versions`, stacked on `feat/time-slider`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042, all in it's PR" (covers `interfaces/I-9`). Property `series`, 3 server rules, rows in `rules.json`; the sheet lists other versions and adds one. Not done: the \"Add version\" button on the routes card (new item T-063). Not seen in a browser.
+- [x] T-041 Versions of one border, route or river in time (2026-11-16, PR #35, branch `feat/shape-versions`, stacked on `feat/time-slider`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042, all in it's PR" (covers `interfaces/I-9`). Property `series`, 3 server rules, rows in `rules.json`; the sheet lists other versions and adds one. Not done: the "Add version" button on the routes card (new item T-063). Not seen in a browser.
 - [x] T-055 Bolder rivers: slider "River size" 0.5x to 4x for all rivers (2026-11-17, PR #37, branch `feat/river-size`). More > Maps & base map > Rivers; river shapes get `river: true` and every width layer multiplies it; base-map waterways get one extra layer `ahm-waterway-boost` above 1x (fixed colour `#4f8fd6`, hidden on satellite); saved in `localStorage` key `ahm-river-size`. The scope (selected, filtered) is T-064. Not seen in a browser.
 - [x] T-040 Time slider: the map at one moment, with play (2026-11-16, branch `feat/time-slider`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042, all in it's PR" (covers `interfaces/I-2`, `I-3`, `I-6` and `tests/js/contract.test.js`). `AHM.state` key `time`, core `visibleAt`/`timeLook`, bar in `sidebar/timebar.js`, `faded` property for the map. Undated objects: option 3 of T-049 assumed. Not seen in a browser.
 - [x] T-060 Map area enlarged to Mesopotamia + Anatolia edge + Caucasus, relief tool and guide made correct for it (2026-11-15, branch `feat/bbox-mesopotamia-caucasus`; owner, in the chat). `bbox` [32, 29, 51, 44]; 285 squares, 15,812 tiles at zoom 0-11; only HTTP 404 means "no tile"; `check` shows void shares and 30/90 borders; `preview --at`; at most 64 open files; docs/10 numbers and the Armenia/Azerbaijan 90 m caveat.
