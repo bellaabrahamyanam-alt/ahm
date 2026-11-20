@@ -27,7 +27,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
 - 6. Campaigns: T-013
-- 7. SQL storage and notes in the forum (after T-070 and T-071): T-075, T-076, T-077, T-078, T-079, T-080, T-081, T-082, T-083
+- 7. SQL storage and notes in the forum (after T-070 and T-071): T-077, T-078, T-079, T-080, T-081, T-082, T-083, T-084
 
 **Done**: the last 15 below.
 
@@ -96,10 +96,12 @@ Settings and files no agent can change.
   Owner, in the chat, 2026-11-19: the data of the extension leaves the files and goes to the database. A note is a post in a topic of a forum "Map" (forums Places, Layers, Shapes). One topic per object; all versions of a border (a `series`, T-041) share one topic. The first post of a topic is a card the extension writes; it is not a note. The topic is made together with the object. Forum permissions decide who may write notes. GeoJSON stays as download and upload; export of notes to Markdown comes later. The history of every object and note is kept (T-078) and only an admin may delete for good.
   1. As above: own tables `ahm_objects`, `ahm_lists`, `ahm_note_meta`, `ahm_imports`, `ahm_revisions` (columns in T-076 and T-078) and notes as posts. 2. The same tables, but notes in an own table (no forum search, quotes, attachments or moderation for free). 3. Keep the files. Recommendation: 1.
   Measured on phpBB 3.3.19 with SQLite (PHP 8.3), a script run as admin: forums made from code; a topic with its card and a note took 16 ms and 4 ms; 50 such topics 0.4 s; editing the first post renames the topic (so the card is the first post); `core.delete_post_after` gives `is_soft` true or false; deleting the last post of a topic deletes the topic. Not measured: MySQL, the posting form over HTTP, attachments, notifications, search.
+  Assumed: 2026-11-19 option 1, because the owner asked in the chat for a PR with a phpBB board with the forum, the database, the SQL schema, the tests and the sample data (T-075, T-076 are built on it). Write `Approved: <date> 2` or `3` to change it.
   Done when: you write `Approved: <date> 1`, `2` or `3`.
   Contract: no.
 - [ ] T-071 Decide: the type of the column `data`
   1. `MEDIUMTEXT` holding JSON text (recommended): the same on SQLite and MySQL, made by phpBB's schema tool, the text is kept as written. Measured on MySQL 8.0.46: JSON functions work on it, `JSON_SET` works, an index on a field inside can be added later (generated column), and one `ALTER ... MODIFY ... JSON` turns it into the native type. 2. Native `JSON` on MySQL and text on SQLite: the migration needs raw SQL per driver (phpBB's schema tool has no JSON type); MySQL checks the text and changes key order and spacing (the same 30 000 places read back as 14.7 MB from JSON against 10.8 MB from text, on two servers); the tests on SQLite would not see these differences.
+  Assumed: 2026-11-19 option 2 (native `JSON` on MySQL, text with a `json_valid` check on SQLite), because the owner asked in the chat why the column is not the JSON type. Measured by the tests of T-076 on MySQL 8.0.46: the native type changes the order of keys, so the date of a note is written in the order of `store.php`; nothing else was lost (3000 places with full-precision coordinates and every note file come back exactly). Write `Approved: <date> 1` to change it.
   Done when: you write `Approved: <date> 1` or `2`.
   Contract: no.
 - [ ] T-072 Decide: the topic of a deleted object
@@ -236,18 +238,10 @@ Waits for T-003 and T-001.
 
 ### 7. SQL storage and notes in the forum
 
-Waits for T-070 and T-071. One item = one pull request, in this order.
+T-075 and T-076 (Done) were built on the assumed answers of T-070 and T-071; the rest waits for them. One item = one pull request, in this order.
 
-- [ ] T-075 Development server on phpBB and SQLite
-  What: a script in `tools/dev/` installs phpBB 3.3.x on SQLite with `phpbbcli.php install`, puts the extension in `ext/ahm/map`, enables it and starts `php -S`, with the sample data. The architect ran these steps by hand on 3.3.19: the installer, `extension:enable ahm/map` and the guest requests of the map routes work.
-  Done when: one command gives a running board with the map; the steps are in `docs/`; CI runs the PHP tests on it; `dev/save-handler.js` is still there (it goes in T-077).
-  Contract: no.
-- [ ] T-076 SQL store behind an interface
-  What: the file reading and writing of `service/store.php` (66 of its 1534 lines touch files) moves behind an interface; the rules (`clean_*`, dates, languages) stay. The SQL version is made by phpBB migrations with portable types only (no ENUM, JSON type, virtual columns or driver SQL). `ahm_objects`: `id`, `kind` (place, shape, layer), `lon`, `lat` (places only), `type`, `topic_id`, `import_id`, `version`, `created_at`, `updated_at`, `data`. `ahm_lists`: `list`, `item_key`, `pos`, `version`, `updated_at`, `data` (one row per entry of languages, categories, types with their SVG `style.path`, overlays and sources). `ahm_imports`: `id`, `file_name`, `user_id`, `at`, `places`, `shapes`. `label` is not stored (it is derived). `data` is the rest of the entry as JSON text. A save with an old `version` is refused. Seed from `data/` at install.
-  Done when: all PHP tests pass on SQLite; a round-trip test (files, tables, files) is equal for the sample and for 3000 generated places with random coordinates; the download and the upload of GeoJSON give the same `places.geojson` and `shapes.geojson`; `docs/05-data-model.md` and `docs/06-http-interface.md` are updated.
-  Contract: no (the answers of the HTTP interface do not change).
 - [ ] T-077 Remove the Node development server
-  Needs: T-075, T-076.
+  Needs: T-084.
   Done when: `dev/save-handler.js` and its parity tests are gone; `tests/fixtures/rules.json` is read by the PHP tests only; `AGENTS.md` ("a validation rule lives in three places") and `tools/ci.sh` are updated (both are protected: this item needs an `Approved:` line).
   Contract: no.
 - [ ] T-078 History of changes
@@ -255,7 +249,7 @@ Waits for T-070 and T-071. One item = one pull request, in this order.
   Done when: tests show a revision for every save and delete of objects and list entries; a deleted object can be rebuilt from its last revision.
   Contract: no.
 - [ ] T-079 Forum "Map" and the card
-  What: a migration makes a category with the forums Places, Layers, Shapes. One class (`PostGateway`) holds every call of phpBB's posting functions (make a topic with its first post, reply, edit, close, move, delete), so that only it depends on them. Making an object makes its topic with the card; a series shares the topic of its first version. The card text is made from the object: all names with languages and periods, dates, type, coordinates, height, certainty and sources; it is edit-locked (`post_edit_locked`) and rewritten when the object changes. The topic title is the object's `label`. A GeoJSON upload makes the topics in a background task; objects without `topic_id` work meanwhile.
+  What: a migration makes a category with the forums Places, Layers, Shapes (the seed of T-075 makes them now, and `service/card.php` of T-076 writes the card text). One class (`PostGateway`) holds every call of phpBB's posting functions (make a topic with its first post, reply, edit, close, move, delete), so that only it depends on them. Making an object makes its topic with the card; a series shares the topic of its first version. The card text is made from the object: all names with languages and periods, dates, type, coordinates, height, certainty and sources; it is edit-locked (`post_edit_locked`) and rewritten when the object changes. The topic title is the object's `label`. A GeoJSON upload makes the topics in a background task; objects without `topic_id` work meanwhile.
   Done when: tests with a fake gateway and on SQLite show a topic and a card for a new place, shape and layer; renaming a place changes the topic title and the card; the card has no row in `ahm_note_meta`.
   Contract: no.
 - [ ] T-080 Notes as posts: reading
@@ -277,9 +271,16 @@ Waits for T-070 and T-071. One item = one pull request, in this order.
   What: deleting an object closes its topic and moves it as T-072 says, and takes the object out of the `members` of layers (a revision on each layer); restoring undoes it from the last revision. "Delete for good" is for admins only (moderators get no `m_delete` in the forums "Map") and removes the object, its revisions, its topic, posts, `ahm_note_meta` and note revisions. `core.delete_post_after` with `is_soft = false` removes the `ahm_note_meta` and the revisions of that note; a soft delete keeps them. A nightly task removes what the events missed (meta and revisions whose post is gone, a `topic_id` whose topic is gone) and stops without deleting when phpBB's tables cannot be read.
   Done when: tests for soft and hard delete of a note, for deleting the last note (the topic stays), for delete and restore of an object, for delete for good, and for the nightly task including the "cannot read" stop.
   Contract: no.
+- [ ] T-084 The map reads and writes the SQL tables
+  Needs: T-076 (Done).
+  What: the file reading and writing of `service/store.php` (66 of its 1534 lines touch files) moves behind an interface; the rules (`clean_*`, dates, languages) stay. The SQL version uses the tables of T-076 through phpBB's database layer. A save with an old `version` is refused. GeoJSON download and upload and the seed use `service/sql_transfer.php`.
+  Done when: all PHP tests pass on SQLite with the SQL store; the download and the upload of GeoJSON give the same `places.geojson` and `shapes.geojson`; `docs/05-data-model.md` and `docs/06-http-interface.md` are updated.
+  Contract: no (the answers of the HTTP interface do not change).
 
 ## Done
 
+- [x] T-076 SQL schema, migration and the transfer between the files and the tables (2026-11-19, branch `feat/sql-storage-env`). Approved: 2026-11-19 owner, in the chat, 2026-11-19: asked for a PR with a phpBB board with the forum and a database for test runs, with the tests, the SQL schema and the sample data (covers `tools/domains.json`: the new folder `migrations/` in the data domain; `tools/ci.sh`: the folder in `CODE` and `php-sqlite3` for the tests; `.github/CODEOWNERS` and `.gitlab/CODEOWNERS`, made from `tools/domains.json`). `service/sql/schema.mysql.sql` (native `JSON`) and `schema.sqlite.sql` (text with `json_valid`): `ahm_objects`, `ahm_lists`, `ahm_note_meta`, `ahm_imports`, `ahm_revisions`; `migrations/m001_storage.php` makes them when the extension is enabled; `service/sql_transfer.php` loads the files of a store into them (one `import` revision for each thing) and writes them back; `service/card.php` writes the text of a card. 14 new PHP tests on SQLite, the same on MySQL 8.0.46 with `AHM_TEST_MYSQL_DSN` (3000 places with full-precision coordinates and every note file come back exactly). SQLite reads a decimal text with an error of one unit in the last place now and then (0.7 nm), the tests allow 1e-12 degree there. The map still reads the files (T-084).
+- [x] T-075 Development board on phpBB and SQLite (2026-11-19, branch `feat/sql-storage-env`). Approved: 2026-11-19 owner, in the chat, 2026-11-19: asked for a PR with a phpBB board with the forum and a database for test runs, with the tests, the SQL schema and the sample data. `tools/dev/phpbb-up.sh` (`setup`, `serve`, `check`, `reset`) installs phpBB 3.3.19 on SQLite, enables the extension and runs `tools/dev/seed.php`: the forum Map with Places, Layers and Shapes, the tables from `store/ahm_map/`, a topic with a card for every place, shape and layer and the notes as posts with `ahm_note_meta`. `check` found 13 objects, 13 topics, 20 notes as posts, 51 revisions and answers 200 from the map routes. `dev/save-handler.js` stays until T-077. The board is not run in CI yet.
 - [x] T-069 One asset builder for extensions and styles (2026-11-18, branch `feat/asset-builder`; owner, in the chat). `tools/assets/build.js`: one copyable file + `assets.config.json` (bundles, ordered file lists); terser (no top-level renaming) and lightningcss when installed, else Bun; `--check` for CI; CSS `url()` rewritten, `@import` refused. `tools/build.js` of this repository is NOT changed (the map bundle is unchanged, byte for byte equal to the new tool with Bun).
 - [x] T-043 Names over time (2026-11-17, PR #41, branch `feat/names-over-time`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-3`, `tests/js/contract.test.js`). Optional `date_from` / `date_to` on names of places and borders, core `nameAt`, forms and \"also called\" rows. Not seen in a browser.
 - [x] T-046 Certainty and sources per object, phase 1 (2026-11-17, PR #38, branch `feat/certainty-sources`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-2`, `I-3`, `I-9`, `tests/js/contract.test.js`). `sources.json` dictionary, `certainty` / `sources` on places and borders, `radius_m` on places with a circle on the map, forms, sheets, filters for the places list. Phase 2 is T-065; the rest of the UI is T-066. Not seen in a browser.

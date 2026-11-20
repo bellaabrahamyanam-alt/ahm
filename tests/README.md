@@ -5,7 +5,7 @@ the tool that runs the part.
 
 | Part | Folder | Runs with | Status |
 | --- | --- | --- | --- |
-| 1. PHP | `tests/php/` | `php tests/php/run.php [filter]` | **done** (93 tests) |
+| 1. PHP | `tests/php/` | `php tests/php/run.php [filter]` | **done** (143 tests; `SqlSchemaTest`, `SqlTransferTest` and `CardTest` need `php-sqlite3`, and run on MySQL too when `AHM_TEST_MYSQL_DSN` is set) |
 | 2. Data | `tests/data/` | `php tests/data/run.php [path]` | **done** (38 tests) |
 | 3. JavaScript | `tests/js/` | `node tests/js/run.js [filter] [--no-browser]` | **done** (includes `features.test.js` and `campaigns.test.js`) |
 | 4. CSS / HTML | `tests/web/` | `node tests/web/run.js` (headless Chromium) | planned, below |

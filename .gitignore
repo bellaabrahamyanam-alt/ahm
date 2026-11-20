@@ -3,3 +3,4 @@ node_modules/
 *.bundle
 __pycache__/
 *.pyc
+.dev/
