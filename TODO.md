@@ -26,7 +26,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
 - 6. Campaigns: T-013
-- 7. Sidebar design v3 (owner's design, one slice = one pull request, in this order): T-070, T-071, T-072, T-073, T-074, T-075, T-076, T-077
+- 7. Sidebar design v3 (owner's design, one slice = one pull request, in this order): T-071, T-072, T-073, T-074, T-075, T-076, T-077
 
 **Done**: the last 15 below.
 
@@ -212,9 +212,6 @@ Waits for T-003 and T-001.
 
 The owner's design "AHM sidebar v3" (reference: `docs/design/sidebar-v3/`, screens listed in its `README.md`) applied to the existing sidebar. **Look only**: no new feature, no changed behaviour, no change of ids, `data-*` attributes or `AHM.*` calls; where the design shows something the app does not have (for example the "Show undated places" switch) it is left out and, if wanted, becomes its own item. The palette already is the design's palette (`app/css/base.css`). Each slice is checked with a screenshot of the old and the new screen (400 px wide panel) and keeps `node tests/js/run.js` green. Order matters: later slices reuse the classes of earlier ones.
 
-- [ ] T-070 Design v3, slice 1: shell (tokens, header with brand block, tabs with icons)
-  Done when: design tokens (`--ui`, `--serif`, radii, ink and line colours) are added to `app/css/base.css` without changing an existing token; the panel starts with the brand block (logo tile, title, small caps subtitle); the six tabs show an icon above the label with the underline mark of the design; clicking an icon or a label switches the tab as before; browser tests unchanged and green.
-  Contract: no.
 - [ ] T-071 Design v3, slice 2: Explore list (search field and filter button, count row with sort and fit buttons, place rows with marker tile, serif name, dates and notes count)
   Done when: the list rows and the controls above them look like s1 and s2 of the design; sort, fit, reset, search and opening a place work as before.
   Contract: no.
@@ -239,6 +236,7 @@ The owner's design "AHM sidebar v3" (reference: `docs/design/sidebar-v3/`, scree
 
 ## Done
 
+- [x] T-070 Design v3, slice 1: shell (2026-11-20, branch `feat/design-v3-shell`; owner, in the chat: "Apply design from zip on existing project, step by step, push each slice"). Brand block, icon tabs, tokens; the tab click handler uses `closest`. Seen in headless Chromium only.
 - [x] T-069 One asset builder for extensions and styles (2026-11-18, branch `feat/asset-builder`; owner, in the chat). `tools/assets/build.js`: one copyable file + `assets.config.json` (bundles, ordered file lists); terser (no top-level renaming) and lightningcss when installed, else Bun; `--check` for CI; CSS `url()` rewritten, `@import` refused. `tools/build.js` of this repository is NOT changed (the map bundle is unchanged, byte for byte equal to the new tool with Bun).
 - [x] T-043 Names over time (2026-11-17, PR #41, branch `feat/names-over-time`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-3`, `tests/js/contract.test.js`). Optional `date_from` / `date_to` on names of places and borders, core `nameAt`, forms and "also called" rows. Not seen in a browser.
 - [x] T-046 Certainty and sources per object, phase 1 (2026-11-17, PR #38, branch `feat/certainty-sources`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-2`, `I-3`, `I-9`, `tests/js/contract.test.js`). `sources.json` dictionary, `certainty` / `sources` on places and borders, `radius_m` on places with a circle on the map, forms, sheets, filters for the places list. Phase 2 is T-065; the rest of the UI is T-066. Not seen in a browser.

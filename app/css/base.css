@@ -74,6 +74,13 @@
   --handle-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
   /* misc */
   --label-color: #425067;
+  /* design v3 (T-070): fonts, rules and radii of the owner's design; the colours of the design are the palette above */
+  --ui: system-ui, "Segoe UI", "DM Sans", Roboto, Arial, sans-serif;
+  --serif: Georgia, Gelasio, "Times New Roman", serif;
+  --line: #e3dec4;
+  --ink-muted: #7b858b;
+  --r-card: 12px;
+  --r-ctl: 8px;
 }
 
 * {

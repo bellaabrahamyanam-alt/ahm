@@ -152,3 +152,11 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 
 - **What:** `pfRowDated` / `pfReadNames` (`placeform.js`): each name row of the place, border and route forms has "Period of this name" (from, to); list rows of places and borders say "also called …" when an old name matched the search.
 - **Files:** `placeform.js`, `shapes.js`, `routes.js`, `places.js`, `tests/js/browser.test.js` (1 scenario: the place form). Seen in headless Chromium: the place form only; NOT seen: border and route forms, the map label with the slider.
+
+## 2026-11-20 — T-070: design v3, slice 1 (brand block, icon tabs, tokens)
+
+- **What:** a brand block (logo tile, "Armenian Highlands", small caps "Historical atlas") above the tabs; each of the six tabs has an icon above its label and an accent underline when open; new tokens in `base.css` (`--ui`, `--serif`, `--line`, `--ink-muted`, `--r-card`, `--r-ctl`). The tab click handler now uses `closest("[data-tab]")`, because the icon and the label are inside the button. No id, `data-tab` value or behaviour changed.
+- **Why:** the owner's design "AHM sidebar v3" (`docs/design/sidebar-v3/`), applied in slices (TODO.md group 7).
+- **Files:** `app/index.html`, `app/css/{base,sidebar}.css`, `app/js/sidebar/layout.js`, `app/dist/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (scenario "browser: tabs ..." has 3 new checks). By hand: the panel top looks like s1 of the design; clicking an icon or a label switches the tab. Seen in headless Chromium at 1000 px; not seen on a real forum or a phone.
+- **Follow-ups:** T-071 to T-077 (the other slices). The body font (Verdana) is not changed yet: the later slices change it screen by screen.
