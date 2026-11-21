@@ -90,6 +90,10 @@ scenario('browser: languages, optional dates in many formats, mountain height, n
     // dates optional: save with unknown dates
     await pg.selectOption('#dPlaceForm .pf-type','village');
     ok(await pg.locator('#dPlaceForm .pf-from .df-mode').inputValue()==='none', 'date defaults to Unknown');
+    ok(await pg.locator('#dPlaceForm .pf-type + .pills .pl').count()>0 && await pg.locator('#dPlaceForm .pf-type + .pills .pl.on').innerText()===await pg.locator('#dPlaceForm .pf-type').evaluate(s=>s.selectedOptions[0].textContent.trim()), 'design v3 (T-079): the place type is a row of pills and the chosen pill is the chosen option');
+    const nlPills=pg.locator('#dPlaceForm .pf-name .pills').first(); await nlPills.locator('.pl:not(.on):not(.more)').first().click();
+    ok(await pg.locator('#dPlaceForm .pf-name select.nl').first().inputValue()===await nlPills.locator('.pl.on').innerText(), 'a click on a language pill sets the language select of the name');
+    if (await nlPills.locator('.more').count()) { await nlPills.locator('.more').click(); ok(await nlPills.locator('.menu').isVisible() && await nlPills.locator('.menu .mi').count()===await pg.locator('#dPlaceForm .pf-name select.nl').first().locator('option').count(), 'the +N button opens a list of every language'); await nlPills.locator('.more').click(); ok(await nlPills.locator('.menu').isHidden(), 'and closes it again'); }
     await pg.click('#dPlaceForm .pf-from .seg[data-sel=df-mode] button[data-v=exact]');
     ok(await pg.locator('#dPlaceForm .pf-from .df-mode').inputValue()==='exact' && await pg.locator('#dPlaceForm .pf-from .seg[data-sel=df-mode] button.on').innerText()==='Exact' && await pg.locator('#dPlaceForm .pf-from .df-g').count()===1, 'design v3 (T-074): the segmented buttons of a date field set the select and show the fields');
     await pg.click('#dPlaceForm .pf-from .seg[data-sel=df-era] button[data-v=BCE]');

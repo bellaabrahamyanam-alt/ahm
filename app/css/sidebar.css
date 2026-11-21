@@ -2080,3 +2080,101 @@ button {
   flex-wrap: wrap;
   gap: 6px;
 }
+
+/* ---- Pills for single-choice selects (design v3, T-079) ---- */
+.pills {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0;
+}
+.pills .pl {
+  height: 26px;
+  min-height: 0;
+  padding: 0 11px;
+  font: 500 12px/24px var(--ui);
+  color: var(--content-color);
+  background: #e9e9e9;
+  border: 1px solid transparent;
+  border-radius: 13px;
+}
+.pills .pl:hover:not(:disabled) {
+  background: #dfdfdf;
+}
+.pills .pl.on,
+.pills .pl.on:hover {
+  color: #fff;
+  background: var(--a);
+}
+.pills .pl.more {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  padding: 0 8px;
+  color: var(--a);
+  font-weight: 600;
+  background: transparent;
+  border-color: #dadada;
+}
+.pills .pl.more svg,
+.pills .pl.more + .menu svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pills .menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 6;
+  min-width: 220px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 4px;
+  background: var(--bg2-bg-color);
+  border: 1px solid #dadada;
+  border-radius: var(--r-ctl);
+  box-shadow: var(--dropdown-shadow);
+}
+.pills .menu[hidden] {
+  display: none;
+}
+.pills .menu .mi {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  font: 13px var(--ui);
+  color: var(--content-color);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  text-align: left;
+}
+.pills .menu .mi:hover {
+  background: var(--row-hover-bg);
+}
+.pills .menu .mi.on {
+  font-weight: 600;
+  color: var(--a);
+}
+.pills .menu .mi code {
+  flex: none;
+  width: 30px;
+  font: 12px ui-monospace, Menlo, monospace;
+  color: var(--ink-muted);
+}
+.pills .menu .mi .nmx {
+  flex: 1;
+}
+.pf-name .pills {
+  flex: 1 1 100%;
+  margin: 0;
+}
