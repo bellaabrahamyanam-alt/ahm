@@ -6,7 +6,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 | domain | files | lines | largest file |
 |---|---|---|---|
-| sidebar | 14 | 4030 | `app/js/sidebar/shapes.js` (829) |
+| sidebar | 14 | 4034 | `app/js/sidebar/shapes.js` (829) |
 | map | 4 | 2626 | `app/js/map/map.js` (1470) |
 | core | 7 | 1199 | `app/js/core/shapes.js` (441) |
 | state | 1 | 44 | `app/js/state/state.js` (44) |
@@ -37,7 +37,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - map -> sidebar: 7 names (btns, edit, focusPlace +4)
 - sidebar -> core: 91 names (BORDER_TYPES, DATE_FORMATS, MONTHS +88)
 - sidebar -> data: 3 names (layerSave, path, save)
-- sidebar -> map: 6 names (drawShape, hideMenu, locate +3)
+- sidebar -> map: 7 names (drawShape, hideMenu, locate +4)
 - state -> core: 1 name (state)
 
 ## Where to look (by file name)
