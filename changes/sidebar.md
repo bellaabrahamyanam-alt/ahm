@@ -160,3 +160,11 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Files:** `app/index.html`, `app/css/{base,sidebar}.css`, `app/js/sidebar/layout.js`, `app/dist/`, `tests/js/browser.test.js`
 - **How to verify:** `node tests/js/run.js` (scenario "browser: tabs ..." has 3 new checks). By hand: the panel top looks like s1 of the design; clicking an icon or a label switches the tab. Seen in headless Chromium at 1000 px; not seen on a real forum or a phone.
 - **Follow-ups:** T-071 to T-077 (the other slices). The body font (Verdana) is not changed yet: the later slices change it screen by screen.
+
+## 2026-11-20 — T-071: design v3, slice 2 (Explore list)
+
+- **What:** Explore tab: the search row has a filter button (opens and closes the Filters block, badge with the number of active filters; the block's own summary line is hidden); the Filters block now sits under the search row and the active-filter chips; the count row has the sort select and an icon button for "Fit map" (same ids `#sort`, `#fit`); each place row is a marker tile, the name in a serif face, the dates and, at the right, the number of notes of the place (`placeRowHTML`). Search, Reset, sort, fit, opening, folding and the double click work as before.
+- **Why:** the owner's design v3, screens s1 and s2 (TODO.md group 7).
+- **Files:** `app/index.html`, `app/css/sidebar.css`, `app/js/sidebar/places.js`, `app/dist/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (scenario "browser: tabs ..." has 3 new checks). By hand: open Explore, press the filter button, pick a type: the badge shows 1.
+- **Follow-ups:** T-072 restyles the inside of the Filters block. The Reset button stays (the design has none); drop it only if the owner decides.

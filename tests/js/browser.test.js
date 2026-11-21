@@ -183,6 +183,9 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
     ok(await pg.locator('aside .hd h1').innerText()==='Armenian Highlands' && await pg.locator('.tabs button svg').count()===6, 'design v3 (T-070): brand block above the tabs, an icon in each of the six tabs');
     await pg.locator('[data-tab=layers] svg').click(); ok(await pg.locator('.tabs button.on').innerText()==='Layers', 'a click on the icon of a tab opens that tab');
     await pg.locator('[data-tab=explore] span').click(); ok(await pg.locator('.tabs button.on').innerText()==='Explore', 'a click on the label of a tab opens that tab');
+    ok(await pg.locator('details.filters').isHidden() && await pg.locator('#list li[data-id] .tmark').count()>0 && await pg.locator('#list li[data-id] .rt b').count()>0, 'design v3 (T-071): the Filters block is closed at first; every row has a marker tile and a name');
+    await pg.click('#fbtn'); ok(await pg.locator('details.filters').isVisible() && await pg.locator('#fbtn').getAttribute('aria-expanded')==='true', 'the filter button of the search row opens the Filters block');
+    await pg.click('#fbtn'); ok(await pg.locator('details.filters').isHidden(), 'and closes it again');
     await pg.evaluate(()=>tab('route')); ok(await pg.locator('#more-route').evaluate(e=>e.open) && !(await pg.locator('#more-maps').evaluate(e=>e.open)) && await pg.locator('#tab-more').isVisible(), 'tab(route) opens the Directions fold in More');
     await pg.evaluate(()=>tab('explore'));
     // selected types are shown inside Filters only: no chips under the Filters block

@@ -1336,3 +1336,135 @@ body.collapsed #timebar {
 .pf-srcerr:empty {
   display: none;
 }
+
+/* ---- Explore list (design v3, T-071): search row with the filter button, count row, place rows with a marker tile ---- */
+.searchbar {
+  gap: 8px;
+  padding: 4px 0 8px;
+}
+.searchbar input {
+  border-radius: var(--r-ctl);
+  background: var(--bg1-bg-color);
+}
+.sq {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  color: var(--a);
+  border-radius: var(--r-ctl);
+}
+.sq svg,
+#list .nn svg {
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sq.on {
+  background: var(--a);
+  color: var(--bg2-bg-color);
+}
+#fbadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 16px;
+  padding: 0 4px;
+  font: 600 10px/16px var(--ui);
+  text-align: center;
+  color: #fff;
+  background: var(--error-color);
+  border-radius: 8px;
+}
+#fbadge[hidden] {
+  display: none;
+}
+.searchbar #reset {
+  align-self: center;
+  background: transparent;
+  color: var(--ink-muted);
+  padding: 4px 6px;
+}
+.filters > summary {
+  display: none; /* the filter button of the search row opens and closes it */
+}
+.filters:not([open]) {
+  display: none;
+}
+.bar {
+  margin: 4px 2px 6px;
+  font: 13px var(--ui);
+  color: var(--html-body-color);
+}
+.bar select {
+  background: transparent;
+  border: 0;
+  padding: 4px 2px;
+  color: var(--a);
+  font: 600 13px var(--ui);
+  cursor: pointer;
+}
+.bar .sq {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+}
+#list li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-ctl);
+}
+#list li:first-child {
+  border: 0;
+}
+#list li.empty {
+  display: block;
+}
+#list .tmark {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+#list .rt {
+  flex: 1;
+  min-width: 0;
+}
+#list .rt b {
+  display: block;
+  font: 600 16px/1.25 var(--serif);
+  color: var(--content-color);
+}
+#list li:hover:where(:not(:has(button:hover, a:hover, input:hover))) .rt b {
+  color: var(--a);
+}
+#list .rt .sn {
+  margin-top: 2px;
+  font: 13px/1.3 var(--ui);
+  color: var(--ink-muted);
+}
+#list .nn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 13px var(--ui);
+  color: var(--ink-muted);
+}
+button.sq.on,
+button.sq.on:hover {
+  background: var(--a);
+  color: var(--bg2-bg-color);
+}

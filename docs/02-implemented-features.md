@@ -53,7 +53,7 @@
 
 ### Sidebar and page
 
-- Five tabs: **Explore**, **Borders**, **Routes**, **Layers**, **More**. More holds three folds: **Maps & base map** (base map toggles, historical map images), **Directions**, **Languages**. Calling `tab('route')` (etc.) opens the right fold. The panel starts with a brand block (logo tile, title, subtitle); each tab shows an icon above its label (design v3, T-070).
+- Five tabs: **Explore**, **Borders**, **Routes**, **Layers**, **More**. More holds three folds: **Maps & base map** (base map toggles, historical map images), **Directions**, **Languages**. Calling `tab('route')` (etc.) opens the right fold. The panel starts with a brand block (logo tile, title, subtitle); each tab shows an icon above its label (design v3, T-070). Explore: a search row with a filter button (opens the Filters block), a count row with sort and fit, rows with a marker tile, the dates and the number of notes (T-071).
 - **Sheets, not view swaps:** a place or a layer opens as a *sheet* over the list (back button on top, actions in a sticky bar at the bottom). The list underneath keeps its scroll position and filters. A place opened from a layer sheet lies on top of it, so Back returns to the layer. Clicking a tab or typing in the search box leaves the sheet.
 - **Filters:** closed by default; whatever is active (types, language, period, layers) is shown as removable chips under the Filters line.
 - **Buttons:** one language everywhere: default (secondary), `primary` (the one main action of a view), `danger`, `back`.
