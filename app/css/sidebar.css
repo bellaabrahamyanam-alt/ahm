@@ -1651,3 +1651,180 @@ button.sq.on:hover {
   padding: 0 18px;
   border-radius: var(--r-ctl);
 }
+
+/* ---- Forms (design v3, T-074): controls, segmented date field, name rows, buttons ---- */
+input:not([type="range"], [type="checkbox"], [type="radio"], [type="color"]),
+textarea {
+  height: 38px;
+  padding: 0 11px;
+  background: var(--bg1-bg-color);
+  border: 1px solid #d6d2ba;
+  border-radius: var(--r-ctl);
+}
+textarea {
+  height: auto;
+  min-height: 96px;
+  padding: 9px 11px;
+  line-height: 1.5;
+}
+select:not([multiple], .seg-src) {
+  height: 38px;
+  padding: 0 32px 0 11px;
+  background: #e9e9e9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center / 16px;
+  border: 1px solid #dadada;
+  border-radius: var(--r-ctl);
+  appearance: none;
+}
+.seg-src {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.df .row,
+.df-g {
+  position: relative;
+}
+.seg {
+  display: flex;
+  flex: 1;
+  padding: 2px;
+  background: var(--bg1-bg-color);
+  border-radius: var(--r-ctl);
+}
+.seg button {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 6px;
+  font: 500 12px var(--ui);
+  white-space: nowrap;
+  color: var(--html-body-color);
+  background: none;
+  border: 0;
+  border-radius: 6px;
+}
+.seg button:hover {
+  background: none;
+  color: var(--tab-color-hover);
+}
+.seg button.on,
+.seg button.on:hover {
+  font-weight: 600;
+  color: var(--a);
+  background: var(--bg2-bg-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.df-g .seg {
+  flex: none;
+  width: 108px;
+  height: 38px;
+  background: #e9e9e9;
+  border: 1px solid #dadada;
+}
+.df-g .seg button {
+  height: 32px;
+}
+.df-g .seg button.on,
+.df-g .seg button.on:hover {
+  color: #fff;
+  background: var(--a);
+}
+.df .row {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.df .row select.df-fmt {
+  flex: 1 1 100%;
+}
+.df-g {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.df-g input {
+  flex: 1 1 70px;
+  margin: 0;
+}
+/* name rows: language, name, move, remove; the period of the name on its own line */
+.pf-name {
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 8px 0;
+}
+.pf-name .nn {
+  flex: 1 1 120px;
+  margin: 0;
+}
+.pf-name select {
+  flex: 0 0 120px;
+  margin: 0;
+}
+.pf-name .pf-up,
+.pf-name .pf-del {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--a);
+  background: transparent;
+}
+.pf-period {
+  flex: 1 1 100%;
+  margin: 2px 0 0;
+}
+.pf-period > summary {
+  font: 500 12px var(--ui);
+  color: var(--ink-muted);
+}
+.pf-add {
+  height: 32px;
+  padding: 0 12px;
+  font: 600 13px var(--ui);
+  color: var(--a);
+  background: transparent;
+  border-radius: 16px;
+}
+.pf .label {
+  margin: 16px 0 6px;
+  padding-bottom: 4px;
+  font: 600 10.5px var(--ui);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line);
+}
+.pf-sub {
+  margin: 10px 0 4px;
+  font: 600 12px var(--ui);
+  color: var(--html-body-color);
+}
+/* Save and Cancel: two wide buttons in the sticky bar */
+.dock-foot button,
+.btn-pair button {
+  flex: 1 1 0;
+  height: 40px;
+  padding: 0 16px;
+  font: 600 14px var(--ui);
+  border-radius: var(--r-ctl);
+}
+.dock-foot button.primary,
+.btn-pair button.primary {
+  color: #fff;
+  background: var(--a);
+}
+.dock-foot button:not(.primary, .danger),
+.btn-pair button:not(.primary, .danger) {
+  color: var(--a);
+  background: #e9e9e9;
+}
+.bar select:not([multiple], .seg-src) {
+  height: 32px;
+  padding: 0 24px 0 6px;
+  background-color: transparent;
+  border: 0;
+}

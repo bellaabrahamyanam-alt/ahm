@@ -90,6 +90,12 @@ scenario('browser: languages, optional dates in many formats, mountain height, n
     // dates optional: save with unknown dates
     await pg.selectOption('#dPlaceForm .pf-type','village');
     ok(await pg.locator('#dPlaceForm .pf-from .df-mode').inputValue()==='none', 'date defaults to Unknown');
+    await pg.click('#dPlaceForm .pf-from .seg[data-sel=df-mode] button[data-v=exact]');
+    ok(await pg.locator('#dPlaceForm .pf-from .df-mode').inputValue()==='exact' && await pg.locator('#dPlaceForm .pf-from .seg[data-sel=df-mode] button.on').innerText()==='Exact' && await pg.locator('#dPlaceForm .pf-from .df-g').count()===1, 'design v3 (T-074): the segmented buttons of a date field set the select and show the fields');
+    await pg.click('#dPlaceForm .pf-from .seg[data-sel=df-era] button[data-v=BCE]');
+    ok(await pg.locator('#dPlaceForm .pf-from .df-era').inputValue()==='BCE', 'and CE / BCE is a segmented control as well');
+    await pg.click('#dPlaceForm .pf-from .seg[data-sel=df-mode] button[data-v=none]');
+    ok(await pg.locator('#dPlaceForm .pf-from .df-mode').inputValue()==='none' && await pg.locator('#dPlaceForm .pf-from .df-g').count()===0, 'Unknown takes the fields away again');
     await pg.click('#dSave'); await pg.waitForTimeout(800);
     ok(await pg.evaluate(()=>places.some(p=>p.names.some(n=>n.name==='Testville') && p.date_from===null && p.date_to===null)), 'place saved with no dates');
     // place with date in DD.MM.YYYY format, exact, and an end as a range of centuries

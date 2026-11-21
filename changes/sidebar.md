@@ -184,3 +184,11 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Files:** `app/css/sidebar.css`, `app/dist/`, `tests/js/browser.test.js`
 - **How to verify:** `node tests/js/run.js` (1 new check in "browser: tabs ..."). By hand: open a place with notes.
 - **Follow-ups:** the design opens the details inside the list under the row (s3); the app keeps the dock (AGENTS.md describes details inside the list, the code has a dock). Moving them is a behaviour change: a decision for the owner, not part of this slice.
+
+## 2026-11-20 — T-074: design v3, slice 5 (forms and the date field)
+
+- **What:** form controls (inputs, selects with a chevron, text areas), the date field with segmented buttons for "how sure" (Unknown / Exact / Approx. / Range) and CE / BCE (`datefield.js`: `dfSeg`; the two selects stay in the page, visually hidden, and remain the source of the value, so `dfRead`, the ids, the classes and the tests are unchanged), name rows with the period of a name on its own line (before, the period summary squeezed the name input), the Save and Cancel buttons as two wide buttons. This also shows in the Filters period and in the time bar field (same date field).
+- **Why:** the owner's design v3, screens s7, s28, s47, s48 (TODO.md group 7).
+- **Files:** `app/js/sidebar/datefield.js`, `app/css/sidebar.css`, `app/dist/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (3 new checks in "browser: languages, optional dates ..."). By hand: edit a place, click Exact, Range, BCE.
+- **Follow-ups:** the language of a name is still a select (the design shows pills); the place type is still a select (pills in s7). Both are looks that need a different control: not done, a new item if wanted. The note dialog was only seen partly in a screenshot.
