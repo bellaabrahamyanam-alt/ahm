@@ -192,3 +192,11 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Files:** `app/js/sidebar/datefield.js`, `app/css/sidebar.css`, `app/dist/`, `tests/js/browser.test.js`
 - **How to verify:** `node tests/js/run.js` (3 new checks in "browser: languages, optional dates ..."). By hand: edit a place, click Exact, Range, BCE.
 - **Follow-ups:** the language of a name is still a select (the design shows pills); the place type is still a select (pills in s7). Both are looks that need a different control: not done, a new item if wanted. The note dialog was only seen partly in a screenshot.
+
+## 2026-11-20 — T-075, T-076, T-077: design v3, slices 6 to 8 (More tab, other tabs, time bar)
+
+- **What:** More: the five folds are cards with an icon and a chevron (`summary` has an `svg` and a `span`; ids unchanged), serif rows in Languages, Types, Categories. Routes, Borders, Rivers and Layers: the same serif rows without lines, small caps labels, cards with the design radius, wide buttons (`button.wide`) and a general button radius and font. Time bar (T-040): a card, a round play button, a slider with a round handle, "Show undated" as a switch (the checkbox `#tbUndated` is unchanged; it only looks like a switch), the label in a serif face. The rivers selection row wraps instead of running out of the panel.
+- **Why:** the owner's design v3, screens s19, s21, s41, s33, s34, s43, s44 and the bar of s22 (TODO.md group 7).
+- **Files:** `app/index.html`, `app/css/sidebar.css`, `app/dist/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (3 new checks in "browser: tabs ..."). By hand: open every tab; open Time.
+- **Follow-ups:** the dual-handle period slider with a histogram at the bottom of the panel (s1) is a new feature, not a look: T-078 under "Needs you". The type editor (s20, s43, s44: symbol grid, colour swatches, line and area options) and the border and route forms were not screenshotted one by one: they got the controls of T-074 and the rows of T-076 only.

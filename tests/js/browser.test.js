@@ -187,6 +187,9 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
   await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
     ok(await pg.locator('.tabs button').count()===6 && await pg.locator('#more-maps #basemap').count()===1, 'six tabs (Explore, Borders, Routes, Rivers, Layers, More); Maps is a fold in More');
     ok(await pg.locator('aside .hd h1').innerText()==='Armenian Highlands' && await pg.locator('.tabs button svg').count()===6, 'design v3 (T-070): brand block above the tabs, an icon in each of the six tabs');
+    ok(await pg.locator('#tab-more .fold > summary svg').count()===5, 'design v3 (T-075): each of the five folds of More has an icon');
+    ok(await pg.evaluate(()=>{const e=document.querySelector('#shList li b, #rtList li b, #lyList li b');return !e||getComputedStyle(e).fontFamily.includes('Georgia');}), 'design v3 (T-076): the rows of Borders, Routes and Layers use the serif name like Explore');
+    ok(await pg.locator('#tbUndated').evaluate(e=>getComputedStyle(e).width==='38px'), 'design v3 (T-077): Show undated is a switch');
     await pg.locator('[data-tab=layers] svg').click(); ok(await pg.locator('.tabs button.on').innerText()==='Layers', 'a click on the icon of a tab opens that tab');
     await pg.locator('[data-tab=explore] span').click(); ok(await pg.locator('.tabs button.on').innerText()==='Explore', 'a click on the label of a tab opens that tab');
     ok(await pg.locator('details.filters').isHidden() && await pg.locator('#list li[data-id] .tmark').count()>0 && await pg.locator('#list li[data-id] .rt b').count()>0, 'design v3 (T-071): the Filters block is closed at first; every row has a marker tile and a name');
