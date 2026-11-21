@@ -114,6 +114,7 @@ function update() {
   // the selected types and the language are shown inside Filters, so only the period is repeated here
   $("#fActive").innerHTML = (periodActive() ? chip("period", "period") : "") + (timeActive() ? chip("time", "Time: " + dateText({ fmt: "y", ts: timeState.at, mode: "exact", ts_to: null })) : "");
   $("#count").textContent = r.length + " of " + places.length + " places";
+  if (typeof dockPark === "function") dockPark(); // the details card sits in the list (T-082)
   $("#list").innerHTML = r.length
     ? r.map(({ p, hits }) => placeRowHTML(p, hits, l, q)).join("")
     : '<li class="empty"><span class="ei"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span><b>No places match.</b><span class="sn">Try fewer filters.</span><button type="button" id="emptyReset">Reset filters</button></li>';

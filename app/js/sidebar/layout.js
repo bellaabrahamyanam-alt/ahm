@@ -55,8 +55,26 @@ $("#collapse").onclick = () => toggleSide(!document.body.classList.contains("col
 sideHandle(false);
 // ---- the details dock: a pane under the lists; the place details (#detail) and the layer details (#lyDetail) live in it ----
 $(".stack").append($("#dock"));
+// The open details are one card with their row: the dock sits in the list right under the open row (design v3.1, T-082).
+// A list that is drawn again first calls dockPark(), because the dock would go with the old rows.
+function dockPark() {
+  const dock = $("#dock");
+  if (dock.parentElement && dock.parentElement.tagName === "UL") {
+    $(".stack").append(dock);
+    dock.classList.remove("inline");
+  }
+}
 function dockSync() {
-  $("#dock").hidden = $("#detail").hidden && $("#lyDetail").hidden && $("#shDetail").hidden && $("#rtDetail").hidden;
+  const dock = $("#dock");
+  dock.hidden = $("#detail").hidden && $("#lyDetail").hidden && $("#shDetail").hidden && $("#rtDetail").hidden;
+  const li = dock.hidden || mobile() ? null : document.querySelector("#list li.on, #lyList li.on, #shList li.on, #rtList li.on");
+  if (li && li.parentElement && li.parentElement.tagName === "UL" && li.offsetParent !== null) {
+    li.after(dock);
+    dock.classList.add("inline");
+  } else {
+    $(".stack").append(dock);
+    dock.classList.remove("inline");
+  }
 }
 // The dock covers the lower half of the panel: if a row is hidden behind it, scroll the list just enough to centre the row.
 function revealRow(li) {

@@ -103,6 +103,7 @@ function lyRenderList() {
       .filter((ly) => (!cat || ly.category === cat) && (!q || lyHay(ly).includes(q)))
       .sort((a, b) => lyName(a, l).localeCompare(lyName(b, l)));
   $('#lyCount').textContent = rows.length + ' of ' + layers.length + ' layers';
+  if (typeof dockPark === "function") dockPark(); // the details card sits in the list (T-082)
   $('#lyList').innerHTML = rows.length ? rows.map((ly) => lyRowHTML(ly, l)).join('') : '<li class="empty">No layers match.</li>';
   lyPlaceDetail();
 }

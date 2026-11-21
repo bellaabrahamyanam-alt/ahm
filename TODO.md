@@ -15,7 +15,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 **Needs you (owner)**
 - History and time: T-049, T-050, T-051, T-052
-- Sidebar design: T-078, T-084
+- Sidebar design: T-084
 - Place and line types, interfaces: T-026, T-002
 - Campaigns: T-003, T-001
 - Project and CI: T-054, T-004
@@ -27,7 +27,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
 - 6. Campaigns: T-013
-- 8. Sidebar design v3, second version: T-083
+- 8. Sidebar design v3, second version: T-083, T-086
 - 7. Sidebar design v3: finished (T-070 to T-077, see Done); the period slider with a histogram is T-078 under "Needs you"
 
 **Done**: the last 15 below.
@@ -61,9 +61,6 @@ Decisions for the time and history block (T-040 to T-047).
 - [ ] T-084 Decide: what in the updated design is a new feature, not a look
   Not in the app today: (a) confirmation boxes in place of the browser `confirm()` (s68, s69), (b) "Other places (OpenStreetMap)" under the list (s61, s62, s63 map point menu), (c) Period / Moment footer with a two-handle slider and histogram (this is T-078), (d) language filter as several pills with counts (s2), (e) notes paging "1-5 of 8" (s45), (f) loading and load-error states of the list (s60), (g) rail and icon-only tooltips (s50 to s52). Say which to build (one new item each); the rest stays out.
   Done when: you write `Approved: <date>` and the letters.
-- [ ] T-078 Decide: period slider with a histogram at the bottom of the panel (design s1, s2, s3, s45)
-  The design draws, under the list, a bar "Period Any" with a play button and a slider with two handles over a histogram of the places by period. The app has the period fields in Filters and the one-moment Time bar (T-040). 1. add the two-handle slider with the histogram and make it drive the same period filter as the Filters fields (the Time bar stays); 2. only the histogram, shown inside Filters; 3. not now. Recommendation: 1 (it is the main look of the design; the filter state already exists).
-  Done when: you write `Approved: <date> 1`, `2` or `3`.
 
 ### Place and line types, interfaces
 
@@ -215,6 +212,9 @@ Audit follow-ups, test gaps and agent texts.
 
 The owner sent an updated design. Same rules as group 7: **look only** where it can be, one slice = one commit on the branch of the open pull request (the owner asked for one branch and one pull request); what is a new feature is its own item under "Needs you".
 
+- [ ] T-086 Moment in the footer slot (prototype s22, s49): the Moment tab shows the date field, play and speed in the footer and the floating Time button goes
+  Done when: switching to Moment shows the time controls in the footer; Time button and floating bar are gone; T-040 behaviour unchanged.
+  Contract: no.
 - [ ] T-083 Cards of Borders, Routes, Layers (s73 to s88)
   Done when: the cards of a border, a route and a layer, their forms and their drawing hints look like the design; no new field.
   Contract: no.
@@ -234,6 +234,8 @@ The owner's design "AHM sidebar v3" (reference: `docs/design/sidebar-v3/`, scree
 
 ## Done
 
+- [x] T-085 Design from the prototype: details as one card in the list (2026-11-21, branch `feat/design-v3-explore`; owner: "use the design from this html"). Dock moved into the list under the open row; phone unchanged.
+- [x] T-078 Period footer with histogram and two-handle slider (2026-11-21, same branch; the owner chose the prototype that shows it). Drives the existing period filter fields.
 - [x] T-082 Design v3.1: closed panel with one opener (2026-11-20, same branch and pull request, `feat/design-v3-explore`; owner sent an updated design). Desktop only; the phone sheet is unchanged.
 - [x] T-081 Design v3.1: empty list state (2026-11-20, same branch and pull request). The confirmation boxes and the loading and error states are not done (the app uses `confirm()`; no loading list), see "Needs you" T-084.
 - [x] T-080 Design v3.1: switches and base map cards in More (2026-11-20, same branch and pull request). Cards seen only with options put in by hand.

@@ -2432,3 +2432,98 @@ button {
   font: 11px var(--ui);
   color: var(--ink-muted);
 }
+
+/* ---- Details as one card with their row (design v3.1, T-082): the dock sits in the list, under the open row ---- */
+#dock.inline {
+  flex: none;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  margin: -4px 0 10px;
+  list-style: none;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--a);
+  border-top: 0;
+  border-radius: 0 0 var(--r-card) var(--r-card);
+  box-shadow: none;
+}
+#dock.inline #dockResizer {
+  display: none;
+}
+#dock.inline .dock-head {
+  border-bottom: 0;
+}
+#dock.inline .dock-body {
+  overflow: visible;
+  padding-top: 4px;
+}
+#dock.inline .dock-foot {
+  position: static;
+  padding: 4px 16px 14px;
+  background: transparent;
+  border-top: 0;
+}
+#dock.inline .dock-foot button.primary:only-child {
+  flex: none;
+}
+#list li.on,
+#lyList li.on,
+#shList li.on,
+#rtList li.on {
+  border-radius: var(--r-card) var(--r-card) 0 0;
+  border-left: 3px solid var(--a);
+  background: var(--bg2-bg-color);
+}
+#dock.inline .dock-head > .tmark,
+#dock.inline .dock-head > .swatch,
+#dock.inline .dock-title {
+  position: absolute; /* the open row above already shows the tile and the name: kept for screen readers, not drawn */
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+#dock.inline .dock-head {
+  padding: 6px 12px 0 16px;
+}
+#dock.inline .dock-btns {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  margin: 0;
+}
+
+/* ---- Lists of Borders, Routes, Layers (design v3.1, T-083): Add button in blue, visibility as an eye ---- */
+#tab-shapes button.wide,
+#tab-routes button.wide,
+#tab-layers button.wide {
+  height: 44px;
+  color: #fff;
+  background: var(--a);
+}
+#tab-shapes button.wide:hover,
+#tab-routes button.wide:hover,
+#tab-layers button.wide:hover {
+  background: var(--a-hover);
+}
+#shList li > input[type="checkbox"],
+#shList li .t ~ input[type="checkbox"],
+#rtList li > input[type="checkbox"] {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0 0 0 auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  appearance: none;
+  cursor: pointer;
+  background: center / 20px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+}
+#shList li > input[type="checkbox"]:not(:checked),
+#shList li .t ~ input[type="checkbox"]:not(:checked),
+#rtList li > input[type="checkbox"]:not(:checked) {
+  opacity: 0.45;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18M10.6 5.1A10 10 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4.1M6.3 6.3A17 17 0 002 12s3.6 7 10 7a10 10 0 004.2-.9M9.9 9.9a3 3 0 004.2 4.2'/%3E%3C/svg%3E");
+}

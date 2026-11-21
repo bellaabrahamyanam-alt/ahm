@@ -153,6 +153,7 @@ function shRenderList() {
     rows = shVisible();
   shRenderTypes();
   $('#shCount').textContent = rows.length + ' of ' + shapes.filter((s) => shapeGroup(s) === SH_GROUP[sh.mode]).length + ' ' + shWord();
+  if (typeof dockPark === "function") dockPark(); // the details card sits in the list (T-082)
   $('#shList').innerHTML = rows.length
     ? rows
         .map((s) => {
