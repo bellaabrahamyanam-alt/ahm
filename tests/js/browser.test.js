@@ -90,6 +90,12 @@ scenario('browser: languages, optional dates in many formats, mountain height, n
     // dates optional: save with unknown dates
     await pg.selectOption('#dPlaceForm .pf-type','village');
     ok(await pg.locator('#dPlaceForm .pf-from .df-mode').inputValue()==='none', 'date defaults to Unknown');
+    await pg.click('#dPlaceForm .pf-from .seg[data-sel=df-mode] button[data-v=exact]');
+    ok(await pg.locator('#dPlaceForm .pf-from .df-mode').inputValue()==='exact' && await pg.locator('#dPlaceForm .pf-from .seg[data-sel=df-mode] button.on').innerText()==='Exact' && await pg.locator('#dPlaceForm .pf-from .df-g').count()===1, 'design v3 (T-074): the segmented buttons of a date field set the select and show the fields');
+    await pg.click('#dPlaceForm .pf-from .seg[data-sel=df-era] button[data-v=BCE]');
+    ok(await pg.locator('#dPlaceForm .pf-from .df-era').inputValue()==='BCE', 'and CE / BCE is a segmented control as well');
+    await pg.click('#dPlaceForm .pf-from .seg[data-sel=df-mode] button[data-v=none]');
+    ok(await pg.locator('#dPlaceForm .pf-from .df-mode').inputValue()==='none' && await pg.locator('#dPlaceForm .pf-from .df-g').count()===0, 'Unknown takes the fields away again');
     await pg.click('#dSave'); await pg.waitForTimeout(800);
     ok(await pg.evaluate(()=>places.some(p=>p.names.some(n=>n.name==='Testville') && p.date_from===null && p.date_to===null)), 'place saved with no dates');
     // place with date in DD.MM.YYYY format, exact, and an end as a range of centuries
@@ -181,8 +187,16 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
   await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
     ok(await pg.locator('.tabs button').count()===6 && await pg.locator('#more-maps #basemap').count()===1, 'six tabs (Explore, Borders, Routes, Rivers, Layers, More); Maps is a fold in More');
     ok(await pg.locator('aside .hd h1').innerText()==='Armenian Highlands' && await pg.locator('.tabs button svg').count()===6, 'design v3 (T-070): brand block above the tabs, an icon in each of the six tabs');
+    ok(await pg.locator('#tab-more .fold > summary svg').count()===5, 'design v3 (T-075): each of the five folds of More has an icon');
+    ok(await pg.evaluate(()=>{const e=document.querySelector('#shList li b, #rtList li b, #lyList li b');return !e||getComputedStyle(e).fontFamily.includes('Georgia');}), 'design v3 (T-076): the rows of Borders, Routes and Layers use the serif name like Explore');
+    ok(await pg.locator('#tbUndated').evaluate(e=>getComputedStyle(e).width==='38px'), 'design v3 (T-077): Show undated is a switch');
     await pg.locator('[data-tab=layers] svg').click(); ok(await pg.locator('.tabs button.on').innerText()==='Layers', 'a click on the icon of a tab opens that tab');
     await pg.locator('[data-tab=explore] span').click(); ok(await pg.locator('.tabs button.on').innerText()==='Explore', 'a click on the label of a tab opens that tab');
+    ok(await pg.locator('details.filters').isHidden() && await pg.locator('#list li[data-id] .tmark').count()>0 && await pg.locator('#list li[data-id] .rt b').count()>0, 'design v3 (T-071): the Filters block is closed at first; every row has a marker tile and a name');
+    await pg.click('#fbtn'); ok(await pg.locator('details.filters').isVisible() && await pg.locator('#fbtn').getAttribute('aria-expanded')==='true', 'the filter button of the search row opens the Filters block');
+    await pg.click('#fbtn'); ok(await pg.locator('details.filters').isHidden(), 'and closes it again');
+    await pg.click('#fbtn'); await pg.click('#typeChips .chip >> nth=0'); ok(await pg.locator('#fbadge').innerText()==='1' && await pg.locator('#typeChips .chip.on').count()===1, 'design v3 (T-072): a chosen type is a filled chip and the badge of the filter button shows 1');
+    await pg.click('#typeChips .chip.on'); ok(await pg.locator('#fbadge').isHidden() && await pg.locator('#typeChips .chip.on').count()===0, 'choosing it again clears it and hides the badge'); await pg.click('#fbtn');
     await pg.evaluate(()=>tab('route')); ok(await pg.locator('#more-route').evaluate(e=>e.open) && !(await pg.locator('#more-maps').evaluate(e=>e.open)) && await pg.locator('#tab-more').isVisible(), 'tab(route) opens the Directions fold in More');
     await pg.evaluate(()=>tab('explore'));
     // selected types are shown inside Filters only: no chips under the Filters block
@@ -196,6 +210,7 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
     ok(await pg.locator('#dock #detail').count()===1 && await pg.locator('#detail').isVisible() && await pg.locator('#detail .dock-btns').isVisible(), 'place opens in the details dock with its buttons');
     ok(await pg.locator('#list li[data-id]').count()===rows, 'the other places stay in the list');
     ok(await pg.locator('#list li.on').count()===1, 'the open place is marked in its row');
+    ok(await pg.locator('#detail .dock-head .tmark').count()===1 && await pg.locator('#detail .note').count()>0 && await pg.locator('#detail .note').first().evaluate(n=>getComputedStyle(n,'::before').content==='""'), 'design v3 (T-073): the open place has a marker tile in its head, and every note has a bullet');
     ok(await pg.locator('[data-act=back]').count()===0, 'no Back button');
     await pg.click('#list li.on'); ok(await pg.locator('#detail').isHidden(), 'a second click folds the details');
     await pg.click('#list li[data-id] >> nth=0'); await pg.fill('#q','tu'); ok(await pg.locator('#detail').isHidden(), 'typing in search closes the details');

@@ -69,12 +69,13 @@ function setData(p, n) {
   fillTypes();
 }
 function placeRowHTML(p, hits, l, q) {
+  const nn = (by[p.id] || []).length;
   return (
-    `<li data-id="${p.id}"><div class="t"><span class="tmark" title="${esc(typeLabel(p.type, l))}">${typeIcon(p.type)}</span><b>${esc(label(p, l))}</b></div>` +
+    `<li data-id="${p.id}"><span class="tmark" title="${esc(typeLabel(p.type, l))}">${typeIcon(p.type)}</span><div class="rt"><b>${esc(label(p, l))}</b>` +
     (placeWhen(p) ? `<div class="sn">${esc(placeWhen(p))}</div>` : "") +
     (nameMatch(p, q, l) ? `<div class="sn">also called ${esc(nameMatch(p, q, l))}</div>` : "") + // an old name found by the search (T-043)
     (hits[0] ? `<div class="sn">${mark(hits[0].text, q)}</div>` : "") +
-    "</li>"
+    `</div>${nn ? `<span class="nn" title="${nn} ${nn === 1 ? "note" : "notes"}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>${nn}</span>` : ""}</li>`
   );
 }
 // The details of the open place (#detail) live in the dock under the list; the list keeps all its rows and the open one is marked.
@@ -107,6 +108,8 @@ function update() {
     q = $("#q").value.trim();
   const nf = state.types.size + state.certainty.size + state.sources.size + (l ? 1 : 0) + (periodActive() ? 1 : 0) + (timeActive() ? 1 : 0) + lyFilterCount();
   $("#fcount").textContent = nf ? `(${nf})` : "";
+  $("#fbadge").textContent = nf || "";
+  $("#fbadge").hidden = !nf;
   const chip = (k, t) => `<button class="chip on" data-clear="${k}" title="Remove this filter">${t} ✕</button>`;
   // the selected types and the language are shown inside Filters, so only the period is repeated here
   $("#fActive").innerHTML = (periodActive() ? chip("period", "period") : "") + (timeActive() ? chip("time", "Time: " + dateText({ fmt: "y", ts: timeState.at, mode: "exact", ts_to: null })) : "");
@@ -189,6 +192,13 @@ $("#reset").onclick = () => {
   searchFieldSync();
   fillTypes();
   update();
+};
+// the filter button of the search row opens and closes the Filters block (T-071)
+$("#fbtn").onclick = () => {
+  const d = document.querySelector("details.filters");
+  d.open = !d.open;
+  $("#fbtn").setAttribute("aria-expanded", d.open);
+  $("#fbtn").classList.toggle("on", d.open);
 };
 $("#fit").onclick = () => {
   AHM.map.fitTo(run(searchOptions()).map(({ p }) => [p.lon, p.lat]));

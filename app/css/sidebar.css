@@ -1336,3 +1336,747 @@ body.collapsed #timebar {
 .pf-srcerr:empty {
   display: none;
 }
+
+/* ---- Explore list (design v3, T-071): search row with the filter button, count row, place rows with a marker tile ---- */
+.searchbar {
+  gap: 8px;
+  padding: 4px 0 8px;
+}
+.searchbar input {
+  border-radius: var(--r-ctl);
+  background: var(--bg1-bg-color);
+}
+.sq {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  color: var(--a);
+  border-radius: var(--r-ctl);
+}
+.sq svg,
+#list .nn svg {
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sq.on {
+  background: var(--a);
+  color: var(--bg2-bg-color);
+}
+#fbadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 16px;
+  padding: 0 4px;
+  font: 600 10px/16px var(--ui);
+  text-align: center;
+  color: #fff;
+  background: var(--error-color);
+  border-radius: 8px;
+}
+#fbadge[hidden] {
+  display: none;
+}
+.searchbar #reset {
+  align-self: center;
+  background: transparent;
+  color: var(--ink-muted);
+  padding: 4px 6px;
+}
+.filters > summary {
+  display: none; /* the filter button of the search row opens and closes it */
+}
+.filters:not([open]) {
+  display: none;
+}
+.bar {
+  margin: 4px 2px 6px;
+  font: 13px var(--ui);
+  color: var(--html-body-color);
+}
+.bar select {
+  background: transparent;
+  border: 0;
+  padding: 4px 2px;
+  color: var(--a);
+  font: 600 13px var(--ui);
+  cursor: pointer;
+}
+.bar .sq {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+}
+#list li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-ctl);
+}
+#list li:first-child {
+  border: 0;
+}
+#list li.empty {
+  display: block;
+}
+#list .tmark {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+#list .rt {
+  flex: 1;
+  min-width: 0;
+}
+#list .rt b {
+  display: block;
+  font: 600 16px/1.25 var(--serif);
+  color: var(--content-color);
+}
+#list li:hover:where(:not(:has(button:hover, a:hover, input:hover))) .rt b {
+  color: var(--a);
+}
+#list .rt .sn {
+  margin-top: 2px;
+  font: 13px/1.3 var(--ui);
+  color: var(--ink-muted);
+}
+#list .nn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 13px var(--ui);
+  color: var(--ink-muted);
+}
+button.sq.on,
+button.sq.on:hover {
+  background: var(--a);
+  color: var(--bg2-bg-color);
+}
+
+/* ---- Filters block (design v3, T-072): card, small caps labels, pill chips, select with a chevron ---- */
+.filters {
+  padding: 12px 14px 14px;
+  margin: 0 0 10px;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+.filters .label {
+  margin: 12px 0 6px;
+  padding-bottom: 4px;
+  font: 600 10.5px var(--ui);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line);
+}
+.filters .label:first-of-type {
+  margin-top: 0;
+}
+.filters .chips,
+#activeBar {
+  gap: 6px;
+}
+.filters .chip,
+#activeBar .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  font: 500 12px var(--ui);
+  color: var(--content-color);
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+.filters .chip:hover {
+  background: var(--row-hover-bg);
+}
+.filters .chip span {
+  margin: 0;
+  color: var(--ink-muted);
+}
+.filters .chip.on,
+.filters .chip.on:hover {
+  color: #fff;
+  background: var(--a);
+  border-color: var(--a);
+}
+.filters .chip.on span {
+  color: rgba(255, 255, 255, 0.8);
+}
+/* the active-filter chips under the search row: light blue with a cross */
+#activeBar {
+  margin: 0 0 8px;
+}
+#activeBar:empty,
+#activeBar:not(:has(.chip)) {
+  display: none;
+}
+#activeBar .chip.on,
+#activeBar .chip.on:hover {
+  color: var(--a);
+  background: #e4ecf6;
+  border-color: #c9d8ea;
+}
+.filters select {
+  height: 40px;
+  padding: 0 32px 0 12px;
+  color: var(--content-color);
+  background: var(--bg1-bg-color) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center / 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  appearance: none;
+}
+
+/* ---- Place details in the dock (design v3, T-073): serif title, names line, flat notes with a bullet ---- */
+#dock {
+  background: var(--bg2-bg-color);
+  border-top: 1px solid var(--line);
+}
+.dock-head {
+  gap: 10px;
+  padding: 10px 10px 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.dock-head .tmark {
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+  background: var(--base-bg);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.dock-title {
+  font: 600 18px/1.2 var(--serif);
+  color: var(--content-color);
+}
+.dock-head .icon-btn {
+  color: var(--a);
+  border-radius: var(--r-ctl);
+}
+.dock-body {
+  padding: 12px 16px 14px;
+}
+#detail .names {
+  margin: 0 0 4px;
+  font: 15px/1.5 var(--serif);
+  color: var(--content-color);
+}
+#detail .names .sn {
+  font: 600 10px var(--ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+#detail .label {
+  margin: 14px 0 6px;
+  padding-bottom: 4px;
+  font: 600 10.5px var(--ui);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line);
+}
+#detail select {
+  height: 40px;
+  padding: 0 32px 0 12px;
+  color: var(--content-color);
+  background: var(--bg1-bg-color) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center / 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  appearance: none;
+}
+#detail .note {
+  position: relative;
+  margin: 0;
+  padding: 12px 0 12px 22px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+}
+#detail .note:last-child {
+  border-bottom: 0;
+}
+#detail .note::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 17px;
+  width: 9px;
+  height: 9px;
+  border: 1.6px solid var(--a);
+  border-radius: 50%;
+}
+#detail .note-meta b {
+  font: 600 14px var(--ui);
+  color: var(--content-color);
+}
+#detail .note-meta .sn {
+  font: 12px var(--ui);
+  color: var(--ink-muted);
+}
+#detail .note-body p {
+  font: 14px/1.5 var(--ui);
+  color: var(--content-color);
+}
+#detail .note-more,
+#detail .note-all {
+  color: var(--a);
+  font: 600 13px var(--ui);
+}
+.dock-foot {
+  padding: 10px 16px;
+  background: var(--bg2-bg-color);
+  border-top: 1px solid var(--line);
+}
+.dock-foot button.primary {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--r-ctl);
+}
+
+/* ---- Forms (design v3, T-074): controls, segmented date field, name rows, buttons ---- */
+input:not([type="range"], [type="checkbox"], [type="radio"], [type="color"]),
+textarea {
+  height: 38px;
+  padding: 0 11px;
+  background: var(--bg1-bg-color);
+  border: 1px solid #d6d2ba;
+  border-radius: var(--r-ctl);
+}
+textarea {
+  height: auto;
+  min-height: 96px;
+  padding: 9px 11px;
+  line-height: 1.5;
+}
+select:not([multiple], .seg-src) {
+  height: 38px;
+  padding: 0 32px 0 11px;
+  background: #e9e9e9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center / 16px;
+  border: 1px solid #dadada;
+  border-radius: var(--r-ctl);
+  appearance: none;
+}
+.seg-src {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.df .row,
+.df-g {
+  position: relative;
+}
+.seg {
+  display: flex;
+  flex: 1;
+  padding: 2px;
+  background: var(--bg1-bg-color);
+  border-radius: var(--r-ctl);
+}
+.seg button {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 6px;
+  font: 500 12px var(--ui);
+  white-space: nowrap;
+  color: var(--html-body-color);
+  background: none;
+  border: 0;
+  border-radius: 6px;
+}
+.seg button:hover {
+  background: none;
+  color: var(--tab-color-hover);
+}
+.seg button.on,
+.seg button.on:hover {
+  font-weight: 600;
+  color: var(--a);
+  background: var(--bg2-bg-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.df-g .seg {
+  flex: none;
+  width: 108px;
+  height: 38px;
+  background: #e9e9e9;
+  border: 1px solid #dadada;
+}
+.df-g .seg button {
+  height: 32px;
+}
+.df-g .seg button.on,
+.df-g .seg button.on:hover {
+  color: #fff;
+  background: var(--a);
+}
+.df .row {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.df .row select.df-fmt {
+  flex: 1 1 100%;
+}
+.df-g {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.df-g input {
+  flex: 1 1 70px;
+  margin: 0;
+}
+/* name rows: language, name, move, remove; the period of the name on its own line */
+.pf-name {
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 8px 0;
+}
+.pf-name .nn {
+  flex: 1 1 120px;
+  margin: 0;
+}
+.pf-name select {
+  flex: 0 0 120px;
+  margin: 0;
+}
+.pf-name .pf-up,
+.pf-name .pf-del {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--a);
+  background: transparent;
+}
+.pf-period {
+  flex: 1 1 100%;
+  margin: 2px 0 0;
+}
+.pf-period > summary {
+  font: 500 12px var(--ui);
+  color: var(--ink-muted);
+}
+.pf-add {
+  height: 32px;
+  padding: 0 12px;
+  font: 600 13px var(--ui);
+  color: var(--a);
+  background: transparent;
+  border-radius: 16px;
+}
+.pf .label {
+  margin: 16px 0 6px;
+  padding-bottom: 4px;
+  font: 600 10.5px var(--ui);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line);
+}
+.pf-sub {
+  margin: 10px 0 4px;
+  font: 600 12px var(--ui);
+  color: var(--html-body-color);
+}
+/* Save and Cancel: two wide buttons in the sticky bar */
+.dock-foot button,
+.btn-pair button {
+  flex: 1 1 0;
+  height: 40px;
+  padding: 0 16px;
+  font: 600 14px var(--ui);
+  border-radius: var(--r-ctl);
+}
+.dock-foot button.primary,
+.btn-pair button.primary {
+  color: #fff;
+  background: var(--a);
+}
+.dock-foot button:not(.primary, .danger),
+.btn-pair button:not(.primary, .danger) {
+  color: var(--a);
+  background: #e9e9e9;
+}
+.bar select:not([multiple], .seg-src) {
+  height: 32px;
+  padding: 0 24px 0 6px;
+  background-color: transparent;
+  border: 0;
+}
+
+/* ---- More tab (design v3, T-075): accordion cards with an icon, serif table rows ---- */
+.fold {
+  margin: 0 0 10px;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+.fold > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  list-style: none;
+  font: 600 15px var(--ui);
+  color: var(--content-color);
+}
+.fold > summary::-webkit-details-marker {
+  display: none;
+}
+.fold > summary svg {
+  flex: none;
+  fill: none;
+  stroke: var(--a);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.fold > summary span {
+  flex: 1;
+}
+.fold > summary::after {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / 16px no-repeat;
+  transition: transform 0.15s;
+}
+.fold[open] > summary::after {
+  transform: rotate(180deg);
+}
+.fold-body {
+  padding: 0 16px 16px;
+}
+.langs li.tr {
+  align-items: center;
+  font: 15px var(--serif);
+  color: var(--content-color);
+}
+.langs li.tr b {
+  font: 12px ui-monospace, Menlo, monospace;
+  color: var(--ink-muted);
+}
+button.wide {
+  height: 40px;
+  font: 600 14px var(--ui);
+  color: var(--a);
+  background: #e9e9e9;
+  border-radius: var(--r-ctl);
+}
+
+/* ---- Routes, Borders, Rivers and Layers (design v3, T-076): the same rows, cards and buttons as Explore ---- */
+button {
+  font-family: var(--ui);
+  border-radius: var(--r-ctl);
+}
+#shList li,
+#rtList li,
+#lyList li,
+#rvSelList li {
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-ctl);
+}
+#shList li:first-child,
+#rtList li:first-child,
+#lyList li:first-child,
+#rvSelList li:first-child {
+  border: 0;
+}
+#shList li b,
+#rtList li b,
+#lyList li b,
+#rvSelList li b {
+  font: 600 16px/1.25 var(--serif);
+  color: var(--content-color);
+}
+#shList li:hover b,
+#rtList li:hover b,
+#lyList li:hover b {
+  color: var(--a);
+}
+#shList li .sn,
+#rtList li .sn,
+#lyList li .sn,
+#rvSelList li .sn {
+  margin-top: 2px;
+  font: 13px/1.3 var(--ui);
+  color: var(--ink-muted);
+}
+#tab-layers .sn:first-child,
+#tab-routes .sn:first-child,
+#tab-shapes .sn:first-child {
+  line-height: 1.5;
+}
+#tab-layers .label,
+#tab-routes .label,
+#tab-shapes .label {
+  margin: 16px 0 6px;
+  padding-bottom: 4px;
+  font: 600 10.5px var(--ui);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line);
+}
+.ovpanel,
+#pick,
+.ly-card,
+#tab-routes details,
+#tab-shapes details {
+  border-radius: var(--r-card);
+  border-color: var(--line);
+}
+#tab-routes details > summary,
+#tab-shapes details > summary {
+  font: 600 14px var(--ui);
+  color: var(--a);
+}
+#tab-layers select,
+#tab-routes select,
+#tab-shapes select {
+  height: 38px;
+}
+
+/* ---- Time bar (design v3, T-077): a card, a round play button, a slider with a round handle, a switch for undated places ---- */
+#tbOpen {
+  height: 36px;
+  padding: 0 16px;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--dropdown-shadow);
+}
+#timebar {
+  gap: 10px 12px;
+  padding: 12px 16px;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  box-shadow: var(--dropdown-shadow);
+}
+#tbPlay {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 12px;
+  color: #fff;
+  background: var(--a);
+  border-radius: 50%;
+}
+#tbPlay:hover:not(:disabled) {
+  background: var(--a-hover);
+}
+#tbLabel {
+  min-width: 5.5em;
+  font: 600 15px var(--serif);
+  color: var(--content-color);
+  text-align: right;
+}
+#tbSlider {
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  appearance: none;
+  accent-color: var(--a);
+}
+#tbSlider::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--a);
+  border-radius: 2px;
+}
+#tbSlider::-moz-range-track {
+  height: 4px;
+  background: var(--a);
+  border-radius: 2px;
+}
+#tbSlider::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  background: var(--base-bg);
+  border: 3px solid var(--a);
+  border-radius: 50%;
+  appearance: none;
+}
+#tbSlider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--base-bg);
+  border: 3px solid var(--a);
+  border-radius: 50%;
+}
+#timebar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 13px var(--ui);
+  color: var(--content-color);
+}
+#tbUndated {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  background: #c9ccc4;
+  border: 0;
+  border-radius: 11px;
+  appearance: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+#tbUndated::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s;
+}
+#tbUndated:checked {
+  background: var(--a);
+}
+#tbUndated:checked::before {
+  transform: translateX(16px);
+}
+#tbOff {
+  color: var(--ink-muted);
+  background: transparent;
+}
+#tab-shapes .bar {
+  flex-wrap: wrap;
+  gap: 6px;
+}

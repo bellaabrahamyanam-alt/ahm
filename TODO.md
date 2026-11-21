@@ -15,6 +15,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 **Needs you (owner)**
 - History and time: T-049, T-050, T-051, T-052
+- Sidebar design: T-078
 - Place and line types, interfaces: T-026, T-002
 - Campaigns: T-003, T-001
 - Project and CI: T-054, T-004
@@ -26,7 +27,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
 - 6. Campaigns: T-013
-- 7. Sidebar design v3 (owner's design, one slice = one pull request, in this order): T-071, T-072, T-073, T-074, T-075, T-076, T-077
+- 7. Sidebar design v3: finished (T-070 to T-077, see Done); the period slider with a histogram is T-078 under "Needs you"
 
 **Done**: the last 15 below.
 
@@ -53,6 +54,12 @@ Decisions for the time and history block (T-040 to T-047).
   1. add the MIT library `polygon-clipping`, vendored and pinned (exact, about 40 KB); 2. compare on a grid of cells (no library, approximate). Recommendation: 1.
   Done when: you write `Approved: <date> 1` or `2`.
   Contract: no.
+
+### Sidebar design
+
+- [ ] T-078 Decide: period slider with a histogram at the bottom of the panel (design s1, s2, s3, s45)
+  The design draws, under the list, a bar "Period Any" with a play button and a slider with two handles over a histogram of the places by period. The app has the period fields in Filters and the one-moment Time bar (T-040). 1. add the two-handle slider with the histogram and make it drive the same period filter as the Filters fields (the Time bar stays); 2. only the histogram, shown inside Filters; 3. not now. Recommendation: 1 (it is the main look of the design; the filter state already exists).
+  Done when: you write `Approved: <date> 1`, `2` or `3`.
 
 ### Place and line types, interfaces
 
@@ -212,30 +219,16 @@ Waits for T-003 and T-001.
 
 The owner's design "AHM sidebar v3" (reference: `docs/design/sidebar-v3/`, screens listed in its `README.md`) applied to the existing sidebar. **Look only**: no new feature, no changed behaviour, no change of ids, `data-*` attributes or `AHM.*` calls; where the design shows something the app does not have (for example the "Show undated places" switch) it is left out and, if wanted, becomes its own item. The palette already is the design's palette (`app/css/base.css`). Each slice is checked with a screenshot of the old and the new screen (400 px wide panel) and keeps `node tests/js/run.js` green. Order matters: later slices reuse the classes of earlier ones.
 
-- [ ] T-071 Design v3, slice 2: Explore list (search field and filter button, count row with sort and fit buttons, place rows with marker tile, serif name, dates and notes count)
-  Done when: the list rows and the controls above them look like s1 and s2 of the design; sort, fit, reset, search and opening a place work as before.
-  Contract: no.
-- [ ] T-072 Design v3, slice 3: filters (chips, selects, period fields, segmented Unknown / Exact / Approx. / Range)
-  Done when: the filter panel looks like s2 of the design and every filter still narrows the list as before.
-  Contract: no.
-- [ ] T-073 Design v3, slice 4: place details inside the list (names, layers, notes with language chip, show more)
-  Done when: the open place looks like s3 and s45 of the design; opening, folding and the double click work as before.
-  Contract: no.
-- [ ] T-074 Design v3, slice 5: forms (edit place, note, name rows, date field, pills, sticky Save and Cancel)
-  Done when: the place form and the note form look like s7, s28, s46, s47 and s48; saving, cancelling and validation work as before.
-  Contract: no.
-- [ ] T-075 Design v3, slice 6: More tab (accordion sections, languages, categories, place types, type editor)
-  Done when: the More tab and the type editor look like s19, s21, s41 and s20 of the design.
-  Contract: no.
-- [ ] T-076 Design v3, slice 7: Routes, Borders, Rivers and Layers tabs (cards, forms, version form)
-  Done when: these tabs use the same classes as slices 1 to 6 and look like s33, s34, s43 and s44 of the design.
-  Contract: no.
-- [ ] T-077 Design v3, slice 8: period bar at the bottom of the panel (histogram, handles, period label)
-  Done when: the period control looks like the bar at the bottom of s1 to s3 and s45 of the design (s22 and s49 show the moment bar, which is not part of this slice); its behaviour (T-040 and T-042) is unchanged.
-  Contract: no.
 
 ## Done
 
+- [x] T-077 Design v3, slice 8: time bar (2026-11-20, same branch and pull request, `feat/design-v3-explore`). Card, round play button, round slider handle, Show undated as a switch. The period slider with a histogram of s1 is a new feature: T-078.
+- [x] T-076 Design v3, slice 7: Routes, Borders, Rivers, Layers (2026-11-20, same branch and pull request). Serif rows, labels, cards, wide buttons.
+- [x] T-075 Design v3, slice 6: More tab (2026-11-20, same branch and pull request). Folds as cards with an icon and a chevron, serif table rows.
+- [x] T-074 Design v3, slice 5: forms and the date field (2026-11-20, same branch and pull request, `feat/design-v3-explore`). Controls, segmented date field (selects kept as the source), name rows, wide Save and Cancel. Language and type pills of s7 not done (they replace a select).
+- [x] T-073 Design v3, slice 4: place details (2026-11-20, same branch and pull request, `feat/design-v3-explore`). Look only: the dock under the list is kept; details inside the list (s3) is a decision for the owner.
+- [x] T-072 Design v3, slice 3: filters (2026-11-20, same branch and pull request as T-071, `feat/design-v3-explore`; owner, in the chat: "keep committing in the same PR"). Card, labels, pill chips, select with a chevron, active chips. The segmented period fields move to T-074 (shared date field).
+- [x] T-071 Design v3, slice 2: Explore list (2026-11-20, branch `feat/design-v3-explore`; owner, in the chat: "continue"). Search row with filter button and badge, count row with sort and fit icon, rows with marker tile, serif name, dates, number of notes. Seen in headless Chromium only.
 - [x] T-070 Design v3, slice 1: shell (2026-11-20, branch `feat/design-v3-shell`; owner, in the chat: "Apply design from zip on existing project, step by step, push each slice"). Brand block, icon tabs, tokens; the tab click handler uses `closest`. Seen in headless Chromium only.
 - [x] T-069 One asset builder for extensions and styles (2026-11-18, branch `feat/asset-builder`; owner, in the chat). `tools/assets/build.js`: one copyable file + `assets.config.json` (bundles, ordered file lists); terser (no top-level renaming) and lightningcss when installed, else Bun; `--check` for CI; CSS `url()` rewritten, `@import` refused. `tools/build.js` of this repository is NOT changed (the map bundle is unchanged, byte for byte equal to the new tool with Bun).
 - [x] T-043 Names over time (2026-11-17, PR #41, branch `feat/names-over-time`). Approved: 2026-11-16 owner, in the chat: "start to build 040, 041, 043, 046 and 042" (covers `interfaces/I-1`, `I-3`, `tests/js/contract.test.js`). Optional `date_from` / `date_to` on names of places and borders, core `nameAt`, forms and "also called" rows. Not seen in a browser.
