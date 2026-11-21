@@ -27,6 +27,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
 - 6. Campaigns: T-013
+- 8. Sidebar design v3, second version: T-079, T-080, T-081, T-082, T-083
 - 7. Sidebar design v3: finished (T-070 to T-077, see Done); the period slider with a histogram is T-078 under "Needs you"
 
 **Done**: the last 15 below.
@@ -205,6 +206,26 @@ Audit follow-ups, test gaps and agent texts.
   Contract: no.
 - [ ] T-028 Update the text that still tells agents to run `bun tools/build.js` before a PR (`AGENTS.md` section 4 and line 43, `.claude/agents/builder.md` step 4, `DOMAINS.md`): CI now rebuilds `app/dist/` (T-006)
   Done when: the texts say a PR need not commit `app/dist/` (a local build is still allowed); `tests/js/build.test.js` stays unchanged. Needs `Approved:` (protected: `AGENTS.md`, `.claude/`, `DOMAINS.md`).
+  Contract: no.
+
+### 8. Sidebar design v3, second version (68 screens, `docs/design/sidebar-v3/COVERAGE.md`)
+
+The owner sent an updated design. Same rules as group 7: **look only** where it can be, one slice = one commit on the branch of the open pull request (the owner asked for one branch and one pull request); what is a new feature is its own item under "Needs you".
+
+- [ ] T-079 Language, type and certainty as pills (s7, s20, s28, s46, s64 to s66)
+  Done when: the language of a name or a note, the type of a place and its certainty are pills (first five, the chosen one always shown, "+N" opens a list with code and name); the select stays in the page and stays the source of the value; browser tests unchanged and green.
+  Contract: no.
+- [ ] T-080 Switches and map style cards in More (s37, s38, s90, s91)
+  Done when: the on/off checkboxes of the map toggles and relief panel look like switches (still the same checkbox), the base map choice shows cards (Terrain / Plain / Relief) over the same select.
+  Contract: no.
+- [ ] T-081 Empty, loading and error states, confirmation boxes (s60 to s62, s68, s69)
+  Done when: an empty list, a failed load, the other-places list and the delete / discard boxes look like the design; their texts and buttons are unchanged.
+  Contract: no.
+- [ ] T-082 Closed panel with one opener (s50 to s52, s97 to s100)
+  Done when: with the panel closed the map shows one opener (logo tile and chevron) top left; it opens the panel as the edge button does now.
+  Contract: no.
+- [ ] T-083 Cards of Borders, Routes, Layers (s73 to s88)
+  Done when: the cards of a border, a route and a layer, their forms and their drawing hints look like the design; no new field.
   Contract: no.
 
 ### 6. Campaigns
