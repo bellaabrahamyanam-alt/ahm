@@ -116,7 +116,7 @@ function update() {
   $("#count").textContent = r.length + " of " + places.length + " places";
   $("#list").innerHTML = r.length
     ? r.map(({ p, hits }) => placeRowHTML(p, hits, l, q)).join("")
-    : '<li class="empty">No places match. Try fewer filters.</li>';
+    : '<li class="empty"><span class="ei"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span><b>No places match.</b><span class="sn">Try fewer filters.</span><button type="button" id="emptyReset">Reset filters</button></li>';
   placeDetail();
   const fc = {
     type: "FeatureCollection",
@@ -181,6 +181,8 @@ $("#srcChips").addEventListener("click", (e) => {
   fillEvidence();
   update();
 });
+// the button of the empty list does what Reset does (T-081)
+$("#list").addEventListener("click", (e) => e.target.closest("#emptyReset") && $("#reset").click());
 $("#reset").onclick = () => {
   ["q", "lang"].forEach((i) => ($("#" + i).value = ""));
   initPeriod();

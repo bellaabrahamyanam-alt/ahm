@@ -2252,3 +2252,82 @@ button {
   border: 2px solid var(--a);
   padding: 3px 3px 5px;
 }
+
+/* ---- Empty list (design v3.1, T-081) ---- */
+#list li.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 28px 12px 20px;
+  text-align: center;
+}
+#list li.empty .ei {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 8px;
+  color: var(--a);
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+#list li.empty .ei svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+#list li.empty b {
+  font: 600 17px var(--serif);
+  color: var(--content-color);
+}
+#list li.empty .sn {
+  font: 14px var(--ui);
+  color: var(--ink-muted);
+}
+#list li.empty button {
+  margin-top: 12px;
+}
+
+/* ---- Closed panel: one opener top left (design v3.1, T-082); on a phone the bottom sheet keeps its handle ---- */
+#collapse .opn {
+  display: none;
+}
+@media (min-width: 701px) {
+  body.collapsed #collapse {
+    top: 16px;
+    left: calc(100% + 16px);
+    right: auto;
+    width: auto;
+    height: 48px;
+    padding: 0 10px 0 8px;
+    transform: none;
+    background: var(--bg2-bg-color);
+    border: 0;
+    border-radius: var(--r-card);
+  }
+  body.collapsed #collapse > svg {
+    display: none;
+  }
+  body.collapsed #collapse .opn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--a);
+  }
+  body.collapsed #collapse .opn > svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    color: var(--ink-muted);
+    transition: transform 0.15s;
+  }
+  body.collapsed #collapse:hover .opn > svg {
+    color: var(--a);
+    transform: translateX(2px);
+  }
+}

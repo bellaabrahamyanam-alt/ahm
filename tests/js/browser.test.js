@@ -195,6 +195,8 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
     ok(await pg.evaluate(()=>{const e=document.querySelector('#shList li b, #rtList li b, #lyList li b');return !e||getComputedStyle(e).fontFamily.includes('Georgia');}), 'design v3 (T-076): the rows of Borders, Routes and Layers use the serif name like Explore');
     ok(await pg.locator('#tbUndated').evaluate(e=>getComputedStyle(e).width==='38px'), 'design v3 (T-077): Show undated is a switch');
     ok(await pg.locator('#view-terrain').evaluate(e=>getComputedStyle(e).width==='38px') && await pg.locator('#basemap + .pills.cards').count()===1, 'design v3.1 (T-080): the on/off checkboxes of More look like switches and the base map select is shown as cards');
+    await pg.click('#collapse'); ok(await pg.evaluate(()=>document.body.classList.contains('collapsed')) && (await pg.evaluate(()=>innerWidth<=700) || await pg.locator('#collapse .opn').isVisible()), 'design v3.1 (T-082): with the panel closed the handle is the opener (logo and chevron)');
+    await pg.click('#collapse'); ok(!(await pg.evaluate(()=>document.body.classList.contains('collapsed'))), 'and it opens the panel again');
     await pg.locator('[data-tab=layers] svg').click(); ok(await pg.locator('.tabs button.on').innerText()==='Layers', 'a click on the icon of a tab opens that tab');
     await pg.locator('[data-tab=explore] span').click(); ok(await pg.locator('.tabs button.on').innerText()==='Explore', 'a click on the label of a tab opens that tab');
     ok(await pg.locator('details.filters').isHidden() && await pg.locator('#list li[data-id] .tmark').count()>0 && await pg.locator('#list li[data-id] .rt b').count()>0, 'design v3 (T-071): the Filters block is closed at first; every row has a marker tile and a name');
@@ -221,6 +223,8 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
     await pg.click('#list li[data-id] >> nth=0'); await pg.fill('#q','tu'); ok(await pg.locator('#detail').isHidden(), 'typing in search closes the details');
     ok(await pg.locator('.clear[data-clearfor=q]').isVisible(), 'the search field shows its clear button');
     await pg.click('.clear[data-clearfor=q]'); ok(await pg.inputValue('#q')==='', 'the clear button empties the search');
+    await pg.fill('#q','zzzzqq'); ok(await pg.locator('#list li.empty #emptyReset').isVisible(), 'design v3.1 (T-081): a search without a hit shows the empty state with a Reset filters button');
+    await pg.click('#emptyReset'); ok(await pg.inputValue('#q')==='' && await pg.locator('#list li[data-id]').count()>0, 'the button of the empty state does what Reset does');
     
     await pg.click('[data-tab=layers]'); 
     ok(await pg.locator('#lyList li[data-lid]').count()===1, 'sample layer listed');

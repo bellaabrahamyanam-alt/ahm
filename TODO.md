@@ -15,7 +15,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 
 **Needs you (owner)**
 - History and time: T-049, T-050, T-051, T-052
-- Sidebar design: T-078
+- Sidebar design: T-078, T-084
 - Place and line types, interfaces: T-026, T-002
 - Campaigns: T-003, T-001
 - Project and CI: T-054, T-004
@@ -27,7 +27,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
 - 6. Campaigns: T-013
-- 8. Sidebar design v3, second version: T-079, T-080, T-081, T-082, T-083
+- 8. Sidebar design v3, second version: T-083
 - 7. Sidebar design v3: finished (T-070 to T-077, see Done); the period slider with a histogram is T-078 under "Needs you"
 
 **Done**: the last 15 below.
@@ -58,6 +58,9 @@ Decisions for the time and history block (T-040 to T-047).
 
 ### Sidebar design
 
+- [ ] T-084 Decide: what in the updated design is a new feature, not a look
+  Not in the app today: (a) confirmation boxes in place of the browser `confirm()` (s68, s69), (b) "Other places (OpenStreetMap)" under the list (s61, s62, s63 map point menu), (c) Period / Moment footer with a two-handle slider and histogram (this is T-078), (d) language filter as several pills with counts (s2), (e) notes paging "1-5 of 8" (s45), (f) loading and load-error states of the list (s60), (g) rail and icon-only tooltips (s50 to s52). Say which to build (one new item each); the rest stays out.
+  Done when: you write `Approved: <date>` and the letters.
 - [ ] T-078 Decide: period slider with a histogram at the bottom of the panel (design s1, s2, s3, s45)
   The design draws, under the list, a bar "Period Any" with a play button and a slider with two handles over a histogram of the places by period. The app has the period fields in Filters and the one-moment Time bar (T-040). 1. add the two-handle slider with the histogram and make it drive the same period filter as the Filters fields (the Time bar stays); 2. only the histogram, shown inside Filters; 3. not now. Recommendation: 1 (it is the main look of the design; the filter state already exists).
   Done when: you write `Approved: <date> 1`, `2` or `3`.
@@ -212,18 +215,6 @@ Audit follow-ups, test gaps and agent texts.
 
 The owner sent an updated design. Same rules as group 7: **look only** where it can be, one slice = one commit on the branch of the open pull request (the owner asked for one branch and one pull request); what is a new feature is its own item under "Needs you".
 
-- [ ] T-079 Language, type and certainty as pills (s7, s20, s28, s46, s64 to s66)
-  Done when: the language of a name or a note, the type of a place and its certainty are pills (first five, the chosen one always shown, "+N" opens a list with code and name); the select stays in the page and stays the source of the value; browser tests unchanged and green.
-  Contract: no.
-- [ ] T-080 Switches and map style cards in More (s37, s38, s90, s91)
-  Done when: the on/off checkboxes of the map toggles and relief panel look like switches (still the same checkbox), the base map choice shows cards (Terrain / Plain / Relief) over the same select.
-  Contract: no.
-- [ ] T-081 Empty, loading and error states, confirmation boxes (s60 to s62, s68, s69)
-  Done when: an empty list, a failed load, the other-places list and the delete / discard boxes look like the design; their texts and buttons are unchanged.
-  Contract: no.
-- [ ] T-082 Closed panel with one opener (s50 to s52, s97 to s100)
-  Done when: with the panel closed the map shows one opener (logo tile and chevron) top left; it opens the panel as the edge button does now.
-  Contract: no.
 - [ ] T-083 Cards of Borders, Routes, Layers (s73 to s88)
   Done when: the cards of a border, a route and a layer, their forms and their drawing hints look like the design; no new field.
   Contract: no.
@@ -243,6 +234,10 @@ The owner's design "AHM sidebar v3" (reference: `docs/design/sidebar-v3/`, scree
 
 ## Done
 
+- [x] T-082 Design v3.1: closed panel with one opener (2026-11-20, same branch and pull request, `feat/design-v3-explore`; owner sent an updated design). Desktop only; the phone sheet is unchanged.
+- [x] T-081 Design v3.1: empty list state (2026-11-20, same branch and pull request). The confirmation boxes and the loading and error states are not done (the app uses `confirm()`; no loading list), see "Needs you" T-084.
+- [x] T-080 Design v3.1: switches and base map cards in More (2026-11-20, same branch and pull request). Cards seen only with options put in by hand.
+- [x] T-079 Design v3.1: language, type and certainty pills (2026-11-20, same branch and pull request). The select stays the source of the value.
 - [x] T-077 Design v3, slice 8: time bar (2026-11-20, same branch and pull request, `feat/design-v3-explore`). Card, round play button, round slider handle, Show undated as a switch. The period slider with a histogram of s1 is a new feature: T-078.
 - [x] T-076 Design v3, slice 7: Routes, Borders, Rivers, Layers (2026-11-20, same branch and pull request). Serif rows, labels, cards, wide buttons.
 - [x] T-075 Design v3, slice 6: More tab (2026-11-20, same branch and pull request). Folds as cards with an icon and a chevron, serif table rows.

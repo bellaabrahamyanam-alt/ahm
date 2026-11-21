@@ -35,11 +35,14 @@ document.querySelector(".tabs").addEventListener("click", (e) => {
   const b = e.target.closest("[data-tab]"); // the icon and the label are inside the button
   if (b) tab(b.dataset.tab);
 });
+// with the panel closed the handle is one opener top left, the logo tile and a chevron (design v3.1, T-082); the CSS shows it
+const SIDE_OPENER =
+  '<span class="opn"><span class="logo"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M2.5 19L9 8l4 6.5 2.8-4L21.5 19z"/></svg></span><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>';
 // the handle on the right edge of the sidebar: one button, the icon and the label say what it does now
 function sideHandle(h) {
   const b = $("#collapse"),
     t = h ? "Expand sidebar" : "Collapse sidebar";
-  b.innerHTML = AHM.icons.svg(h ? "panel-right" : "panel-left", 14);
+  b.innerHTML = AHM.icons.svg(h ? "panel-right" : "panel-left", 14) + SIDE_OPENER;
   b.title = t;
   b.setAttribute("aria-label", t);
 }
