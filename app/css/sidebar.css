@@ -1468,3 +1468,79 @@ button.sq.on:hover {
   background: var(--a);
   color: var(--bg2-bg-color);
 }
+
+/* ---- Filters block (design v3, T-072): card, small caps labels, pill chips, select with a chevron ---- */
+.filters {
+  padding: 12px 14px 14px;
+  margin: 0 0 10px;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+.filters .label {
+  margin: 12px 0 6px;
+  padding-bottom: 4px;
+  font: 600 10.5px var(--ui);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line);
+}
+.filters .label:first-of-type {
+  margin-top: 0;
+}
+.filters .chips,
+#activeBar {
+  gap: 6px;
+}
+.filters .chip,
+#activeBar .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  font: 500 12px var(--ui);
+  color: var(--content-color);
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+}
+.filters .chip:hover {
+  background: var(--row-hover-bg);
+}
+.filters .chip span {
+  margin: 0;
+  color: var(--ink-muted);
+}
+.filters .chip.on,
+.filters .chip.on:hover {
+  color: #fff;
+  background: var(--a);
+  border-color: var(--a);
+}
+.filters .chip.on span {
+  color: rgba(255, 255, 255, 0.8);
+}
+/* the active-filter chips under the search row: light blue with a cross */
+#activeBar {
+  margin: 0 0 8px;
+}
+#activeBar:empty,
+#activeBar:not(:has(.chip)) {
+  display: none;
+}
+#activeBar .chip.on,
+#activeBar .chip.on:hover {
+  color: var(--a);
+  background: #e4ecf6;
+  border-color: #c9d8ea;
+}
+.filters select {
+  height: 40px;
+  padding: 0 32px 0 12px;
+  color: var(--content-color);
+  background: var(--bg1-bg-color) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center / 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  appearance: none;
+}

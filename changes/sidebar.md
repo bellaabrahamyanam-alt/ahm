@@ -168,3 +168,11 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Files:** `app/index.html`, `app/css/sidebar.css`, `app/js/sidebar/places.js`, `app/dist/`, `tests/js/browser.test.js`
 - **How to verify:** `node tests/js/run.js` (scenario "browser: tabs ..." has 3 new checks). By hand: open Explore, press the filter button, pick a type: the badge shows 1.
 - **Follow-ups:** T-072 restyles the inside of the Filters block. The Reset button stays (the design has none); drop it only if the owner decides.
+
+## 2026-11-20 — T-072: design v3, slice 3 (Filters block)
+
+- **What:** the Filters block is a card with small caps labels, pill chips (a chosen chip is filled blue, counts in a muted tone), a select with a chevron, and light blue active-filter chips under the search row (the row is hidden when empty). The period fields keep their existing selects (only restyled).
+- **Why:** the owner's design v3, screen s2 (TODO.md group 7).
+- **Files:** `app/css/sidebar.css`, `app/dist/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (2 new checks in "browser: tabs ..."). By hand: open Filters, choose a type: filled chip, badge 1 on the filter button.
+- **Follow-ups:** the segmented period fields of s2 (Unknown / Exact, number, CE / BCE) share the date field with the forms: they come with T-074. The chip style is scoped to Filters and the active chips; T-076 unifies the other chips.

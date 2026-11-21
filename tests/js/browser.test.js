@@ -186,6 +186,8 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
     ok(await pg.locator('details.filters').isHidden() && await pg.locator('#list li[data-id] .tmark').count()>0 && await pg.locator('#list li[data-id] .rt b').count()>0, 'design v3 (T-071): the Filters block is closed at first; every row has a marker tile and a name');
     await pg.click('#fbtn'); ok(await pg.locator('details.filters').isVisible() && await pg.locator('#fbtn').getAttribute('aria-expanded')==='true', 'the filter button of the search row opens the Filters block');
     await pg.click('#fbtn'); ok(await pg.locator('details.filters').isHidden(), 'and closes it again');
+    await pg.click('#fbtn'); await pg.click('#typeChips .chip >> nth=0'); ok(await pg.locator('#fbadge').innerText()==='1' && await pg.locator('#typeChips .chip.on').count()===1, 'design v3 (T-072): a chosen type is a filled chip and the badge of the filter button shows 1');
+    await pg.click('#typeChips .chip.on'); ok(await pg.locator('#fbadge').isHidden() && await pg.locator('#typeChips .chip.on').count()===0, 'choosing it again clears it and hides the badge'); await pg.click('#fbtn');
     await pg.evaluate(()=>tab('route')); ok(await pg.locator('#more-route').evaluate(e=>e.open) && !(await pg.locator('#more-maps').evaluate(e=>e.open)) && await pg.locator('#tab-more').isVisible(), 'tab(route) opens the Directions fold in More');
     await pg.evaluate(()=>tab('explore'));
     // selected types are shown inside Filters only: no chips under the Filters block
