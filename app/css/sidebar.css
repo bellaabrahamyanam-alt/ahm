@@ -1544,3 +1544,110 @@ button.sq.on:hover {
   border-radius: var(--r-ctl);
   appearance: none;
 }
+
+/* ---- Place details in the dock (design v3, T-073): serif title, names line, flat notes with a bullet ---- */
+#dock {
+  background: var(--bg2-bg-color);
+  border-top: 1px solid var(--line);
+}
+.dock-head {
+  gap: 10px;
+  padding: 10px 10px 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.dock-head .tmark {
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+  background: var(--base-bg);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+.dock-title {
+  font: 600 18px/1.2 var(--serif);
+  color: var(--content-color);
+}
+.dock-head .icon-btn {
+  color: var(--a);
+  border-radius: var(--r-ctl);
+}
+.dock-body {
+  padding: 12px 16px 14px;
+}
+#detail .names {
+  margin: 0 0 4px;
+  font: 15px/1.5 var(--serif);
+  color: var(--content-color);
+}
+#detail .names .sn {
+  font: 600 10px var(--ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+#detail .label {
+  margin: 14px 0 6px;
+  padding-bottom: 4px;
+  font: 600 10.5px var(--ui);
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line);
+}
+#detail select {
+  height: 40px;
+  padding: 0 32px 0 12px;
+  color: var(--content-color);
+  background: var(--bg1-bg-color) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center / 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  appearance: none;
+}
+#detail .note {
+  position: relative;
+  margin: 0;
+  padding: 12px 0 12px 22px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+}
+#detail .note:last-child {
+  border-bottom: 0;
+}
+#detail .note::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 17px;
+  width: 9px;
+  height: 9px;
+  border: 1.6px solid var(--a);
+  border-radius: 50%;
+}
+#detail .note-meta b {
+  font: 600 14px var(--ui);
+  color: var(--content-color);
+}
+#detail .note-meta .sn {
+  font: 12px var(--ui);
+  color: var(--ink-muted);
+}
+#detail .note-body p {
+  font: 14px/1.5 var(--ui);
+  color: var(--content-color);
+}
+#detail .note-more,
+#detail .note-all {
+  color: var(--a);
+  font: 600 13px var(--ui);
+}
+.dock-foot {
+  padding: 10px 16px;
+  background: var(--bg2-bg-color);
+  border-top: 1px solid var(--line);
+}
+.dock-foot button.primary {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--r-ctl);
+}

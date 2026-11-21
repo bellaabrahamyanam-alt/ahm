@@ -26,7 +26,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
 - 6. Campaigns: T-013
-- 7. Sidebar design v3 (owner's design, one slice = one pull request, in this order): T-073, T-074, T-075, T-076, T-077
+- 7. Sidebar design v3 (owner's design, one slice = one pull request, in this order): T-074, T-075, T-076, T-077
 
 **Done**: the last 15 below.
 
@@ -212,9 +212,6 @@ Waits for T-003 and T-001.
 
 The owner's design "AHM sidebar v3" (reference: `docs/design/sidebar-v3/`, screens listed in its `README.md`) applied to the existing sidebar. **Look only**: no new feature, no changed behaviour, no change of ids, `data-*` attributes or `AHM.*` calls; where the design shows something the app does not have (for example the "Show undated places" switch) it is left out and, if wanted, becomes its own item. The palette already is the design's palette (`app/css/base.css`). Each slice is checked with a screenshot of the old and the new screen (400 px wide panel) and keeps `node tests/js/run.js` green. Order matters: later slices reuse the classes of earlier ones.
 
-- [ ] T-073 Design v3, slice 4: place details inside the list (names, layers, notes with language chip, show more)
-  Done when: the open place looks like s3 and s45 of the design; opening, folding and the double click work as before.
-  Contract: no.
 - [ ] T-074 Design v3, slice 5: forms (edit place, note, name rows, date field, pills, sticky Save and Cancel)
   Done when: the place form and the note form look like s7, s28, s46, s47 and s48, and the period fields of the Filters block (s2) use the same segmented date field; saving, cancelling and validation work as before.
   Contract: no.
@@ -230,6 +227,7 @@ The owner's design "AHM sidebar v3" (reference: `docs/design/sidebar-v3/`, scree
 
 ## Done
 
+- [x] T-073 Design v3, slice 4: place details (2026-11-20, same branch and pull request, `feat/design-v3-explore`). Look only: the dock under the list is kept; details inside the list (s3) is a decision for the owner.
 - [x] T-072 Design v3, slice 3: filters (2026-11-20, same branch and pull request as T-071, `feat/design-v3-explore`; owner, in the chat: "keep committing in the same PR"). Card, labels, pill chips, select with a chevron, active chips. The segmented period fields move to T-074 (shared date field).
 - [x] T-071 Design v3, slice 2: Explore list (2026-11-20, branch `feat/design-v3-explore`; owner, in the chat: "continue"). Search row with filter button and badge, count row with sort and fit icon, rows with marker tile, serif name, dates, number of notes. Seen in headless Chromium only.
 - [x] T-070 Design v3, slice 1: shell (2026-11-20, branch `feat/design-v3-shell`; owner, in the chat: "Apply design from zip on existing project, step by step, push each slice"). Brand block, icon tabs, tokens; the tab click handler uses `closest`. Seen in headless Chromium only.

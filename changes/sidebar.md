@@ -176,3 +176,11 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Files:** `app/css/sidebar.css`, `app/dist/`, `tests/js/browser.test.js`
 - **How to verify:** `node tests/js/run.js` (2 new checks in "browser: tabs ..."). By hand: open Filters, choose a type: filled chip, badge 1 on the filter button.
 - **Follow-ups:** the segmented period fields of s2 (Unknown / Exact, number, CE / BCE) share the date field with the forms: they come with T-074. The chip style is scoped to Filters and the active chips; T-076 unifies the other chips.
+
+## 2026-11-20 — T-073: design v3, slice 4 (place details)
+
+- **What:** the details of the open place (the dock under the list) look like s3 and s45: a marker tile and the name in a serif face in the head, the names line in a serif face with small caps language tags, small caps section labels, a select with a chevron, flat notes with a bullet and a rule between them, link-style "Show more", a rounded "Add note" button. The markup, the dock (under the list, resizable) and all actions are unchanged.
+- **Why:** the owner's design v3 (TODO.md group 7).
+- **Files:** `app/css/sidebar.css`, `app/dist/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (1 new check in "browser: tabs ..."). By hand: open a place with notes.
+- **Follow-ups:** the design opens the details inside the list under the row (s3); the app keeps the dock (AGENTS.md describes details inside the list, the code has a dock). Moving them is a behaviour change: a decision for the owner, not part of this slice.

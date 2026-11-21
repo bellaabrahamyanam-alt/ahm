@@ -201,6 +201,7 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
     ok(await pg.locator('#dock #detail').count()===1 && await pg.locator('#detail').isVisible() && await pg.locator('#detail .dock-btns').isVisible(), 'place opens in the details dock with its buttons');
     ok(await pg.locator('#list li[data-id]').count()===rows, 'the other places stay in the list');
     ok(await pg.locator('#list li.on').count()===1, 'the open place is marked in its row');
+    ok(await pg.locator('#detail .dock-head .tmark').count()===1 && await pg.locator('#detail .note').count()>0 && await pg.locator('#detail .note').first().evaluate(n=>getComputedStyle(n,'::before').content==='""'), 'design v3 (T-073): the open place has a marker tile in its head, and every note has a bullet');
     ok(await pg.locator('[data-act=back]').count()===0, 'no Back button');
     await pg.click('#list li.on'); ok(await pg.locator('#detail').isHidden(), 'a second click folds the details');
     await pg.click('#list li[data-id] >> nth=0'); await pg.fill('#q','tu'); ok(await pg.locator('#detail').isHidden(), 'typing in search closes the details');
