@@ -2331,3 +2331,104 @@ button {
     transform: translateX(2px);
   }
 }
+
+/* ---- Period footer (design v3.1, T-078) ---- */
+#pfoot {
+  flex: none;
+  padding: 10px 16px 12px;
+  background: var(--bg2-bg-color);
+  border-top: 1px solid var(--line);
+}
+#pfoot[hidden],
+#pfoot.empty .pf-bar,
+#pfoot.empty .pf-axis {
+  display: none;
+}
+.pf-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pf-top .seg {
+  flex: none;
+  width: 164px;
+}
+.pf-top #pfLabel {
+  flex: 1;
+  text-align: right;
+  font: 600 14px var(--ui);
+  color: var(--content-color);
+}
+.pf-bar {
+  position: relative;
+  height: 56px;
+  margin-top: 8px;
+}
+#pfHist {
+  position: absolute;
+  inset: 0 6px 10px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+#pfHist i {
+  flex: 1;
+  background: #b9c6d6;
+  border-radius: 2px 2px 0 0;
+}
+#pfHist i.in {
+  background: #7b9ac0;
+}
+.pf-bar input[type="range"] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  appearance: none;
+  pointer-events: none;
+}
+.pf-bar input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px;
+  background: var(--a);
+  border-radius: 2px;
+}
+.pf-bar input[type="range"]::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  margin-top: -7.5px;
+  background: var(--base-bg);
+  border: 3px solid var(--a);
+  border-radius: 50%;
+  appearance: none;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.pf-bar input[type="range"]::-moz-range-track {
+  height: 3px;
+  background: var(--a);
+}
+.pf-bar input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--base-bg);
+  border: 3px solid var(--a);
+  border-radius: 50%;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.pf-bar input[type="range"] + input[type="range"]::-webkit-slider-runnable-track {
+  background: transparent;
+}
+.pf-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+  font: 11px var(--ui);
+  color: var(--ink-muted);
+}

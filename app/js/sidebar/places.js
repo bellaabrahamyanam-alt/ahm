@@ -118,6 +118,7 @@ function update() {
     ? r.map(({ p, hits }) => placeRowHTML(p, hits, l, q)).join("")
     : '<li class="empty"><span class="ei"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span><b>No places match.</b><span class="sn">Try fewer filters.</span><button type="button" id="emptyReset">Reset filters</button></li>';
   placeDetail();
+  if (typeof pfSync === "function") pfSync(); // the period footer follows the filter (T-078)
   const fc = {
     type: "FeatureCollection",
     features: r.map(({ p }) => ({

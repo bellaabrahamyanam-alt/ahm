@@ -197,6 +197,12 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
     ok(await pg.locator('#view-terrain').evaluate(e=>getComputedStyle(e).width==='38px') && await pg.locator('#basemap + .pills.cards').count()===1, 'design v3.1 (T-080): the on/off checkboxes of More look like switches and the base map select is shown as cards');
     await pg.click('#collapse'); ok(await pg.evaluate(()=>document.body.classList.contains('collapsed')) && (await pg.evaluate(()=>innerWidth<=700) || await pg.locator('#collapse .opn').isVisible()), 'design v3.1 (T-082): with the panel closed the handle is the opener (logo and chevron)');
     await pg.click('#collapse'); ok(!(await pg.evaluate(()=>document.body.classList.contains('collapsed'))), 'and it opens the panel again');
+    const pfN0=await pg.locator('#list li[data-id]').count();
+    ok(await pg.locator('#pfHist i').count()>0 && (await pg.locator('#pfLabel').innerText())==='Any', 'design v3.1 (T-078): the period footer shows a histogram and Any');
+    await pg.evaluate(()=>{const e=document.querySelector('#pfLo');e.value=600;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));});
+    ok(await pg.locator('#list li[data-id]').count()<pfN0 && (await pg.locator('#pfLabel').innerText())!=='Any' && await pg.locator('#pfClear').isVisible(), 'moving the start handle sets the period filter: fewer places, the period in the label');
+    ok(await pg.locator('#fFrom .df-mode').inputValue()==='exact', 'the handle sets the same From field as the Filters block');
+    await pg.click('#pfClear'); ok(await pg.locator('#list li[data-id]').count()===pfN0 && (await pg.locator('#pfLabel').innerText())==='Any', 'Clear brings every place back');
     await pg.locator('[data-tab=layers] svg').click(); ok(await pg.locator('.tabs button.on').innerText()==='Layers', 'a click on the icon of a tab opens that tab');
     await pg.locator('[data-tab=explore] span').click(); ok(await pg.locator('.tabs button.on').innerText()==='Explore', 'a click on the label of a tab opens that tab');
     ok(await pg.locator('details.filters').isHidden() && await pg.locator('#list li[data-id] .tmark').count()>0 && await pg.locator('#list li[data-id] .rt b').count()>0, 'design v3 (T-071): the Filters block is closed at first; every row has a marker tile and a name');
