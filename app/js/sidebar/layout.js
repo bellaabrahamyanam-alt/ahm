@@ -37,7 +37,9 @@ function tab(n) {
 }
 document.querySelector(".tabs").addEventListener("click", (e) => {
   const b = e.target.closest("[data-tab]"); // the click may land on the icon inside the button
-  if (b) tab(b.dataset.tab);
+  if (!b) return;
+  if (document.body.classList.contains("collapsed") && !mobile()) toggleSide(false); // on the closed rail a click opens the panel on that tab
+  tab(b.dataset.tab);
 });
 // the handle on the right edge of the sidebar: one button, the icon and the label say what it does now
 function sideHandle(h) {
@@ -53,6 +55,11 @@ const toggleSide = (h) => {
   setTimeout(() => AHM.emit("sidebar:resized"), 250);
 };
 $("#collapse").onclick = () => toggleSide(!document.body.classList.contains("collapsed"));
+// the logo tile is a second toggle (on the closed rail it is the only thing besides the tab icons)
+$(".hd .logo").onclick = () => $("#collapse").click();
+$(".hd .logo").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") $("#collapse").click();
+});
 sideHandle(false);
 // ---- the details dock: a pane under the lists; the place details (#detail) and the layer details (#lyDetail) live in it ----
 $(".stack").append($("#dock"));

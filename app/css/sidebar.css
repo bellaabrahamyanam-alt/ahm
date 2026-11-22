@@ -2080,3 +2080,66 @@ button:not(.btn):not(.tab):not(.chip) {
 #rtFinder > :last-child {
   margin-bottom: 14px;
 }
+
+/* ---- closed sidebar on a desktop: a 60px rail, the logo tile and the six tab icons (T-070) ---- */
+.hd .logo {
+  cursor: pointer;
+}
+@media (min-width: 701px) {
+  body.collapsed aside {
+    transform: none;
+    width: 60px;
+    overflow: visible;
+  }
+  body.collapsed aside .stack,
+  body.collapsed aside #pfoot,
+  body.collapsed aside #pick,
+  body.collapsed aside .hd > div:last-child {
+    display: none;
+  }
+  body.collapsed .hd {
+    justify-content: center;
+    padding: 14px 0 10px;
+    border-bottom: 1px solid var(--at-line);
+  }
+  body.collapsed .tabs {
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 8px;
+    border: 0;
+  }
+  body.collapsed .tabs .tab {
+    flex: none;
+    height: 40px;
+    padding: 0;
+    font-size: 0;
+    border-radius: var(--at-ctl);
+  }
+  body.collapsed .tabs .tab:hover {
+    background: var(--at-sunk);
+  }
+  body.collapsed .tabs .tab.on {
+    background: var(--at-sunk);
+  }
+  body.collapsed .tabs .tab.on::after {
+    display: none;
+  }
+  /* the handle becomes the small chevron on the logo tile */
+  body.collapsed #collapse {
+    top: 34px;
+    right: auto;
+    left: 38px;
+    width: 18px;
+    height: 18px;
+    min-height: 0;
+    padding: 0;
+    transform: none;
+    border: 1px solid var(--at-line);
+    border-radius: 50%;
+  }
+  /* the map controls sit right of the rail */
+  body.collapsed .maplibregl-ctrl-top-left,
+  body.collapsed .maplibregl-ctrl-bottom-left {
+    margin-left: 60px;
+  }
+}

@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 9: closed rail (T-070)
+
+- **What:** on a desktop the closed sidebar is a 60px rail with the logo tile and the six tab icons (titles as tooltips) instead of sliding away. A click on a tab icon opens the panel on that tab; the logo tile (role=button, Enter/Space) and the chevron both toggle the panel; map controls move 60px right. Phones keep the bottom sheet.
+- **Why:** prototype screens s50 to s52.
+- **Files:** `app/index.html`, `app/css/sidebar.css`, `app/js/sidebar/layout.js`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: click the logo, then a tab icon, then the chevron.
+- **Follow-ups:** the hover popover and the "Time" dot (s51); the rail rule for map controls is written in `sidebar.css`, the map domain may want it in `map.css`.
+
 ## 2026-11-22 — Prototype look, slice 8: Period | Moment footer (T-070)
 
 - **What:** a footer at the bottom of the panel. Segmented switch Period | Moment, a label ("Any", "200 BCE – 300"), a reset ✕ and a two-handle year slider (1200 BCE to 1500 CE, step 10) that fills the same From and To date fields of the Explore filters, so the list, chips and map follow as before. Moment mode shows the existing time bar (play, slider, speed, undated, Off) in the same slot. The floating "Time" button and bar over the map are gone; their ids are unchanged. New in `period.js`: `periodSync`, `pfSlide`, `periodLabel`; `tbOpen` does nothing when the moment is already on; `tbRender` also toggles the switch.
