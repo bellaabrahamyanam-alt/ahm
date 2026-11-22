@@ -197,3 +197,10 @@ dockGrip.addEventListener("keydown", (e) => {
   e.preventDefault();
   setDock(dockEl.offsetHeight + d, true);
 });
+
+// The long first paragraph of Borders, Routes, Layers and Rivers is a two-line note; a click reads it all (prototype s73, s80, s85).
+document.querySelectorAll("#shIntro, #tab-routes > p.sn, #lyListView > p.sn").forEach((p) => {
+  p.classList.add("intro");
+  p.title = "Click to read all";
+  p.addEventListener("click", () => p.classList.toggle("open"));
+});

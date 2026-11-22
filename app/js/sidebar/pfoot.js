@@ -73,8 +73,8 @@ AHM.on('state:time', () => {
   $('#pfPeriod').setAttribute('aria-pressed', String(!on));
   $('#pfMoment').setAttribute('aria-pressed', String(on));
 });
-// the footer belongs to the lists of places, borders and routes
-const pfShow = () => ($('#pfoot').hidden = !['explore', 'shapes', 'routes'].includes(document.querySelector('.tabs .on')?.dataset.tab));
+// the footer belongs to the list of places
+const pfShow = () => ($('#pfoot').hidden = !['explore'].includes(document.querySelector('.tabs .on')?.dataset.tab));
 document.querySelector('.tabs').addEventListener('click', () => setTimeout(pfShow));
 pfShow();
 pfSync();

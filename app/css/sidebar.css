@@ -2527,3 +2527,182 @@ button {
   opacity: 0.45;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18M10.6 5.1A10 10 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4.1M6.3 6.3A17 17 0 002 12s3.6 7 10 7a10 10 0 004.2-.9M9.9 9.9a3 3 0 004.2 4.2'/%3E%3C/svg%3E");
 }
+
+/* ---- Fixes after the audit against the prototype ---- */
+/* the one-paragraph note at the top of Borders, Routes, Layers, Rivers */
+.intro {
+  position: relative;
+  margin: 8px 0 12px;
+  padding: 0 12px 0 34px;
+  border-top: 9px solid transparent; /* a border, not padding: the clipped third line must not show in the padding */
+  border-bottom: 9px solid transparent;
+  font: 13px/1.45 var(--ui);
+  color: var(--html-body-color);
+  background: var(--bg1-bg-color);
+  border-radius: var(--r-ctl);
+  cursor: pointer;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.intro.open {
+  -webkit-line-clamp: unset;
+}
+.intro::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v5M12 8v.01'/%3E%3C/svg%3E") center / 16px no-repeat;
+}
+/* no caption over a search field; the field has a magnifier */
+#tab-shapes .label:has(+ .field),
+#tab-routes .label:has(+ .field),
+#tab-layers .label:has(+ .field) {
+  display: none;
+}
+.field input[type="search"] {
+  padding-left: 36px;
+  background: var(--bg1-bg-color) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E") no-repeat 12px center / 16px;
+}
+/* border and route rows: tile, name, dates, eye */
+#shList li,
+#rtList li {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  column-gap: 12px;
+  align-items: center;
+}
+#shList li > .t,
+#rtList li > .t {
+  display: contents;
+}
+#shList li .tmark,
+#rtList li .tmark {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+#shList li .t > b,
+#rtList li .t > b {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+}
+#shList li > .sn,
+#rtList li > .sn {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+}
+.sh-eye {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+}
+.sh-eye input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  background: center / 20px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+  border: 0;
+  appearance: none;
+  cursor: pointer;
+}
+.sh-eye input[type="checkbox"]:not(:checked) {
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18M10.6 5.1A10 10 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4.1M6.3 6.3A17 17 0 002 12s3.6 7 10 7a10 10 0 004.2-.9M9.9 9.9a3 3 0 004.2 4.2'/%3E%3C/svg%3E");
+}
+/* layers: a card per layer, Only and Hide as icons */
+#lyList li {
+  margin: 0 0 10px;
+  padding: 12px 14px;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--a);
+  border-radius: var(--r-ctl);
+}
+#lyList li .t {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ly-btns {
+  display: flex;
+  padding: 2px;
+  background: #e9e9e9;
+  border-radius: var(--r-ctl);
+}
+.ly-btns button {
+  width: 34px;
+  height: 28px;
+  padding: 0;
+  font-size: 0;
+  background: center / 18px no-repeat transparent;
+  border-radius: 6px;
+}
+.ly-btns button[data-lyact="only"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='2.5'/%3E%3C/svg%3E");
+}
+.ly-btns button[data-lyact="hide"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18M10.6 5.1A10 10 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4.1M6.3 6.3A17 17 0 002 12s3.6 7 10 7a10 10 0 004.2-.9M9.9 9.9a3 3 0 004.2 4.2'/%3E%3C/svg%3E");
+}
+.ly-btns button.on {
+  background-color: var(--bg2-bg-color);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+#lyList li .sn {
+  margin-top: 4px;
+}
+/* Add buttons stay at the bottom of the panel while the list scrolls */
+#shAdd,
+#rtAdd,
+#ly-add {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding: 10px 0 12px;
+  background: var(--base-bg);
+}
+/* phone: the footer is only the Period | Moment row and the label */
+@media (max-width: 700px) {
+  #pfoot {
+    padding: 8px 12px;
+  }
+  #pfoot .pf-bar,
+  #pfoot .pf-axis {
+    display: none;
+  }
+}
+#shList li > div.t,
+#rtList li > div.t {
+  display: contents;
+}
+#shList li.empty,
+#rtList li.empty,
+#rvSelList li.empty,
+#lyList li.empty {
+  display: block;
+  padding: 12px;
+  font: 13px var(--ui);
+  color: var(--ink-muted);
+  background: none;
+  border: 0;
+}
+.intro:not(.open) {
+  max-height: calc(2 * 1.45em + 18px);
+}
+.intro.open {
+  max-height: none;
+}
