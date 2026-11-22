@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 17: Add border replaces the list (T-070)
+
+- **What:** while the "Add a border" panel is open the border list and the other cards of the Borders tab are hidden and Close is a bar at the bottom of the panel. CSS only (`:has()`), applied only when the panel has a Close button, so the Rivers tab keeps its list.
+- **Why:** prototype screen s75.
+- **Files:** `app/css/sidebar.css`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; Borders, "+ Add border", Close.
+- **Follow-ups:** the "Found" list with + buttons and the "Or draw it" icon pair of s79.
+
 ## 2026-11-22 — Prototype look, slice 16: histogram behind the period slider (T-070)
 
 - **What:** 15 bars behind the footer slider show how many dated places existed in each 180-year stretch of 1200 BCE to 1500 CE (`pfHist` in `period.js`, redrawn only when the data changes; undated places and mountains are not counted). The reset ✕ is always shown and dimmed until a period is set.

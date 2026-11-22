@@ -2628,3 +2628,22 @@ button.pf-add {
 #pfReset:hover:not(:disabled) {
   background: var(--at-sunk);
 }
+
+/* adding a border or finding a river replaces the list; Close is the bottom bar (prototype s75, s79) */
+#tab-shapes:has(#shAdd [data-shadd="closeadd"]) > :not(#shAdd) {
+  display: none;
+}
+#shAdd:has([data-shadd="closeadd"]) {
+  display: flex;
+  flex-direction: column;
+}
+#shAdd button[data-shadd="closeadd"] {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  width: calc(100% + 32px);
+  height: 44px;
+  margin: 16px -16px 0;
+  border-radius: 0;
+  box-shadow: 0 -10px 0 var(--base-bg);
+}
