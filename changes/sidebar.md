@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 14: lists and phone header (T-070)
+
+- **What:** bottom padding under the Borders, Routes and Layers lists so the sticky "Add" footer no longer covers the last row; a compact header (no subtitle, smaller logo) in the phone sheet.
+- **Why:** a bug found in slice 5 and prototype screen s99.
+- **Files:** `app/css/sidebar.css`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; Borders list scrolled to the end; a 390px wide window.
+- **Not mine:** the "Campaigns (development)" badge is the scaffold of `app/features/campaigns`; it overlaps the footer on a small screen.
+
 ## 2026-11-22 — Prototype look, slice 13: Find rivers and Add border panels (T-070)
 
 - **What:** the search row of the Find rivers and Add border panels (input and a blue Find / Search button), full-width quiet buttons for draw, import and Close. CSS only.

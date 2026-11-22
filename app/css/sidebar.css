@@ -2365,3 +2365,27 @@ details.filters > #reset {
 #shAdd > .row {
   margin: 4px 0;
 }
+
+/* room under the lists for the sticky "Add" footer, so the last row can scroll clear of it */
+#shList,
+#rtList,
+#lyList {
+  padding-bottom: 64px;
+}
+
+/* phone: a compact header in the bottom sheet (T-070) */
+@media (max-width: 700px) {
+  .hd {
+    padding: 10px 16px 6px;
+  }
+  .hd p {
+    display: none;
+  }
+  .hd h1 {
+    font-size: 15px;
+  }
+  .hd .logo {
+    width: 28px;
+    height: 28px;
+  }
+}
