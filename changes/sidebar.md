@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 6: Layers (T-070)
+
+- **What:** each layer is a card with a colour edge, serif name, category line and a three-state switch (show / only / hide) built from `btn join-item` buttons with CSS-mask icons. `lyRowHTML` in `layers.js` emits the new markup; a click on the new `show` button turns off whichever of `only` / `hide` is on. Intro and Add footer fixed (`#ly-add`).
+- **Why:** Layers still showed the old Only/Hide text buttons.
+- **Files:** `app/js/sidebar/layers.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`; compare Layers with prototype screen s85.
+- **Follow-ups:** open layer card (s86), Rivers panel, Routes finder, Period footer, closed rail, phone sheet, forms.
+
 ## 2026-11-22 — Prototype look, slice 5 (T-070)
 
 - **What:** "Atlas look, part 3" in `app/css/sidebar.css`: intro paragraphs with an info icon, search fields with an icon on every tab (label for screen readers only), sticky blue "Add border/route/layer" footer, eye toggles for the visibility checkboxes, marker-tile rows in Borders and Routes, and More sections as accordion cards with an icon and a sub line (`<small>` added to the five `summary` elements in `app/index.html`).

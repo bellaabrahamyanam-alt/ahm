@@ -87,12 +87,14 @@ function lyRowHTML(ly, l) {
   const c = catById(ly.category),
     np = ly.members.filter((m) => m.place).length,
     ns = ly.members.length - np,
-    meta = [catName(c, l), lyWhen(ly), np + (np === 1 ? ' place' : ' places'), ns ? ns + (ns === 1 ? ' border' : ' borders') : ''].filter(Boolean);
+    meta = [lyWhen(ly), np + (np === 1 ? ' place' : ' places'), ns ? ns + (ns === 1 ? ' border' : ' borders') : ''].filter(Boolean),
+    only = lyState.only.has(ly.id),
+    hide = lyState.hide.has(ly.id),
+    seg = (act, on, title, cls) => `<button class="btn btn-sm join-item ${cls}${on ? ' on' : ''}" data-lyact="${act}" data-lid="${ly.id}" title="${title}" aria-pressed="${on}"></button>`;
   return (
-    `<li data-lid="${ly.id}"><div class="t"><b>${lySwatch(ly.color)}${esc(lyName(ly, l))}</b>` +
-    `<span class="ly-btns"><button class="${lyState.only.has(ly.id) ? 'on' : ''}" data-lyact="only" data-lid="${ly.id}" title="Show on the map only the places of this layer">Only</button>` +
-    `<button class="${lyState.hide.has(ly.id) ? 'on' : ''}" data-lyact="hide" data-lid="${ly.id}" title="Hide the places of this layer">Hide</button></span></div>` +
-    `<div class="sn">${esc(meta.join(' · '))}</div></li>`
+    `<li class="ly-card${hide ? ' is-hidden' : ''}" data-lid="${ly.id}"${ly.color ? ` style="--lc:${esc(ly.color)}"` : ''}><div class="ly-main"><b>${esc(lyName(ly, l))}</b>` +
+    `<span class="ly-cat">${esc(catName(c, l))}</span><span class="sn">${esc(meta.join(' \u00b7 '))}</span></div>` +
+    `<span class="ly-btns join">${seg('show', !only && !hide, 'Show with everything else', 'ly-show')}${seg('only', only, 'Show on the map only the places of this layer', 'ly-only')}${seg('hide', hide, 'Hide the places of this layer', 'ly-hide')}</span></li>`
   );
 }
 function lyRenderList() {
@@ -550,7 +552,10 @@ $('#lyList').addEventListener('click', (e) => {
   if (e.composedPath().includes($('#lyDetail'))) return;
   const b = e.target.closest('[data-lyact]'),
     li = e.target.closest('li[data-lid]');
-  if (b) lyToggleFilter(b.dataset.lyact, b.dataset.lid);
+  if (b && b.dataset.lyact === 'show') {
+    const k = ['only', 'hide'].find((x) => lyState[x].has(b.dataset.lid));
+    if (k) lyToggleFilter(k, b.dataset.lid);
+  } else if (b) lyToggleFilter(b.dataset.lyact, b.dataset.lid);
   else if (li && lyState.open === li.dataset.lid) {
     if (!lyState.editing) lyClose(); // a second click on the open layer folds it
   } else if (li) lyOpen(li.dataset.lid);
