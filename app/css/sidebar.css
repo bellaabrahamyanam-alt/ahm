@@ -3681,3 +3681,44 @@ body:has(#dock.inline:not([hidden])) #ly-add {
 #dock input[type="range"] {
   accent-color: var(--a);
 }
+
+/* ---- Types and Categories lists (prototype s19, s21): tile, name with its kind, count, pencil ---- */
+#more-types .langs li.tr {
+  grid-template-columns: 40px 1fr auto auto;
+  column-gap: 12px;
+  padding: 5px 0;
+  font: 15px var(--ui);
+}
+#more-types .langs li.tr .tc-code {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+#more-types .langs li.tr > span:nth-child(3) {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+#more-types .langs li.tr > span:nth-child(3) .sn {
+  font: 600 10px var(--ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+#more-types .langs li.tr > span.sn {
+  font: 13px var(--ui);
+  color: var(--ink-muted);
+}
+#more-cat .langs li.tr {
+  grid-template-columns: 1fr auto auto;
+  column-gap: 12px;
+  padding: 8px 0;
+  font: 15px var(--ui);
+}
+#more-cat .langs li.tr > b {
+  font: 500 15px var(--ui);
+}
