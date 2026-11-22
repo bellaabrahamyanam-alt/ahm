@@ -390,7 +390,7 @@ button.wide {
 /* ---- cards: one rule for every boxed block (panel bg2, 7px radius like .panel / .forabg) ---- */
 .filters,
 #pick,
-#detail .note,
+.dock-body .note,
 .ovpanel {
   background: var(--bg2-bg-color);
   border: 1px solid var(--li-row-border-bottom-color);
@@ -518,13 +518,13 @@ li.empty:hover {
 }
 
 /* ---- place details ---- */
-#detail .note {
+.dock-body .note {
   margin: 10px 0;
   padding: 8px 10px;
   background: var(--bg1-bg-color);
   border-color: var(--select-border-color);
 }
-#detail .note p {
+.dock-body .note p {
   margin: 4px 0;
 }
 .note .mini {
@@ -541,32 +541,32 @@ li.empty:hover {
 #detail .names {
   overflow-wrap: anywhere;
 }
-#detail .note-body {
+.dock-body .note-body {
   margin-top: 4px;
   line-height: 1.45;
   overflow-wrap: anywhere; /* a very long word or link never pushes the card wider than the sidebar */
   hyphens: auto; /* uses the note's lang attribute */
   text-wrap: pretty;
 }
-#detail .note-body p {
+.dock-body .note-body p {
   margin: 0 0 0.65em;
   line-height: 1.45;
 }
-#detail .note-body p:last-child {
+.dock-body .note-body p:last-child {
   margin-bottom: 0;
 }
-#detail .note-body.is-clamped {
+.dock-body .note-body.is-clamped {
   max-height: calc(1.45em * 6); /* NOTE_LINES in ui.js */
   overflow: hidden;
   -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.8em), transparent);
   mask-image: linear-gradient(to bottom, #000 calc(100% - 2.8em), transparent);
 }
-#detail .note-body.anim {
+.dock-body .note-body.anim {
   overflow: hidden;
   transition: max-height 0.28s ease;
 }
 /* "more…" / "less": a quiet text link under the note, no box */
-#detail .note-more {
+.dock-body .note-more {
   display: inline-block;
   min-height: 0;
   margin: 2px 0 0;
@@ -579,27 +579,27 @@ li.empty:hover {
   font-weight: 600;
   cursor: pointer;
 }
-#detail .note-more[hidden] {
+.dock-body .note-more[hidden] {
   display: none;
 }
-#detail .note-more:hover {
+.dock-body .note-more:hover {
   text-decoration: underline;
 }
-#detail .note-more:focus-visible,
-#detail .note-all:focus-visible {
+.dock-body .note-more:focus-visible,
+.dock-body .note-all:focus-visible {
   outline: 2px solid var(--base-href-color);
   outline-offset: 2px;
 }
-#detail .note-tools {
+.dock-body .note-tools {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin: 10px 0 -4px;
 }
-#detail .note-tools[hidden] {
+.dock-body .note-tools[hidden] {
   display: none;
 }
-#detail .note-all {
+.dock-body .note-all {
   min-height: 0;
   padding: 2px 8px;
   border: 0;
@@ -610,11 +610,11 @@ li.empty:hover {
   font-weight: 600;
   cursor: pointer;
 }
-#detail .note-all:hover {
+.dock-body .note-all:hover {
   text-decoration: underline;
 }
 @media (prefers-reduced-motion: reduce) {
-  #detail .note-body.anim {
+  .dock-body .note-body.anim {
     transition: none;
   }
 }
@@ -1602,7 +1602,7 @@ button.sq.on:hover {
   border-radius: var(--r-ctl);
   appearance: none;
 }
-#detail .note {
+.dock-body .note {
   position: relative;
   margin: 0;
   padding: 12px 0 12px 22px;
@@ -1611,10 +1611,10 @@ button.sq.on:hover {
   border-bottom: 1px solid var(--line);
   border-radius: 0;
 }
-#detail .note:last-child {
+.dock-body .note:last-child {
   border-bottom: 0;
 }
-#detail .note::before {
+.dock-body .note::before {
   content: "";
   position: absolute;
   left: 2px;
@@ -1624,20 +1624,20 @@ button.sq.on:hover {
   border: 1.6px solid var(--a);
   border-radius: 50%;
 }
-#detail .note-meta b {
+.dock-body .note-meta b {
   font: 600 14px var(--ui);
   color: var(--content-color);
 }
-#detail .note-meta .sn {
+.dock-body .note-meta .sn {
   font: 12px var(--ui);
   color: var(--ink-muted);
 }
-#detail .note-body p {
+.dock-body .note-body p {
   font: 14px/1.5 var(--ui);
   color: var(--content-color);
 }
-#detail .note-more,
-#detail .note-all {
+.dock-body .note-more,
+.dock-body .note-all {
   color: var(--a);
   font: 600 13px var(--ui);
 }
@@ -2818,37 +2818,37 @@ body:has(#dock.inline:not([hidden])) #ly-add {
 #detail .names .sn {
   margin: 0 8px 0 3px;
 }
-#detail .note-meta b {
+.dock-body .note-meta b {
   display: block;
   font: 600 16px/1.3 var(--serif);
 }
-#detail .note-sub {
+.dock-body .note-sub {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 3px;
 }
-#detail .lgc {
+.dock-body .lgc {
   padding: 1px 7px;
   font: 600 11px var(--ui);
   color: var(--html-body-color);
   background: #e9e9e9;
   border-radius: 6px;
 }
-#detail .when {
+.dock-body .when {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font: 12px var(--ui);
   color: var(--ink-muted);
 }
-#detail .when svg {
+.dock-body .when svg {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
   stroke-linecap: round;
 }
-#detail .note-more {
+.dock-body .note-more {
   padding: 4px 0;
   font: 600 13px var(--ui);
   color: var(--a);
@@ -3380,8 +3380,7 @@ body:has(#dock.inline:not([hidden])) #ly-add {
 #rvArea {
   margin-top: 4px;
 }
-#tab-shapes #shGeo,
-#tab-shapes button:last-child:not(.wide) {
+#tab-shapes #shGeo {
   height: 34px;
   padding: 0 16px;
   color: var(--a);
@@ -3557,4 +3556,74 @@ body:has(#dock.inline:not([hidden])) #ly-add {
 #activeBar {
   align-items: center;
   margin: 2px 0 6px;
+}
+
+/* ---- Border, route and layer cards: one toolbar row (the head buttons and the action icons side by side) ---- */
+#shDetail,
+#rtDetail {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+#shDetail > .dock-head,
+#rtDetail > .dock-head {
+  grid-column: 1;
+  grid-row: 1;
+  padding: 6px 0 0 14px;
+}
+#shDetail > .dock-foot:has([data-shact="fit"]),
+#rtDetail > .dock-foot:has([data-rtact="fit"]) {
+  grid-column: 2;
+  grid-row: 1;
+  padding: 6px 12px 0 0;
+}
+#shDetail > .dock-body,
+#rtDetail > .dock-body {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+#dock.inline .dock-head [data-shact="close"],
+#dock.inline .dock-head [data-rtact="close"],
+#dock.inline .dock-head [data-lyact="close"] {
+  display: none; /* the open row folds the card */
+}
+#shDetail .dock-body:not(:has(.pf)) > .sn:first-child,
+#rtDetail .dock-body:not(:has(.pf)) > .sn:first-child {
+  display: none; /* the row above says the same */
+}
+
+/* notes: bullets joined by a line, no rules between them (prototype s3, s45) */
+.dock-body .note {
+  border-bottom: 0;
+  padding-bottom: 14px;
+}
+.dock-body .note::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 30px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--a);
+  opacity: 0.85;
+}
+.dock-body .note:last-of-type::after,
+.dock-body .note:last-child::after {
+  display: none;
+}
+#detail .names .nm {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+#detail .names .nm .sn {
+  margin: 0;
+}
+.pills .pl .cn {
+  margin-left: 5px;
+  font-size: 10px;
+  color: var(--ink-muted);
+}
+.pills .pl.on .cn {
+  color: rgba(255, 255, 255, 0.8);
 }

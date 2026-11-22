@@ -25,7 +25,7 @@ function plRender(sel) {
   const rest = opts.length - shown.length;
   box.innerHTML =
     shown
-      .map((o) => (card ? `<button type="button" class="pl card${o.value === cur ? " on" : ""}" data-v="${esc(o.value)}" aria-pressed="${o.value === cur}"><i style="background:${plSample(o)}"></i><span>${esc(o.textContent.trim())}</span></button>` : `<button type="button" class="pl${o.value === cur ? " on" : ""}" data-v="${esc(o.value)}" aria-pressed="${o.value === cur}" title="${esc(o.textContent.trim())}">${!lang && sel.matches(".pf-type") && typeof typeIcon === "function" ? typeIcon(o.value) : ""}${esc(label(o) || "Not stated")}</button>`))
+      .map((o) => (card ? `<button type="button" class="pl card${o.value === cur ? " on" : ""}" data-v="${esc(o.value)}" aria-pressed="${o.value === cur}"><i style="background:${plSample(o)}"></i><span>${esc(o.textContent.trim())}</span></button>` : `<button type="button" class="pl${o.value === cur ? " on" : ""}" data-v="${esc(o.value)}" aria-pressed="${o.value === cur}" title="${esc(o.textContent.trim())}">${!lang && sel.matches(".pf-type") && typeof typeIcon === "function" ? typeIcon(o.value) : ""}${esc(label(o) || "Not stated")}${sel.id === "lang" && o.value && typeof places !== "undefined" ? `<span class="cn">${places.filter((p) => p.names.some((n) => n.lang === o.value)).length}</span>` : ""}</button>`))
       .join("") +
     (rest > 0 ? `<button type="button" class="pl more" aria-haspopup="listbox" aria-expanded="false" title="All choices"><span class="n">+${rest}</span>${PL_CHEV}</button>` : "") +
     `<div class="menu" role="listbox" hidden>${opts

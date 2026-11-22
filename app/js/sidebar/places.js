@@ -357,8 +357,8 @@ async function show(id) {
     `<div class="dock-body"><p class="names">` +
     p.names
       .filter((n) => !l || n.lang === l)
-      .map((n) => `<span lang="${esc(n.lang)}">${esc(n.name)}</span> <span class="sn">${esc(n.lang)}</span>`)
-      .join(" · ") +
+      .map((n) => `<span class="nm"><span lang="${esc(n.lang)}">${esc(n.name)}</span> <span class="sn">${esc(n.lang)}</span></span>`)
+      .join("") +
     "</p>" +
     evidenceHTML(p) + // certainty, radius and sources (T-046)
     lyPlaceHTML(p) +
