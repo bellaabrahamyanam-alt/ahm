@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — daisyUI shell, slice 1 (T-070)
+
+- **What:** `daisyui@5` CSS linked in `app/index.html` (CDN, before the `ahm:css` block); forum palette mapped to daisyUI variables in `base.css`; the six tabs use `tabs tabs-border` / `tab` / `tab-active` (`role=tablist`, `aria-selected`); old `.tabs button` rules replaced.
+- **Why:** owner asked to replace the sidebar design with daisyUI step by step.
+- **Files:** `app/index.html`, `app/css/{base,sidebar}.css`, `app/js/sidebar/layout.js`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`. By hand: switch tabs; the active one has the blue bar.
+- **Follow-ups:** variable names are from daisyUI 5 docs, not checked against the CDN file (no network here).
+
 ## 2026-11-12 — Place types are a dictionary (T-025, I-8)
 
 - **What:** More tab → "Place types" (list with markers and counts; admins: add, edit, remove, live preview); the place form and the filter chips use the dictionary; the old `PLACE_TYPES` list is gone.

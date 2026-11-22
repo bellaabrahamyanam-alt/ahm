@@ -17,7 +17,11 @@ function tab(n) {
   curTab = top;
   document
     .querySelectorAll(".tabs button")
-    .forEach((b) => b.classList.toggle("on", b.dataset.tab === top));
+    .forEach((b) => {
+      b.classList.toggle("on", b.dataset.tab === top);
+      b.classList.toggle("tab-active", b.dataset.tab === top);
+      b.setAttribute("aria-selected", b.dataset.tab === top);
+    });
   document
     .querySelectorAll("#side section")
     .forEach((s) => (s.hidden = s.id !== "tab-" + (top === "rivers" ? "shapes" : top))); // the Rivers tab shows the panel of the Borders tab, in its own mode

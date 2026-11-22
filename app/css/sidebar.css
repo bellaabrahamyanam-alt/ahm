@@ -286,38 +286,26 @@ button.wide {
   flex: 1 1 0;
 }
 
-/* ---- tabs (cp.css tabs: rounded top, active uses the panel colour) ---- */
+/* ---- tabs: daisyUI `tabs tabs-border`; only the paper-and-pencil look is set here ---- */
 .tabs {
-  display: flex;
-  gap: 2px;
-  border-bottom: 1px solid var(--li-row-border-bottom-color);
   margin: 4px 14px 6px;
+  border-bottom: 1px solid var(--li-row-border-bottom-color);
 }
-.tabs button {
+.tabs .tab {
   flex: 1;
   min-width: 0;
-  padding: 8px 4px;
+  padding-inline: 4px;
   font-family: var(--font-head);
   font-size: 13px;
   font-weight: bold;
-  color: var(--content-color);
-  background: transparent;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 5px 5px 0 0;
+  --tab-border-color: transparent;
 }
-.tabs button:hover {
-  background: var(--tab-bg-hover);
+.tabs .tab:hover {
   color: var(--tab-color-hover);
 }
-.tabs .on,
-.tabs .on:hover {
-  background: var(--panel-container-panel-bg-color);
+.tabs .tab.tab-active {
   color: var(--header);
-  border-bottom-color: var(--a);
-}
-.tabs .on:hover {
-  color: var(--a-hover);
+  --tab-border-color: var(--a);
 }
 
 /* ---- labels = small h3 (uppercase, bottom rule) ---- */
