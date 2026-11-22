@@ -141,7 +141,7 @@ const NAME_PERIOD = { modes: ['none', 'exact'], names: { none: 'Any' } };
 const pfRowDated = (n) =>
   pfRow(n).replace(
     /<\/div>$/,
-    `<details class="pf-period"${n.date_from || n.date_to ? ' open' : ''}><summary>Period of this name</summary><div class="pf-sub">From</div>${dfHTML('pf-nfrom', n.date_from || null, NAME_PERIOD)}<div class="pf-sub">To</div>${dfHTML('pf-nto', n.date_to || null, NAME_PERIOD)}</details></div>`
+    `<details class="pf-period"${n.date_from || n.date_to ? ' open' : ''}><summary>Period: ${n.date_from || n.date_to ? [n.date_from && dateText(n.date_from), n.date_to && dateText(n.date_to)].filter(Boolean).join(' – ') : 'unknown'}</summary><div class="pf-sub">From</div>${dfHTML('pf-nfrom', n.date_from || null, NAME_PERIOD)}<div class="pf-sub">To</div>${dfHTML('pf-nto', n.date_to || null, NAME_PERIOD)}</details></div>`
   );
 /** The names of a form with their periods; throws the readable error of a bad date. */
 function pfReadNames(root) {
@@ -169,7 +169,7 @@ function placeFormHTML(p) {
   return (
     `<div class="pf"><div class="label">Names</div><div class="pf-names" data-dated="1">${names.map((n) => pfRowDated(n)).join('')}</div>` +
     `<button type="button" class="pf-add">+ Add another name</button>` +
-    `<div class="sn">A place can have several names, even in one language (Ararat and Masis). The first name of each language is shown on the map. ${LANG_HINT}</div>` +
+    `<div class="sn">The first name of each language is shown on the map. ${LANG_HINT}</div>` +
     `<div class="label">Type</div><select class="pf-type" title="${TYPE_HINT}">${typeOptions(p.type, typeof document !== 'undefined' && document.getElementById ? (document.getElementById('lang') || {}).value : 'en')}</select>` +
     `<div class="pf-when"${mountain ? ' hidden' : ''}><div class="label">Dates (optional)</div>` +
     `<div class="sn">Leave “Unknown” when you do not know a date. Choose “Approximate” or “Range” when you only know roughly.</div>` +

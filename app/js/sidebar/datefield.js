@@ -8,6 +8,12 @@ const DF_MODES = { none: 'Unknown', exact: 'Exact', approx: 'Approximate (c.)', 
 const dfOptions = (pairs, cur) =>
   pairs.map(([v, t]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(t)}</option>`).join('');
 
+/** A segmented control that mirrors the <select class=sel> next to it (T-074): the select stays the source of the value. */
+const dfSeg = (sel, pairs, cur) =>
+  `<div class="seg" data-sel="${sel}" role="group">${pairs
+    .map(([v, t]) => `<button type="button" data-v="${esc(v)}" aria-pressed="${v === cur}"${v === cur ? ' class="on"' : ''}>${esc(t)}</button>`)
+    .join('')}</div>`;
+
 /** The input fields of ONE date (or one end of a range) in format `fmt`; f = fields from dateFromTs, or {} when empty. */
 function dfGroup(fmt, f) {
   const F = dateFormat(fmt);
@@ -27,7 +33,8 @@ function dfGroup(fmt, f) {
   };
   return (
     `<div class="df-g">${F.fields.map(part).join('')}` +
-    `<select class="df-era" aria-label="Era">${dfOptions([['CE', 'CE'], ['BCE', 'BCE']], f.era || 'CE')}</select></div>`
+    `<select class="df-era seg-src" aria-label="Era">${dfOptions([['CE', 'CE'], ['BCE', 'BCE']], f.era || 'CE')}</select>` +
+    `${dfSeg('df-era', [['CE', 'CE'], ['BCE', 'BCE']], f.era || 'CE')}</div>`
   );
 }
 const dfBody = (mode, fmt, ts, tsTo) => {
@@ -48,10 +55,15 @@ function dfHTML(cls, date, opts) {
     fmt = date ? date.fmt : opts.fmt || 'y';
   return (
     `<div class="df ${cls}" data-mode="${mode}" data-fmt="${fmt}"><div class="row">` +
-    `<select class="df-mode" aria-label="How sure is the date">${dfOptions(
+    `<select class="df-mode seg-src" aria-label="How sure is the date">${dfOptions(
       modes.map((m) => [m, names[m]]),
       mode
     )}</select>` +
+    dfSeg(
+      'df-mode',
+      modes.map((m) => [m, names[m].replace(/^Approximate.*/, 'Approx.')]),
+      mode
+    ) +
     `<select class="df-fmt" aria-label="Date format">${dfOptions(
       DATE_FORMATS.map((f) => [f.id, f.label + ' — ' + f.example]),
       fmt
@@ -93,6 +105,26 @@ function dfSafe(el) {
 
 /** Makes the "how sure" and "format" selects of every date field inside root work. Call once per container. */
 function dfWire(root) {
+  // the segmented buttons set their select and announce the change (the select stays the source of the value)
+  root.addEventListener('click', (e) => {
+    const b = e.target.closest('.seg button');
+    if (!b) return;
+    const sel = b.parentElement.parentElement.querySelector('select.' + b.parentElement.dataset.sel);
+    if (!sel || sel.value === b.dataset.v) return;
+    sel.value = b.dataset.v;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  root.addEventListener('change', (e) => {
+    const el = e.target.closest('.df');
+    if (!el || !e.target.matches('.df-mode, .df-era')) return;
+    el.querySelectorAll('.seg').forEach((g) => {
+      const sel = g.parentElement.querySelector('select.' + g.dataset.sel);
+      g.querySelectorAll('button').forEach((b) => {
+        b.classList.toggle('on', b.dataset.v === sel.value);
+        b.setAttribute('aria-pressed', b.dataset.v === sel.value);
+      });
+    });
+  });
   root.addEventListener('change', (e) => {
     const el = e.target.closest('.df');
     if (!el || !e.target.matches('.df-mode, .df-fmt')) return;

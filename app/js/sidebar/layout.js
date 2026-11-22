@@ -35,11 +35,14 @@ document.querySelector(".tabs").addEventListener("click", (e) => {
   const b = e.target.closest("[data-tab]"); // the icon and the label are inside the button
   if (b) tab(b.dataset.tab);
 });
+// with the panel closed the handle is one opener top left, the logo tile and a chevron (design v3.1, T-082); the CSS shows it
+const SIDE_OPENER =
+  '<span class="opn"><span class="logo"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M2.5 19L9 8l4 6.5 2.8-4L21.5 19z"/></svg></span><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></span>';
 // the handle on the right edge of the sidebar: one button, the icon and the label say what it does now
 function sideHandle(h) {
   const b = $("#collapse"),
     t = h ? "Expand sidebar" : "Collapse sidebar";
-  b.innerHTML = AHM.icons.svg(h ? "panel-right" : "panel-left", 14);
+  b.innerHTML = AHM.icons.svg(h ? "panel-right" : "panel-left", 14) + SIDE_OPENER;
   b.title = t;
   b.setAttribute("aria-label", t);
 }
@@ -52,8 +55,26 @@ $("#collapse").onclick = () => toggleSide(!document.body.classList.contains("col
 sideHandle(false);
 // ---- the details dock: a pane under the lists; the place details (#detail) and the layer details (#lyDetail) live in it ----
 $(".stack").append($("#dock"));
+// The open details are one card with their row: the dock sits in the list right under the open row (design v3.1, T-082).
+// A list that is drawn again first calls dockPark(), because the dock would go with the old rows.
+function dockPark() {
+  const dock = $("#dock");
+  if (dock.parentElement && dock.parentElement.tagName === "UL") {
+    $(".stack").append(dock);
+    dock.classList.remove("inline");
+  }
+}
 function dockSync() {
-  $("#dock").hidden = $("#detail").hidden && $("#lyDetail").hidden && $("#shDetail").hidden && $("#rtDetail").hidden;
+  const dock = $("#dock");
+  dock.hidden = $("#detail").hidden && $("#lyDetail").hidden && $("#shDetail").hidden && $("#rtDetail").hidden;
+  const li = dock.hidden || mobile() ? null : document.querySelector("#list li.on, #lyList li.on, #shList li.on, #rtList li.on");
+  if (li && li.parentElement && li.parentElement.tagName === "UL" && li.offsetParent !== null) {
+    li.after(dock);
+    dock.classList.add("inline");
+  } else {
+    $(".stack").append(dock);
+    dock.classList.remove("inline");
+  }
 }
 // The dock covers the lower half of the panel: if a row is hidden behind it, scroll the list just enough to centre the row.
 function revealRow(li) {
@@ -175,4 +196,11 @@ dockGrip.addEventListener("keydown", (e) => {
   if (!d) return;
   e.preventDefault();
   setDock(dockEl.offsetHeight + d, true);
+});
+
+// The long first paragraph of Borders, Routes, Layers and Rivers is a two-line note; a click reads it all (prototype s73, s80, s85).
+document.querySelectorAll("#shIntro, #tab-routes > p.sn, #lyListView > p.sn").forEach((p) => {
+  p.classList.add("intro");
+  p.title = "Click to read all";
+  p.addEventListener("click", () => p.classList.toggle("open"));
 });

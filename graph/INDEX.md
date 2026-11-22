@@ -6,21 +6,22 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 | domain | files | lines | largest file |
 |---|---|---|---|
-| sidebar | 13 | 3900 | `app/js/sidebar/shapes.js` (829) |
+| sidebar | 15 | 4208 | `app/js/sidebar/shapes.js` (830) |
 | map | 4 | 2626 | `app/js/map/map.js` (1470) |
 | core | 7 | 1199 | `app/js/core/shapes.js` (441) |
 | state | 1 | 44 | `app/js/state/state.js` (44) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
 | data | 8 | 4134 | `service/store.php` (2055) |
-| shared | 5 | 262 | `app/js/config.js` (155) |
+| shared | 6 | 900 | `docs/design/sidebar-v3/sidebar.js` (638) |
 
 ## Flags
 
 - `app/js/map/map.js` has 1470 lines (limit 600); owner: map
-- `app/js/sidebar/layers.js` has 691 lines (limit 600); owner: sidebar
-- `app/js/sidebar/routes.js` has 655 lines (limit 600); owner: sidebar
-- `app/js/sidebar/shapes.js` has 829 lines (limit 600); owner: sidebar
+- `app/js/sidebar/layers.js` has 697 lines (limit 600); owner: sidebar
+- `app/js/sidebar/routes.js` has 656 lines (limit 600); owner: sidebar
+- `app/js/sidebar/shapes.js` has 830 lines (limit 600); owner: sidebar
 - `dev/save-handler.js` has 1239 lines (limit 600); owner: data
+- `docs/design/sidebar-v3/sidebar.js` has 638 lines (limit 600); owner: shared
 - `service/store.php` has 2055 lines (limit 600); owner: data
 
 ## Cross-domain uses of top-level names (not through `AHM.*`; compare with the contract)
@@ -36,12 +37,12 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - map -> sidebar: 7 names (btns, edit, focusPlace +4)
 - sidebar -> core: 91 names (BORDER_TYPES, DATE_FORMATS, MONTHS +88)
 - sidebar -> data: 3 names (layerSave, path, save)
-- sidebar -> map: 6 names (drawShape, hideMenu, locate +3)
+- sidebar -> map: 7 names (drawShape, hideMenu, locate +4)
 - state -> core: 1 name (state)
 
 ## Where to look (by file name)
 
-- sidebar: app/js/sidebar/actions.js, app/js/sidebar/admin.js, app/js/sidebar/datefield.js +10
+- sidebar: app/js/sidebar/actions.js, app/js/sidebar/admin.js, app/js/sidebar/datefield.js +13
 - map: app/js/map/map.js, app/js/map/overlays.js, app/js/map/shapes.js +1
 - layer: app/js/core/layer-rules.js, app/js/sidebar/layers.js
 - search: app/js/core/search.js, app/js/sidebar/searchfield.js

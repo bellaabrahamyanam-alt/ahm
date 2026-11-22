@@ -69,12 +69,13 @@ function setData(p, n) {
   fillTypes();
 }
 function placeRowHTML(p, hits, l, q) {
+  const nn = (by[p.id] || []).length;
   return (
-    `<li data-id="${p.id}"><div class="t"><span class="tmark" title="${esc(typeLabel(p.type, l))}">${typeIcon(p.type)}</span><b>${esc(label(p, l))}</b></div>` +
+    `<li data-id="${p.id}"><span class="tmark" title="${esc(typeLabel(p.type, l))}">${typeIcon(p.type)}</span><div class="rt"><b>${esc(label(p, l))}</b>` +
     (placeWhen(p) ? `<div class="sn">${esc(placeWhen(p))}</div>` : "") +
     (nameMatch(p, q, l) ? `<div class="sn">also called ${esc(nameMatch(p, q, l))}</div>` : "") + // an old name found by the search (T-043)
     (hits[0] ? `<div class="sn">${mark(hits[0].text, q)}</div>` : "") +
-    "</li>"
+    `</div>${nn ? `<span class="nn" title="${nn} ${nn === 1 ? "note" : "notes"}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>${nn}</span>` : ""}</li>`
   );
 }
 // The details of the open place (#detail) live in the dock under the list; the list keeps all its rows and the open one is marked.
@@ -107,14 +108,27 @@ function update() {
     q = $("#q").value.trim();
   const nf = state.types.size + state.certainty.size + state.sources.size + (l ? 1 : 0) + (periodActive() ? 1 : 0) + (timeActive() ? 1 : 0) + lyFilterCount();
   $("#fcount").textContent = nf ? `(${nf})` : "";
+  $("#fbadge").textContent = nf || "";
+  $("#fbadge").hidden = !nf;
   const chip = (k, t) => `<button class="chip on" data-clear="${k}" title="Remove this filter">${t} ✕</button>`;
   // the selected types and the language are shown inside Filters, so only the period is repeated here
-  $("#fActive").innerHTML = (periodActive() ? chip("period", "period") : "") + (timeActive() ? chip("time", "Time: " + dateText({ fmt: "y", ts: timeState.at, mode: "exact", ts_to: null })) : "");
-  $("#count").textContent = r.length + " of " + places.length + " places";
+  const yr = (sec) => dateText({ fmt: "y", ts: secToIso(sec), mode: "exact", ts_to: null });
+  const [pa, pb] = periodActive() ? periodBounds() : [null, null];
+  const chips = [...state.types].map((c) => chip("type:" + c, esc(typeLabel(c, l)))).concat(
+    l ? [chip("lang", esc(langName(l)))] : [],
+    periodActive() ? [chip("period", "Period " + (pa === null ? "…" : yr(pa)) + " – " + (pb === null ? "…" : yr(pb - 1)))] : [],
+    timeActive() ? [chip("time", "Time: " + dateText({ fmt: "y", ts: timeState.at, mode: "exact", ts_to: null }))] : []
+  );
+  // every active filter is a chip that takes itself away, and "Clear all" takes them all (prototype s2)
+  $("#fActive").innerHTML = chips.join("") + (chips.length ? '<button type="button" class="linkbtn" data-clear="all">Clear all</button>' : "");
+  $("#count").innerHTML = r.length === places.length ? `<b>${r.length}</b> places` : `<b>${r.length}</b> of ${places.length} places`;
+  $("#reset").hidden = !(q || nf || periodActive() || timeActive()); // nothing to clear: no button (prototype s1)
+  if (typeof dockPark === "function") dockPark(); // the details card sits in the list (T-082)
   $("#list").innerHTML = r.length
     ? r.map(({ p, hits }) => placeRowHTML(p, hits, l, q)).join("")
-    : '<li class="empty">No places match. Try fewer filters.</li>';
+    : '<li class="empty"><span class="ei"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span><b>No places match.</b><span class="sn">Try fewer filters.</span><button type="button" id="emptyReset">Reset filters</button></li>';
   placeDetail();
+  if (typeof pfSync === "function") pfSync(); // the period footer follows the filter (T-078)
   const fc = {
     type: "FeatureCollection",
     features: r.map(({ p }) => ({
@@ -139,6 +153,7 @@ function update() {
 $("#activeBar").addEventListener("click", (e) => {
   const k = e.target.closest("[data-clear]") && e.target.closest("[data-clear]").dataset.clear;
   if (!k) return;
+  if (k === "all") return $("#reset").click();
   if (k.startsWith("type:")) state.types.delete(k.slice(5));
   else if (k === "lang") $("#lang").value = "";
   else if (k === "period") initPeriod();
@@ -178,6 +193,8 @@ $("#srcChips").addEventListener("click", (e) => {
   fillEvidence();
   update();
 });
+// the button of the empty list does what Reset does (T-081)
+$("#list").addEventListener("click", (e) => e.target.closest("#emptyReset") && $("#reset").click());
 $("#reset").onclick = () => {
   ["q", "lang"].forEach((i) => ($("#" + i).value = ""));
   initPeriod();
@@ -189,6 +206,13 @@ $("#reset").onclick = () => {
   searchFieldSync();
   fillTypes();
   update();
+};
+// the filter button of the search row opens and closes the Filters block (T-071)
+$("#fbtn").onclick = () => {
+  const d = document.querySelector("details.filters");
+  d.open = !d.open;
+  $("#fbtn").setAttribute("aria-expanded", d.open);
+  $("#fbtn").classList.toggle("on", d.open);
 };
 $("#fit").onclick = () => {
   AHM.map.fitTo(run(searchOptions()).map(({ p }) => [p.lon, p.lat]));
@@ -333,8 +357,8 @@ async function show(id) {
     `<div class="dock-body"><p class="names">` +
     p.names
       .filter((n) => !l || n.lang === l)
-      .map((n) => `<span lang="${esc(n.lang)}">${esc(n.name)}</span> <span class="sn">[${esc(n.lang)}]</span>`)
-      .join(" · ") +
+      .map((n) => `<span class="nm"><span lang="${esc(n.lang)}">${esc(n.name)}</span> <span class="sn">${esc(n.lang)}</span></span>`)
+      .join("") +
     "</p>" +
     evidenceHTML(p) + // certainty, radius and sources (T-046)
     lyPlaceHTML(p) +
@@ -343,6 +367,7 @@ async function show(id) {
     (ns.length > 1
       ? `<div class="note-tools" hidden><span class="sn">${ns.length} notes</span><button type="button" class="note-all" data-note-all></button></div>`
       : "") +
+    (ns.length ? `<div class="label">Notes · ${ns.length}</div>` : "") +
     (ns.map((n, i) => noteHTML(n, bodies[i])).join("") || '<p class="sn">No notes yet.</p>') +
     editHint +
     `</div><div class="dock-foot">` +
@@ -353,7 +378,7 @@ async function show(id) {
   if (body && keepScroll) body.scrollTop = keepScroll;
 }
 // ---- long notes: a folded preview with a "more…" toggle, so one long note never buries the rest of the place ----
-const NOTE_LINES = 6; // lines of a folded note
+const NOTE_LINES = 3; // lines of a folded note (prototype s3)
 const noteOpen = new Set(); // ids of long notes the reader has opened; kept while the panel is redrawn
 let shownId = null; // the place whose details are drawn
 // Paragraphs are separated by a blank line; a single line break inside one is kept.
@@ -365,13 +390,13 @@ const para = (t) =>
     .map((x) => "<p>" + esc(x.trim()).replace(/\n/g, "<br>") + "</p>")
     .join("");
 const noteHTML = (n, text) =>
-  `<div class="note" data-nid="${esc(n.id)}" lang="${esc(n.lang)}"><div class="note-head"><div class="note-meta"><b>${esc(n.title)}</b> <span class="sn">${n.date ? esc(dateText(n.date)) + " · " : ""}${esc(langName(n.lang))}</span></div>${AHM_CONFIG.canEdit ? iconBtn("editnote", "pencil", "Edit note", `data-id="${esc(n.id)}"`, "sm") : ""}</div><div class="note-body" id="nb-${esc(n.id)}">${para(text)}</div><button type="button" class="note-more" hidden aria-expanded="false" aria-controls="nb-${esc(n.id)}" data-note-toggle></button></div>`;
+  `<div class="note" data-nid="${esc(n.id)}" lang="${esc(n.lang)}"><div class="note-head"><div class="note-meta"><b>${esc(n.title)}</b><div class="note-sub"><span class="lgc" title="${esc(langName(n.lang))}">${esc(n.lang)}</span>${n.date ? `<span class="when"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${esc(dateText(n.date))}</span>` : ""}</div></div>${AHM_CONFIG.canEdit ? iconBtn("editnote", "pencil", "Edit note", `data-id="${esc(n.id)}"`, "sm") : ""}</div><div class="note-body" id="nb-${esc(n.id)}">${para(text)}</div><button type="button" class="note-more" hidden aria-expanded="false" aria-controls="nb-${esc(n.id)}" data-note-toggle></button></div>`;
 const reduceMotion = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const lineHeightOf = (el) => parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.45;
 function noteLabels(note) {
   const open = noteOpen.has(note.dataset.nid),
     btn = note.querySelector(".note-more");
-  btn.textContent = open ? "less" : "more…";
+  btn.textContent = open ? "Show less" : "Show more";
   btn.setAttribute("aria-expanded", String(open));
 }
 // Measure every note: only a note that is really longer than the fold gets the toggle (a short one is shown whole).

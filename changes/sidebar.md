@@ -160,3 +160,59 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Files:** `app/index.html`, `app/css/{base,sidebar}.css`, `app/js/sidebar/layout.js`, `app/dist/`, `tests/js/browser.test.js`
 - **How to verify:** `node tests/js/run.js` (scenario "browser: tabs ..." has 3 new checks). By hand: the panel top looks like s1 of the design; clicking an icon or a label switches the tab. Seen in headless Chromium at 1000 px; not seen on a real forum or a phone.
 - **Follow-ups:** T-071 to T-077 (the other slices). The body font (Verdana) is not changed yet: the later slices change it screen by screen.
+
+## 2026-11-20 — T-071: design v3, slice 2 (Explore list)
+
+- **What:** Explore tab: the search row has a filter button (opens and closes the Filters block, badge with the number of active filters; the block's own summary line is hidden); the Filters block now sits under the search row and the active-filter chips; the count row has the sort select and an icon button for "Fit map" (same ids `#sort`, `#fit`); each place row is a marker tile, the name in a serif face, the dates and, at the right, the number of notes of the place (`placeRowHTML`). Search, Reset, sort, fit, opening, folding and the double click work as before.
+- **Why:** the owner's design v3, screens s1 and s2 (TODO.md group 7).
+- **Files:** `app/index.html`, `app/css/sidebar.css`, `app/js/sidebar/places.js`, `app/dist/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (scenario "browser: tabs ..." has 3 new checks). By hand: open Explore, press the filter button, pick a type: the badge shows 1.
+- **Follow-ups:** T-072 restyles the inside of the Filters block. The Reset button stays (the design has none); drop it only if the owner decides.
+
+## 2026-11-20 — T-072: design v3, slice 3 (Filters block)
+
+- **What:** the Filters block is a card with small caps labels, pill chips (a chosen chip is filled blue, counts in a muted tone), a select with a chevron, and light blue active-filter chips under the search row (the row is hidden when empty). The period fields keep their existing selects (only restyled).
+- **Why:** the owner's design v3, screen s2 (TODO.md group 7).
+- **Files:** `app/css/sidebar.css`, `app/dist/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (2 new checks in "browser: tabs ..."). By hand: open Filters, choose a type: filled chip, badge 1 on the filter button.
+- **Follow-ups:** the segmented period fields of s2 (Unknown / Exact, number, CE / BCE) share the date field with the forms: they come with T-074. The chip style is scoped to Filters and the active chips; T-076 unifies the other chips.
+
+## 2026-11-20 — T-073: design v3, slice 4 (place details)
+
+- **What:** the details of the open place (the dock under the list) look like s3 and s45: a marker tile and the name in a serif face in the head, the names line in a serif face with small caps language tags, small caps section labels, a select with a chevron, flat notes with a bullet and a rule between them, link-style "Show more", a rounded "Add note" button. The markup, the dock (under the list, resizable) and all actions are unchanged.
+- **Why:** the owner's design v3 (TODO.md group 7).
+- **Files:** `app/css/sidebar.css`, `app/dist/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (1 new check in "browser: tabs ..."). By hand: open a place with notes.
+- **Follow-ups:** the design opens the details inside the list under the row (s3); the app keeps the dock (AGENTS.md describes details inside the list, the code has a dock). Moving them is a behaviour change: a decision for the owner, not part of this slice.
+
+## 2026-11-20 — T-074: design v3, slice 5 (forms and the date field)
+
+- **What:** form controls (inputs, selects with a chevron, text areas), the date field with segmented buttons for "how sure" (Unknown / Exact / Approx. / Range) and CE / BCE (`datefield.js`: `dfSeg`; the two selects stay in the page, visually hidden, and remain the source of the value, so `dfRead`, the ids, the classes and the tests are unchanged), name rows with the period of a name on its own line (before, the period summary squeezed the name input), the Save and Cancel buttons as two wide buttons. This also shows in the Filters period and in the time bar field (same date field).
+- **Why:** the owner's design v3, screens s7, s28, s47, s48 (TODO.md group 7).
+- **Files:** `app/js/sidebar/datefield.js`, `app/css/sidebar.css`, `app/dist/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (3 new checks in "browser: languages, optional dates ..."). By hand: edit a place, click Exact, Range, BCE.
+- **Follow-ups:** the language of a name is still a select (the design shows pills); the place type is still a select (pills in s7). Both are looks that need a different control: not done, a new item if wanted. The note dialog was only seen partly in a screenshot.
+
+## 2026-11-20 — T-075, T-076, T-077: design v3, slices 6 to 8 (More tab, other tabs, time bar)
+
+- **What:** More: the five folds are cards with an icon and a chevron (`summary` has an `svg` and a `span`; ids unchanged), serif rows in Languages, Types, Categories. Routes, Borders, Rivers and Layers: the same serif rows without lines, small caps labels, cards with the design radius, wide buttons (`button.wide`) and a general button radius and font. Time bar (T-040): a card, a round play button, a slider with a round handle, "Show undated" as a switch (the checkbox `#tbUndated` is unchanged; it only looks like a switch), the label in a serif face. The rivers selection row wraps instead of running out of the panel.
+- **Why:** the owner's design v3, screens s19, s21, s41, s33, s34, s43, s44 and the bar of s22 (TODO.md group 7).
+- **Files:** `app/index.html`, `app/css/sidebar.css`, `app/dist/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (3 new checks in "browser: tabs ..."). By hand: open every tab; open Time.
+- **Follow-ups:** the dual-handle period slider with a histogram at the bottom of the panel (s1) is a new feature, not a look: T-078 under "Needs you". The type editor (s20, s43, s44: symbol grid, colour swatches, line and area options) and the border and route forms were not screenshotted one by one: they got the controls of T-074 and the rows of T-076 only.
+
+## 2026-11-20 — T-079, T-080, T-081, T-082: design v3.1 (updated design, 68 screens)
+
+- **What:** (T-079) new `pills.js`: the language select of a name or a note, the place type and the certainty are shown as pills; a language select shows the first five and the chosen one, with a "+N" button that opens a list with code and name; types and certainty show all. The `<select>` stays in the page (hidden), stays the source of the value, and is redrawn on `change`, on a new option list and when code sets `select.value`, so forms and tests are unchanged. (T-080) the checkboxes of More look like switches (same checkbox); the base map select (`#basemap`) is shown as cards with a colour sample. (T-081) the empty list has an icon, the serif text and a "Reset filters" button (`#emptyReset`, same action as Reset). (T-082) with the panel closed the handle `#collapse` is the opener top left (logo tile and chevron); on a phone the bottom sheet keeps its handle.
+- **Why:** the owner's updated design (`docs/design/sidebar-v3/`, TODO.md group 8).
+- **Files:** `app/js/sidebar/pills.js` (new), `app/js/sidebar/places.js`, `app/js/sidebar/layout.js`, `app/index.html`, `app/css/sidebar.css`, `app/dist/`, `graph/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (new checks in "browser: languages, optional dates ..." and "browser: tabs ..."). By hand: edit a place and click a language pill and "+N"; open More; search for "zzzz"; close the panel.
+- **Follow-ups:** T-083 (cards of borders, routes, layers) is not done. Not looks, so not done: the confirmation boxes (the app uses the browser `confirm()` in 8 places), "Other places (OpenStreetMap)" (s61, s62: a new search), the Period / Moment footer with the histogram (T-078), language filter as pills with several languages (s2: the app filters by one language), notes paging (s45). The base map cards could only be seen with options put in by hand (the map library is not reachable in the sandbox).
+
+## 2026-11-21 — T-078, T-085: design from the clickable prototype (period footer, details as a card in the list)
+
+- **What:** (T-078, approved by the owner's instruction to use the prototype) a footer at the bottom of the panel on Explore, Borders and Routes: "Period | Moment", the chosen period, a histogram of the dated places and a slider with two handles (`pfoot.js`). The handles set the same two date fields of the Filters block (`#fFrom`, `#fTo`) and so the same period filter; "Clear" empties them; "Moment" switches the one-moment time bar on, "Period" off. The footer is redrawn after every filter change. (T-085) the details of the open place, border, layer or route are no longer a pane under the list: the dock is moved into the list, right under the open row, and the row and the card are one card with a blue edge (`dockSync` / `dockPark` in `layout.js`; a list that is drawn again parks the dock first). The row above already shows the name, so the card's own title is kept for screen readers and not drawn. On a phone the bottom sheet stays as it was. The Add buttons of Borders, Routes, Layers are blue; the visibility checkboxes of the border and route rows look like an eye.
+- **Why:** the owner's clickable prototype `docs/design/sidebar-v3/prototype-standalone.html` (s1, s3, s73 to s86).
+- **Files:** `app/js/sidebar/pfoot.js` (new), `app/js/sidebar/layout.js`, `places.js`, `layers.js`, `routes.js`, `shapes.js`, `app/index.html`, `app/css/sidebar.css`, `app/dist/`, `graph/`, `tests/js/browser.test.js`
+- **How to verify:** `node tests/js/run.js` (new checks in "browser: tabs ..."). By hand: move a handle of the footer (the list shrinks, Filters shows the same From / To), open a place, a border, a layer.
+- **Follow-ups:** the resizable dock (drag the top edge) no longer applies on desktop because the card sits in the list; its code stays for the phone sheet. The floating "Time" button and the time bar are still the old Moment controls (the prototype shows Moment in the footer slot): T-086. Toolbars of icons on the cards, eye / solo / hide buttons on layer rows and colour swatches are next.
