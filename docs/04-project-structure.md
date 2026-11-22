@@ -32,6 +32,11 @@ ahm/map/
 │
 ├─ controller/main.php            page, data, notes, save, overlays: login + permissions
 ├─ service/store.php              ALL data rules (places, notes, languages, overlays, search index, migration)
+├─ migrations/m001_storage.php     phpBB migration: makes the five ahm_* tables when the extension is enabled (T-096)
+├─ service/sql/                   schema.mysql.sql and schema.sqlite.sql: the tables (the same names and columns)
+├─ service/sql_transfer.php       the files of a store <-> the tables, and the note files <-> post + ahm_note_meta (PDO, no phpBB)
+├─ service/card.php               the text of the first post of a topic, made from the data of an object
+├─ tools/dev/                     phpbb-up.sh (a phpBB board on SQLite with the extension) and seed.php (forum Map, tables, topics, notes)
 ├─ service/dates.php              the date model on the server (mirror of app/js/core/dates.js)
 ├─ event/listener.php             language file and the "Map" Quick links entry
 ├─ language/en/common.php         the few texts used by the forum side

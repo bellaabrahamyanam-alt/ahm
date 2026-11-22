@@ -23,7 +23,7 @@ The back end: page controller, file store, endpoints and formats (I-1), the Node
 
 ## Files of this domain (where most changes of this area happen; you may change others when the TODO item needs it)
 
-`data/`, `service/`, `controller/`, `config/`, `event/`, `language/`, `styles/`, `dev/`, `ext.php`, `composer.json`, `tests/php/`, `tests/data/`, `tests/js/parity.test.js`, `tests/fixtures/rules.json`, and the log `changes/data.md`.
+`data/`, `service/`, `controller/`, `migrations/`, `config/`, `event/`, `language/`, `styles/`, `dev/`, `ext.php`, `composer.json`, `tests/php/`, `tests/data/`, `tests/js/parity.test.js`, `tests/fixtures/rules.json`, and the log `changes/data.md`.
 
 ## Token rules
 

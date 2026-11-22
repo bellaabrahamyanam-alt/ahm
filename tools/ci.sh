@@ -9,7 +9,7 @@ set -euo pipefail
 
 # Paths whose change needs tests. Documents (*.md, changes/, tools/prompts/, .claude/) do not.
 # A new top-level folder with code or config must be added here.
-CODE='^(app|controller|service|config|event|language|styles|data|dev|tests|context|graph)/|^tools/[^/]+$|^\.gitlab/CODEOWNERS$|^\.gitlab-ci\.yml$|^\.github/(workflows/|CODEOWNERS$)|^[^/]+\.(php|json)$'
+CODE='^(app|controller|migrations|service|config|event|language|styles|data|dev|tests|context|graph)/|^tools/[^/]+$|^\.gitlab/CODEOWNERS$|^\.gitlab-ci\.yml$|^\.github/(workflows/|CODEOWNERS$)|^[^/]+\.(php|json)$'
 
 mr="${CI_MERGE_REQUEST_IID:-}"
 if [ -n "$mr" ]; then
@@ -52,7 +52,7 @@ else
 fi
 
 apt-get update -qq
-apt-get install -y -qq php-cli php-mbstring
+apt-get install -y -qq php-cli php-mbstring php-sqlite3
 npm install -g --no-fund --no-audit eslint@9 playwright
 npx playwright install --with-deps chromium
 NODE_PATH="$(npm root -g)"
