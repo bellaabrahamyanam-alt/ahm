@@ -1672,7 +1672,7 @@ button:not(.btn):not(.tab):not(.chip) {
   clip-path: inset(50%);
 }
 /* sticky "Add ..." footer */
-#side :is(#shAdd, #rtAdd, #ly-add) {
+#side :is(#shAdd:has(> [data-shadd="open"]), #rtAdd, #ly-add) {
   position: sticky;
   bottom: 0;
   z-index: 2;
@@ -1681,7 +1681,7 @@ button:not(.btn):not(.tab):not(.chip) {
   background: var(--base-bg);
   border-top: 1px solid var(--at-line);
 }
-#side :is(#shAdd, #rtAdd, #ly-add) button {
+#side :is(#shAdd:has(> [data-shadd="open"]), #rtAdd, #ly-add) button {
   width: 100%;
   height: 44px;
   font-size: 14px;
@@ -1689,7 +1689,7 @@ button:not(.btn):not(.tab):not(.chip) {
   background: var(--at-blue);
   border: 0;
 }
-#side :is(#shAdd, #rtAdd, #ly-add) button:hover {
+#side :is(#shAdd:has(> [data-shadd="open"]), #rtAdd, #ly-add) button:hover {
   background: var(--a-hover);
 }
 /* visibility checkboxes in lists look like the prototype's eye buttons */
@@ -1892,4 +1892,96 @@ button:not(.btn):not(.tab):not(.chip) {
   height: 38px;
   margin: 6px 0 0;
   border-radius: var(--at-ctl);
+}
+
+/* Rivers: find card and selection card */
+.sh-banner,
+#rvSel {
+  position: relative;
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+  overflow: hidden;
+}
+.sh-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--at-blue);
+}
+.sh-banner > b {
+  display: block;
+  margin-bottom: 3px;
+  font: 600 16px var(--at-serif);
+  color: var(--at-ink);
+}
+#rvSel .bar {
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 8px 0 4px;
+}
+#rvSel .bar #rvCount {
+  flex: 1 0 100%;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--at-ink);
+}
+#rvSel .bar button {
+  padding: 0;
+  height: 28px;
+  font-size: 12px;
+}
+/* Routes: the path finder is a card like the More sections */
+#rtFinder {
+  margin: 0 0 12px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+  overflow: hidden;
+}
+#rtFinder > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  list-style: none;
+  font: 600 15px/1.2 var(--at-serif);
+  color: var(--at-ink);
+  cursor: pointer;
+}
+#rtFinder > summary::-webkit-details-marker {
+  display: none;
+}
+#rtFinder > summary::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  background: var(--at-muted);
+  -webkit-mask: var(--m-down) center / contain no-repeat;
+  mask: var(--m-down) center / contain no-repeat;
+}
+#rtFinder[open] {
+  box-shadow: inset 3px 0 0 var(--at-blue);
+}
+#rtFinder[open] > summary {
+  color: var(--at-blue);
+}
+#rtFinder[open] > summary::after {
+  transform: rotate(180deg);
+}
+#rtFinder > :not(summary) {
+  margin-left: 14px;
+  margin-right: 14px;
+}
+#rtFinder > summary + * {
+  padding-top: 12px;
+  border-top: 1px solid var(--at-line);
+  margin-top: 0;
+}
+#rtFinder > :last-child {
+  margin-bottom: 14px;
 }

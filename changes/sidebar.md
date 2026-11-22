@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 7: Rivers and Routes (T-070)
+
+- **What:** Rivers find card and selection card, Routes path finder as an accordion card; the blue sticky footer only for the "Add border" button (not for the river panel).
+- **Why:** these panels still looked like the old design.
+- **Files:** `app/css/sidebar.css`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; compare Routes and Rivers with prototype screens s80 and s78.
+- **Follow-ups:** icon for the finder card, open layer/border/route cards (s74, s83, s86), Period footer, closed rail, phone sheet, forms.
+
 ## 2026-11-22 — Prototype look, slice 6: Layers (T-070)
 
 - **What:** each layer is a card with a colour edge, serif name, category line and a three-state switch (show / only / hide) built from `btn join-item` buttons with CSS-mask icons. `lyRowHTML` in `layers.js` emits the new markup; a click on the new `show` button turns off whichever of `only` / `hide` is on. Intro and Add footer fixed (`#ly-add`).
