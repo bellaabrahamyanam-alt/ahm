@@ -2253,3 +2253,59 @@ select.pf-type {
 .pill svg {
   flex: none;
 }
+
+/* the filter button beside the search; the details summary is replaced by it */
+details.filters > summary {
+  display: none;
+}
+details.filters {
+  margin: 6px 0 0;
+}
+details.filters[open] {
+  padding: 4px 0 10px;
+}
+.searchbar .fbtn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  min-height: 0;
+  padding: 0;
+  margin-left: 8px;
+  color: var(--at-blue);
+  background: var(--at-sunk);
+  border: 1px solid var(--inputbox-border);
+  border-radius: var(--at-ctl);
+}
+.searchbar .fbtn.on {
+  color: #fff;
+  background: var(--at-blue);
+  border-color: var(--at-blue);
+}
+#fcount:not(:empty) {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font: 600 10px/16px var(--font);
+  text-align: center;
+  color: #fff;
+  background: var(--at-blue);
+  border-radius: 8px;
+}
+details.filters > #reset {
+  margin-top: 12px;
+  width: 100%;
+  height: 34px;
+}
+
+.chip.on,
+.chip.on:hover:not(:disabled) {
+  background: var(--at-blue);
+  border-color: var(--at-blue);
+  color: #fff;
+}

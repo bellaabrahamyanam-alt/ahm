@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 12: filter button (T-070)
+
+- **What:** the search field is the first row of Explore, with a filter icon button at its right (aria-expanded, a number badge with the count of active filters); the filters open under it. The "Filters" summary is hidden, "Reset" moved to the bottom of the filters, and the From/To period fields moved into a hidden block because the footer slider fills them. Active chips use the dark blue.
+- **Why:** prototype screens s1 and s2.
+- **Files:** `app/index.html`, `app/js/sidebar/places.js` (`#fbtn` handler, `#fcount` is a bare number), `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: the filter button, pick a type, Reset.
+- **Follow-ups:** typing an exact period date is no longer possible in the UI (only the slider, 10-year steps); decide whether to bring the date fields back as a "Dates" option.
+
 ## 2026-11-22 — Prototype look, slice 11: form controls (T-070)
 
 - **What:** the date "how sure" select is now a segmented switch (Unknown, Exact, Approx., Range; in the Explore period filter Any, Exact) in every date field; the place type is a row of pills with the type icon. The original selects stay in the page, visually hidden, and are the source of truth, so the keyboard, the readers of the form and the tests work as before. New: `dfHTML` seg markup and a click handler in `dfWire` (`datefield.js`); `typePills` and its click handler in `placeform.js`.

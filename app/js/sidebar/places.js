@@ -106,7 +106,7 @@ function update() {
     l = $("#lang").value,
     q = $("#q").value.trim();
   const nf = state.types.size + state.certainty.size + state.sources.size + (l ? 1 : 0) + (periodActive() ? 1 : 0) + (timeActive() ? 1 : 0) + lyFilterCount();
-  $("#fcount").textContent = nf ? `(${nf})` : "";
+  $("#fcount").textContent = nf ? String(nf) : "";
   const chip = (k, t) => `<button class="chip on" data-clear="${k}" title="Remove this filter">${t} ✕</button>`;
   // the selected types and the language are shown inside Filters, so only the period is repeated here
   $("#fActive").innerHTML = (periodActive() ? chip("period", "period") : "") + (timeActive() ? chip("time", "Time: " + dateText({ fmt: "y", ts: timeState.at, mode: "exact", ts_to: null })) : "");
@@ -178,6 +178,12 @@ $("#srcChips").addEventListener("click", (e) => {
   fillEvidence();
   update();
 });
+$("#fbtn").onclick = () => {
+  const d = $("details.filters");
+  d.open = !d.open;
+  $("#fbtn").setAttribute("aria-expanded", String(d.open));
+  $("#fbtn").classList.toggle("on", d.open);
+};
 $("#reset").onclick = () => {
   ["q", "lang"].forEach((i) => ($("#" + i).value = ""));
   initPeriod();

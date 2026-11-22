@@ -33,10 +33,13 @@
       <div class="stack">
       <div class="body">
         <section id="tab-explore">
+          <div class="searchbar">
+            <div data-searchfield="q" data-placeholder="Search places, names, notes… (Enter: other places)"></div>
+            <button type="button" id="fbtn" class="fbtn" title="Filters" aria-label="Filters" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg><span id="fcount"></span></button>
+          </div>
           <details class="filters">
             <summary>
               Filters
-              <span id="fcount"></span>
             </summary>
             <div class="label">Type</div>
             <div id="typeChips" class="chips"></div>
@@ -46,6 +49,8 @@
             <div id="srcChips" class="chips" hidden></div>
             <div class="label">Language</div>
             <select id="lang" class="select select-sm"></select>
+            <!-- the footer slider fills these two fields; they stay in the page for typing exact dates and for the code -->
+            <div class="pf-fields" hidden>
             <div class="label">Period</div>
             <div class="sn">From</div>
             <div id="fFrom"></div>
@@ -55,12 +60,10 @@
               >Shows places that existed in the period. Places with no known
               dates are hidden while a period is set.</small
             >
+            </div>
+            <button id="reset" class="btn btn-sm" title="Clear search and filters">Reset</button>
           </details>
           <div id="activeBar" class="chips"><span id="fActive"></span><span id="lyActive"></span></div>
-          <div class="searchbar">
-            <div data-searchfield="q" data-placeholder="Search places, names, notes… (Enter: other places)"></div>
-            <button id="reset" class="btn btn-sm" title="Clear search and filters">Reset</button>
-          </div>
           <div class="bar">
             <span id="count"></span>
             <span>
