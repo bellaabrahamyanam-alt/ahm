@@ -3461,3 +3461,86 @@ body:has(#dock.inline:not([hidden])) #ly-add {
 #lyList > li .lyt .sn {
   margin-top: 3px;
 }
+
+/* ---- Moment bar as in the prototype (s22): big play and date, speed as a segmented row, switch for undated places ---- */
+@media (min-width: 701px) {
+  #timebar {
+    left: 0;
+    width: var(--side-w, 380px);
+    bottom: 0;
+    padding: 10px 16px 12px;
+    background: var(--bg2-bg-color);
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    box-shadow: none;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px 12px;
+  }
+  body:has(#pfoot:not([hidden])) #timebar {
+    bottom: 50px;
+  }
+  #timebar #tbPlay {
+    grid-column: 1;
+    grid-row: 1;
+    width: 44px;
+    height: 44px;
+  }
+  #timebar #tbLabel {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    font: 600 22px var(--serif);
+  }
+  #timebar #tbLabel::before {
+    content: "MOMENT";
+    display: block;
+    font: 600 10px var(--ui);
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    text-align: right;
+  }
+  #timebar .pills {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    gap: 0;
+    padding: 2px;
+    margin: 0;
+    background: #e9e9e9;
+    border-radius: var(--r-ctl);
+  }
+  #timebar .pills .pl {
+    flex: 1;
+    height: 30px;
+    background: transparent;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  #timebar .pills .pl.on {
+    color: var(--a);
+    background: var(--bg2-bg-color);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+  }
+  #timebar #tbSlider {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    width: 100%;
+  }
+  #timebar #tbAt {
+    grid-column: 1 / -1;
+    grid-row: 4;
+  }
+  #timebar label {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    justify-content: space-between;
+    flex-direction: row-reverse;
+  }
+  #timebar #tbOff {
+    grid-column: 1 / -1;
+    grid-row: 6;
+    justify-self: end;
+  }
+}

@@ -1,7 +1,7 @@
 // Single-choice selects shown as pills (sidebar domain, design v3, T-079).
 // The <select> stays in the page and stays the source of the value (forms and tests read and set it as before); the pills only show it and set it.
 // A language select shows at most PL_MAX pills (the chosen one always); the others are behind a "+N" button that opens a list with the code and the name.
-const PL_SEL = "select.nl, select.pf-type, select.pf-cert, #nLang, #lang, #basemap";
+const PL_SEL = "select.nl, select.pf-type, select.pf-cert, #nLang, #lang, #basemap, #tbSpeed";
 const PL_MAX = 5;
 const PL_CHEV = '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const plIsLang = (sel) => sel.matches(".nl, #nLang, #lang");
@@ -17,7 +17,7 @@ function plRender(sel) {
   const lang = plIsLang(sel);
   const card = sel.id === "basemap";
   box.classList.toggle("cards", card);
-  const label = (o) => (lang ? o.value || (sel.id === "lang" ? "All" : "") : o.textContent.trim());
+  const label = (o) => (lang ? o.value || (sel.id === "lang" ? "All" : "") : sel.id === "tbSpeed" ? o.value + "×" : o.textContent.trim());
   const max = lang ? PL_MAX : opts.length; // languages: the first few and "+N"; types and certainty: all of them
   let shown = opts.slice(0, max);
   const chosen = opts.find((o) => o.value === cur);
