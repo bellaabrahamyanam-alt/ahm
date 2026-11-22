@@ -2735,3 +2735,29 @@ body:has(#dock .pf) #pfoot {
 .df[data-mode="none"] select.df-fmt {
   display: none;
 }
+
+/* ---- Moment in the footer slot (prototype s22): the one-moment bar sits above the Period | Moment row inside the panel ---- */
+#tbOpen {
+  display: none !important; /* the Moment button of the footer opens the bar */
+}
+@media (min-width: 701px) {
+  #timebar {
+    left: 12px;
+    right: auto;
+    width: calc(var(--side-w, 380px) - 24px);
+    bottom: 12px;
+    box-sizing: border-box;
+  }
+  body:has(#pfoot:not([hidden])) #timebar {
+    bottom: 58px;
+  }
+  body:has(#timebar:not([hidden])) #pfoot .pf-bar,
+  body:has(#timebar:not([hidden])) #pfoot .pf-axis,
+  body:has(#timebar:not([hidden])) #pfoot #pfLabel,
+  body:has(#timebar:not([hidden])) #pfoot #pfClear {
+    display: none;
+  }
+  body:has(#timebar:not([hidden])) #pfoot {
+    padding-bottom: 10px;
+  }
+}
