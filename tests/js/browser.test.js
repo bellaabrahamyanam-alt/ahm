@@ -212,9 +212,9 @@ scenario('browser: tabs, sheets, filters, layers (only / hide / search / create 
     await pg.click('#typeChips .chip.on'); ok(await pg.locator('#fbadge').isHidden() && await pg.locator('#typeChips .chip.on').count()===0, 'choosing it again clears it and hides the badge'); await pg.click('#fbtn');
     await pg.evaluate(()=>tab('route')); ok(await pg.locator('#more-route').evaluate(e=>e.open) && !(await pg.locator('#more-maps').evaluate(e=>e.open)) && await pg.locator('#tab-more').isVisible(), 'tab(route) opens the Directions fold in More');
     await pg.evaluate(()=>tab('explore'));
-    // selected types are shown inside Filters only: no chips under the Filters block
+    // a selected type is a chip under the search row, with Clear all (the updated design, prototype s2)
     await pg.evaluate(()=>{state.types.add('settlement');fillTypes();update();});
-    ok(await pg.locator('#fActive .chip').count()===0, 'no chip for a selected type');
+    ok(await pg.locator('#fActive .chip').count()===1 && /Settlement/i.test(await pg.locator('#fActive .chip').innerText()) && await pg.locator('#fActive [data-clear=all]').isVisible(), 'a selected type is a chip under the search row, with Clear all');
     ok(/1/.test(await pg.locator('#fcount').innerText()), 'the filter count shows the selected type');
     await pg.evaluate(()=>{state.types.clear();fillTypes();update();});
     // a place opens in the details dock under the list; its row stays in the list and is marked; the map does not move; no Back button

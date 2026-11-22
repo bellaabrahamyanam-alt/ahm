@@ -112,7 +112,15 @@ function update() {
   $("#fbadge").hidden = !nf;
   const chip = (k, t) => `<button class="chip on" data-clear="${k}" title="Remove this filter">${t} ✕</button>`;
   // the selected types and the language are shown inside Filters, so only the period is repeated here
-  $("#fActive").innerHTML = (periodActive() ? chip("period", "period") : "") + (timeActive() ? chip("time", "Time: " + dateText({ fmt: "y", ts: timeState.at, mode: "exact", ts_to: null })) : "");
+  const yr = (sec) => dateText({ fmt: "y", ts: secToIso(sec), mode: "exact", ts_to: null });
+  const [pa, pb] = periodActive() ? periodBounds() : [null, null];
+  const chips = [...state.types].map((c) => chip("type:" + c, esc(typeLabel(c, l)))).concat(
+    l ? [chip("lang", esc(langName(l)))] : [],
+    periodActive() ? [chip("period", "Period " + (pa === null ? "…" : yr(pa)) + " – " + (pb === null ? "…" : yr(pb - 1)))] : [],
+    timeActive() ? [chip("time", "Time: " + dateText({ fmt: "y", ts: timeState.at, mode: "exact", ts_to: null }))] : []
+  );
+  // every active filter is a chip that takes itself away, and "Clear all" takes them all (prototype s2)
+  $("#fActive").innerHTML = chips.join("") + (chips.length ? '<button type="button" class="linkbtn" data-clear="all">Clear all</button>' : "");
   $("#count").innerHTML = r.length === places.length ? `<b>${r.length}</b> places` : `<b>${r.length}</b> of ${places.length} places`;
   $("#reset").hidden = !(q || nf || periodActive() || timeActive()); // nothing to clear: no button (prototype s1)
   if (typeof dockPark === "function") dockPark(); // the details card sits in the list (T-082)
@@ -145,6 +153,7 @@ function update() {
 $("#activeBar").addEventListener("click", (e) => {
   const k = e.target.closest("[data-clear]") && e.target.closest("[data-clear]").dataset.clear;
   if (!k) return;
+  if (k === "all") return $("#reset").click();
   if (k.startsWith("type:")) state.types.delete(k.slice(5));
   else if (k === "lang") $("#lang").value = "";
   else if (k === "period") initPeriod();

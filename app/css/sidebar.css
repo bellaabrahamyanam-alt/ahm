@@ -3544,3 +3544,17 @@ body:has(#dock.inline:not([hidden])) #ly-add {
     justify-self: end;
   }
 }
+.linkbtn {
+  height: 28px;
+  padding: 0 6px;
+  font: 500 13px var(--ui);
+  color: var(--a);
+  background: none;
+}
+.searchbar #reset {
+  display: none;
+}
+#activeBar {
+  align-items: center;
+  margin: 2px 0 6px;
+}
