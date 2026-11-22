@@ -2801,3 +2801,313 @@ body:has(#dock.inline:not([hidden])) #rtAdd,
 body:has(#dock.inline:not([hidden])) #ly-add {
   display: none;
 }
+
+/* ---- Place card as in the prototype (s3, s45) ---- */
+#dock.inline [data-act="dockmax"],
+#dock.inline [data-act="closedetail"] {
+  display: none; /* the open row folds the card; there is no separate panel size */
+}
+#list li.on::after {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 15 6-6 6 6'/%3E%3C/svg%3E") center / 16px no-repeat;
+}
+#detail .names .sn {
+  margin: 0 8px 0 3px;
+}
+#detail .note-meta b {
+  display: block;
+  font: 600 16px/1.3 var(--serif);
+}
+#detail .note-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+}
+#detail .lgc {
+  padding: 1px 7px;
+  font: 600 11px var(--ui);
+  color: var(--html-body-color);
+  background: #e9e9e9;
+  border-radius: 6px;
+}
+#detail .when {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 12px var(--ui);
+  color: var(--ink-muted);
+}
+#detail .when svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+#detail .note-more {
+  padding: 4px 0;
+  font: 600 13px var(--ui);
+  color: var(--a);
+  background: none;
+}
+/* the layers of the place: chips, and the select as a dashed "+ Add to a layer" chip */
+#detail .ly-chip {
+  height: 30px;
+  padding: 0 12px;
+  background: var(--bg2-bg-color);
+  border: 1px solid #d6d2ba;
+  border-radius: 15px;
+}
+#detail select[data-lyadd],
+#detail .chips + select,
+#detail select#lyJoin {
+  display: inline-block;
+  width: auto;
+  height: 30px;
+  margin-top: 6px;
+  padding: 0 28px 0 12px;
+  font: 13px var(--ui);
+  color: var(--a);
+  background-color: transparent;
+  border: 1px dashed var(--a);
+  border-radius: 15px;
+}
+
+/* ---- Edit place as in the prototype (s7, s28): one card per name, a compact Period row, dashed Add button, type pills with icons ---- */
+#dock.inline:has(.pf) .dock-title {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 8px 0 0;
+  overflow: visible;
+  opacity: 1;
+  font: 600 22px var(--serif);
+}
+#dock.inline:has(.pf) .dock-head {
+  flex-wrap: wrap;
+}
+.pf-name {
+  padding: 10px 12px 6px;
+  background: var(--bg2-bg-color);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+}
+.pf-name .nn {
+  background: var(--bg1-bg-color);
+}
+.pf-period {
+  margin: 6px 0 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+.pf-period > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  min-height: 28px;
+  font: 13px var(--ui);
+  color: var(--html-body-color);
+  cursor: pointer;
+}
+.pf-period > summary::-webkit-details-marker {
+  display: none;
+}
+.pf-period > summary::before {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E") center / 14px no-repeat;
+}
+.pf-period > summary::after {
+  content: "Set";
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--a);
+}
+.pf-period[open] > summary::after {
+  content: "Done";
+}
+.pf-add {
+  height: 34px;
+  margin: 2px 0 8px;
+  padding: 0 16px;
+  border: 1px dashed var(--a);
+  border-radius: 17px;
+  color: var(--a);
+  background: transparent;
+}
+.pf-type + .pills .pl {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+  border-radius: 17px;
+}
+.pf-type + .pills .pl img,
+.pf-type + .pills .pl svg {
+  width: 12px;
+  height: 12px;
+}
+.pf-type + .pills {
+  gap: 8px;
+}
+/* detail card: the Add note bar is at the end of the card, not pinned (only forms pin their buttons) */
+#dock.inline:not(:has(.pf)) .dock-foot {
+  position: static;
+  background: transparent;
+  border-top: 0;
+}
+#detail .names {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+}
+/* sort as an icon (the select stays) */
+#sort {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 0;
+  color: transparent;
+  background: center / 18px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 4v16M8 20l-3-3M8 20l3-3M16 20V4M16 4l-3 3M16 4l3 3'/%3E%3C/svg%3E") !important;
+  border: 0 !important;
+}
+#sort option {
+  font-size: 13px;
+  color: #222;
+}
+.pf-name {
+  gap: 6px;
+  padding-right: 8px;
+}
+.pf-name .pf-up,
+.pf-name .pf-del {
+  width: 28px;
+}
+.pf-name:first-of-type .pf-up {
+  display: none;
+}
+.pf-name {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 6px;
+}
+.pf-name .pills,
+.pf-name .pf-period {
+  grid-column: 1 / -1;
+}
+.pf-name .nn {
+  grid-column: 1;
+  width: 100%;
+}
+.pf-name .pf-up {
+  grid-column: 2;
+}
+.pf-name .pf-del {
+  grid-column: 3;
+}
+
+/* ---- Filters as in the prototype (s2): flat sections, thin histogram bars ---- */
+.filters {
+  padding: 0;
+  margin: 0 0 8px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+.filters .label {
+  border-bottom: 0;
+  margin: 14px 0 8px;
+}
+#pfHist {
+  gap: 1px;
+}
+#pfHist i {
+  background: #d7d9cf;
+  border-radius: 1px 1px 0 0;
+}
+#pfHist i.in {
+  background: #7b9ac0;
+}
+.filters .pills .pl {
+  height: 28px;
+  font-size: 12px;
+  background: var(--bg2-bg-color);
+  border: 1px solid #d6d2ba;
+}
+.filters .pills .pl.on {
+  background: var(--a);
+  border-color: var(--a);
+}
+
+/* ---- Border and route cards: the actions are a row of icons under the row (prototype s74, s83) ---- */
+#shDetail,
+#rtDetail {
+  display: flex;
+  flex-direction: column;
+}
+#shDetail .dock-foot:has([data-shact="fit"]),
+#rtDetail .dock-foot:has([data-rtact="fit"]) {
+  order: 1;
+  position: static;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 14px 6px;
+  background: transparent;
+  border: 0;
+}
+#shDetail .dock-body,
+#rtDetail .dock-body {
+  order: 2;
+}
+.dock-foot [data-shact="fit"],
+.dock-foot [data-shact="editshape"],
+.dock-foot [data-shact="addversion"],
+.dock-foot [data-shact="delete"],
+.dock-foot [data-rtact="fit"],
+.dock-foot [data-rtact="editpath"],
+.dock-foot [data-rtact="addversion"],
+.dock-foot [data-rtact="reverse"],
+.dock-foot [data-rtact="delete"] {
+  flex: none !important;
+  width: 34px;
+  height: 34px !important;
+  padding: 0 !important;
+  font-size: 0 !important;
+  background: center / 18px no-repeat transparent !important;
+  border-radius: var(--r-ctl);
+}
+.dock-foot [data-shact="delete"],
+.dock-foot [data-rtact="delete"] {
+  margin-left: auto;
+}
+.dock-foot [data-shact="fit"],
+.dock-foot [data-rtact="fit"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4'/%3E%3C/svg%3E") !important;
+}
+.dock-foot [data-shact="editshape"],
+.dock-foot [data-rtact="editpath"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z'/%3E%3C/svg%3E") !important;
+}
+.dock-foot [data-shact="addversion"],
+.dock-foot [data-rtact="addversion"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8M3 3v5h5M12 7v5l3 2'/%3E%3C/svg%3E") !important;
+}
+.dock-foot [data-rtact="reverse"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7'/%3E%3C/svg%3E") !important;
+}
+.dock-foot [data-shact="delete"],
+.dock-foot [data-rtact="delete"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c0392b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3'/%3E%3C/svg%3E") !important;
+}

@@ -348,7 +348,7 @@ async function show(id) {
     `<div class="dock-body"><p class="names">` +
     p.names
       .filter((n) => !l || n.lang === l)
-      .map((n) => `<span lang="${esc(n.lang)}">${esc(n.name)}</span> <span class="sn">[${esc(n.lang)}]</span>`)
+      .map((n) => `<span lang="${esc(n.lang)}">${esc(n.name)}</span> <span class="sn">${esc(n.lang)}</span>`)
       .join(" · ") +
     "</p>" +
     evidenceHTML(p) + // certainty, radius and sources (T-046)
@@ -358,6 +358,7 @@ async function show(id) {
     (ns.length > 1
       ? `<div class="note-tools" hidden><span class="sn">${ns.length} notes</span><button type="button" class="note-all" data-note-all></button></div>`
       : "") +
+    (ns.length ? `<div class="label">Notes · ${ns.length}</div>` : "") +
     (ns.map((n, i) => noteHTML(n, bodies[i])).join("") || '<p class="sn">No notes yet.</p>') +
     editHint +
     `</div><div class="dock-foot">` +
@@ -368,7 +369,7 @@ async function show(id) {
   if (body && keepScroll) body.scrollTop = keepScroll;
 }
 // ---- long notes: a folded preview with a "more…" toggle, so one long note never buries the rest of the place ----
-const NOTE_LINES = 6; // lines of a folded note
+const NOTE_LINES = 3; // lines of a folded note (prototype s3)
 const noteOpen = new Set(); // ids of long notes the reader has opened; kept while the panel is redrawn
 let shownId = null; // the place whose details are drawn
 // Paragraphs are separated by a blank line; a single line break inside one is kept.
@@ -380,13 +381,13 @@ const para = (t) =>
     .map((x) => "<p>" + esc(x.trim()).replace(/\n/g, "<br>") + "</p>")
     .join("");
 const noteHTML = (n, text) =>
-  `<div class="note" data-nid="${esc(n.id)}" lang="${esc(n.lang)}"><div class="note-head"><div class="note-meta"><b>${esc(n.title)}</b> <span class="sn">${n.date ? esc(dateText(n.date)) + " · " : ""}${esc(langName(n.lang))}</span></div>${AHM_CONFIG.canEdit ? iconBtn("editnote", "pencil", "Edit note", `data-id="${esc(n.id)}"`, "sm") : ""}</div><div class="note-body" id="nb-${esc(n.id)}">${para(text)}</div><button type="button" class="note-more" hidden aria-expanded="false" aria-controls="nb-${esc(n.id)}" data-note-toggle></button></div>`;
+  `<div class="note" data-nid="${esc(n.id)}" lang="${esc(n.lang)}"><div class="note-head"><div class="note-meta"><b>${esc(n.title)}</b><div class="note-sub"><span class="lgc" title="${esc(langName(n.lang))}">${esc(n.lang)}</span>${n.date ? `<span class="when"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>${esc(dateText(n.date))}</span>` : ""}</div></div>${AHM_CONFIG.canEdit ? iconBtn("editnote", "pencil", "Edit note", `data-id="${esc(n.id)}"`, "sm") : ""}</div><div class="note-body" id="nb-${esc(n.id)}">${para(text)}</div><button type="button" class="note-more" hidden aria-expanded="false" aria-controls="nb-${esc(n.id)}" data-note-toggle></button></div>`;
 const reduceMotion = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 const lineHeightOf = (el) => parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.45;
 function noteLabels(note) {
   const open = noteOpen.has(note.dataset.nid),
     btn = note.querySelector(".note-more");
-  btn.textContent = open ? "less" : "more…";
+  btn.textContent = open ? "Show less" : "Show more";
   btn.setAttribute("aria-expanded", String(open));
 }
 // Measure every note: only a note that is really longer than the fold gets the toggle (a short one is shown whole).

@@ -265,8 +265,8 @@ function shRenderView() {
     lyOwnerNotesHTML(s.id, l, 'shact') +
     (osm ? `<div class="sn">Outline © <a href="https://www.openstreetmap.org/${osm[1]}/${osm[2]}" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL).</div>` : '') +
     `<div class="err-line" id="shErr"></div></div><div class="dock-foot">` +
-    `<button type="button" data-shact="fit">Fit map</button>` +
-    (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-shact="editshape">Edit shape</button>' : ''}<button type="button" data-shact="addversion" title="Move the points to the outline for another time. The outline you see now stays as it is.">New version…</button><button type="button" class="danger" data-shact="delete">Delete</button>` : '') +
+    `<button type="button" data-shact="fit" title="Fit map">Fit map</button>` +
+    (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-shact="editshape" title="Edit shape">Edit shape</button>' : ''}<button type="button" data-shact="addversion" title="Move the points to the outline for another time. The outline you see now stays as it is.">New version…</button><button type="button" class="danger" data-shact="delete" title="Delete">Delete</button>` : '') +
     `</div>`;
   shShow(true);
   if (li) revealRow(li);

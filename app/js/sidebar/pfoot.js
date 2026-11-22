@@ -1,7 +1,7 @@
 // The period footer (sidebar domain, design v3.1, T-078): "Period | Moment", the chosen period, a histogram of the dated places and a
 // slider with two handles. The handles set the same two date fields of the Filters block (#fFrom, #fTo) and so the same period filter; "Moment" switches
 // the one-moment time bar (T-040) on and "Period" off. Nothing new is stored: the filter fields stay the source.
-const PF_N = 28; // bars of the histogram
+const PF_N = 56; // bars of the histogram
 const pfSpan = () => timeSpan([...places, ...shapes]);
 const pfYear = (sec) => Math.round(sec / 31556952 + 1970);
 const pfDate = (sec) => ({ mode: 'exact', fmt: 'y', ts: secToIso(sec), ts_to: null });

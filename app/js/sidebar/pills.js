@@ -1,10 +1,10 @@
 // Single-choice selects shown as pills (sidebar domain, design v3, T-079).
 // The <select> stays in the page and stays the source of the value (forms and tests read and set it as before); the pills only show it and set it.
 // A language select shows at most PL_MAX pills (the chosen one always); the others are behind a "+N" button that opens a list with the code and the name.
-const PL_SEL = "select.nl, select.pf-type, select.pf-cert, #nLang, #basemap";
+const PL_SEL = "select.nl, select.pf-type, select.pf-cert, #nLang, #lang, #basemap";
 const PL_MAX = 5;
 const PL_CHEV = '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
-const plIsLang = (sel) => sel.matches(".nl, #nLang");
+const plIsLang = (sel) => sel.matches(".nl, #nLang, #lang");
 // the base map choice shows cards with a small colour sample (T-080): plain map, satellite pictures, relief
 const plSample = (o) => (o.value === "" ? "#e6e1c6" : /relief/i.test(o.value + o.textContent) ? "linear-gradient(135deg,#a8c98b,#e9dfa8 55%,#a58a6a)" : "linear-gradient(135deg,#4d6b4a,#8a8f5a 60%,#6b5a43)");
 
@@ -17,7 +17,7 @@ function plRender(sel) {
   const lang = plIsLang(sel);
   const card = sel.id === "basemap";
   box.classList.toggle("cards", card);
-  const label = (o) => (lang ? o.value : o.textContent.trim());
+  const label = (o) => (lang ? o.value || (sel.id === "lang" ? "All" : "") : o.textContent.trim());
   const max = lang ? PL_MAX : opts.length; // languages: the first few and "+N"; types and certainty: all of them
   let shown = opts.slice(0, max);
   const chosen = opts.find((o) => o.value === cur);
@@ -25,7 +25,7 @@ function plRender(sel) {
   const rest = opts.length - shown.length;
   box.innerHTML =
     shown
-      .map((o) => (card ? `<button type="button" class="pl card${o.value === cur ? " on" : ""}" data-v="${esc(o.value)}" aria-pressed="${o.value === cur}"><i style="background:${plSample(o)}"></i><span>${esc(o.textContent.trim())}</span></button>` : `<button type="button" class="pl${o.value === cur ? " on" : ""}" data-v="${esc(o.value)}" aria-pressed="${o.value === cur}" title="${esc(o.textContent.trim())}">${esc(label(o) || "Not stated")}</button>`))
+      .map((o) => (card ? `<button type="button" class="pl card${o.value === cur ? " on" : ""}" data-v="${esc(o.value)}" aria-pressed="${o.value === cur}"><i style="background:${plSample(o)}"></i><span>${esc(o.textContent.trim())}</span></button>` : `<button type="button" class="pl${o.value === cur ? " on" : ""}" data-v="${esc(o.value)}" aria-pressed="${o.value === cur}" title="${esc(o.textContent.trim())}">${!lang && sel.matches(".pf-type") && typeof typeIcon === "function" ? typeIcon(o.value) : ""}${esc(label(o) || "Not stated")}</button>`))
       .join("") +
     (rest > 0 ? `<button type="button" class="pl more" aria-haspopup="listbox" aria-expanded="false" title="All choices"><span class="n">+${rest}</span>${PL_CHEV}</button>` : "") +
     `<div class="menu" role="listbox" hidden>${opts

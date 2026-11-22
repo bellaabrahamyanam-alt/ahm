@@ -283,8 +283,8 @@ function rtRenderView() {
     (/^osrm:/.test(s.source || '') ? `<div class="sn">The path follows modern roads: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL), via OSRM. Edit the path to match the historical one.</div>` : '') +
     (rts.note ? `<div class="sn">${esc(rts.note)}</div>` : '') +
     `<div class="err-line" id="rtErr"></div></div><div class="dock-foot">` +
-    `<button type="button" data-rtact="fit">Fit map</button>` +
-    (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-rtact="editpath">Edit path</button><button type="button" data-rtact="addversion" title="Move the points to the path for another time. The path you see now stays as it is.">New version…</button>' : ''}<button type="button" data-rtact="reverse" title="Run the other way: the places and the line are reversed">Reverse</button><button type="button" class="danger" data-rtact="delete">Delete</button>` : '') +
+    `<button type="button" data-rtact="fit" title="Fit map">Fit map</button>` +
+    (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-rtact="editpath" title="Edit path">Edit path</button><button type="button" data-rtact="addversion" title="Move the points to the path for another time. The path you see now stays as it is.">New version…</button>' : ''}<button type="button" data-rtact="reverse" title="Run the other way: the places and the line are reversed">Reverse</button><button type="button" class="danger" data-rtact="delete">Delete</button>` : '') +
     `</div>`;
   rts.note = '';
   rtShow(true);
