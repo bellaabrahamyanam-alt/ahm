@@ -8,6 +8,7 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.1/dist/maplibre-gl.css"
     />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@5/daisyui.css" />
     <!-- ahm:css -->
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/sidebar.css" />
@@ -20,21 +21,25 @@
     <aside id="side">
       <button id="collapse" class="icon-btn" title="Hide panel" aria-label="Hide panel"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="m16 15-3-3 3-3"/></svg></button>
       <div id="pick"></div>
-      <nav class="tabs">
-        <button data-tab="explore" class="on">Explore</button>
-        <button data-tab="shapes">Borders</button>
-        <button data-tab="routes">Routes</button>
-        <button data-tab="rivers">Rivers</button>
-        <button data-tab="layers">Layers</button>
-        <button data-tab="more">More</button>
+      <header class="hd"><div class="logo" role="button" tabindex="0" title="Hide or show the panel"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 19L9 8l4 6.5 2.8-4L21.5 19z"/></svg></div><div><h1>Armenian Highlands</h1><p>Historical atlas</p></div></header>
+            <nav class="tabs tabs-border" role="tablist">
+        <button role="tab" data-tab="explore" title="Explore" class="tab on tab-active"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Explore</button>
+        <button role="tab" data-tab="shapes" title="Borders" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 3"/></svg>Borders</button>
+        <button role="tab" data-tab="routes" title="Routes" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h5.5a3.5 3.5 0 000-7h-3a3.5 3.5 0 010-7H16"/></svg>Routes</button>
+        <button role="tab" data-tab="rivers" title="Rivers" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 12c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 17c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>Rivers</button>
+        <button role="tab" data-tab="layers" title="Layers" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg>Layers</button>
+        <button role="tab" data-tab="more" title="More" class="tab"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg>More</button>
       </nav>
       <div class="stack">
       <div class="body">
         <section id="tab-explore">
+          <div class="searchbar">
+            <div data-searchfield="q" data-placeholder="Search places, names, notes… (Enter: other places)"></div>
+            <button type="button" id="fbtn" class="fbtn" title="Filters" aria-label="Filters" aria-expanded="false"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg><span id="fcount"></span></button>
+          </div>
           <details class="filters">
             <summary>
               Filters
-              <span id="fcount"></span>
             </summary>
             <div class="label">Type</div>
             <div id="typeChips" class="chips"></div>
@@ -43,7 +48,9 @@
             <div class="label" id="srcLabel" hidden>Source</div>
             <div id="srcChips" class="chips" hidden></div>
             <div class="label">Language</div>
-            <select id="lang"></select>
+            <select id="lang" class="select select-sm"></select>
+            <!-- the footer slider fills these two fields; they stay in the page for typing exact dates and for the code -->
+            <div class="pf-fields" hidden>
             <div class="label">Period</div>
             <div class="sn">From</div>
             <div id="fFrom"></div>
@@ -53,19 +60,17 @@
               >Shows places that existed in the period. Places with no known
               dates are hidden while a period is set.</small
             >
+            </div>
+            <button id="reset" class="btn btn-sm" title="Clear search and filters">Reset</button>
           </details>
           <div id="activeBar" class="chips"><span id="fActive"></span><span id="lyActive"></span></div>
-          <div class="searchbar">
-            <div data-searchfield="q" data-placeholder="Search places, names, notes… (Enter: other places)"></div>
-            <button id="reset" title="Clear search and filters">Reset</button>
-          </div>
           <div class="bar">
             <span id="count"></span>
             <span>
-              <button id="fit" title="Zoom the map to the results">
+              <button id="fit" class="btn btn-sm" title="Zoom the map to the results">
                 Fit map
               </button>
-              <select id="sort">
+              <select id="sort" class="select select-sm">
                 <option value="name">A–Z</option>
                 <option value="date">By date</option>
               </select>
@@ -77,7 +82,7 @@
         </section>
         <section id="tab-more" hidden>
         <!-- region:map -->
-        <details class="fold" id="more-maps"><summary>Maps &amp; base map</summary><div class="fold-body">
+        <details class="fold" id="more-maps"><summary><span><span class="t">Maps &amp; base map</span><small>Terrain · 3D view · relief</small></span></summary><div class="fold-body">
           <div class="sn">Base map</div>
           <select id="basemap"></select>
           <div id="base-credit" hidden></div>
@@ -142,7 +147,7 @@
           <input type="file" id="ovFile" accept="image/*" hidden />
         </div></details>
         <!-- /region:map -->
-        <details class="fold" id="more-route"><summary>Directions</summary><div class="fold-body">
+        <details class="fold" id="more-route"><summary><span><span class="t">Directions</span><small>Car route between two points</small></span></summary><div class="fold-body">
           <div class="rp">
             <span class="dot a"></span>
             <div>
@@ -181,14 +186,14 @@
             </a>
             (ODbL).
           </p>
-        </div></details><details class="fold" id="more-lang"><summary>Languages</summary><div class="fold-body">
+        </div></details><details class="fold" id="more-lang"><summary><span><span class="t">Languages</span><small>Names and notes use these</small></span></summary><div class="fold-body">
           <p class="sn">
             Every name and every note uses one of these languages. If a
             language is missing, ask an administrator to add it.
           </p>
           <ul id="langList" class="langs"></ul>
           <div id="langAdmin"></div>
-        </div></details><details class="fold" id="more-types"><summary>Types</summary><div class="fold-body">
+        </div></details><details class="fold" id="more-types"><summary><span><span class="t">Types</span><small>Place, route and area types</small></span></summary><div class="fold-body">
           <p class="sn">
             Every place, border and route has one of these types; the type
             decides its marker, line or colour on the map. If a type is missing
@@ -197,7 +202,7 @@
           </p>
           <ul id="typeList" class="langs"></ul>
           <div id="typeAdmin"></div>
-        </div></details><details class="fold" id="more-cat"><summary>Categories</summary><div class="fold-body">
+        </div></details><details class="fold" id="more-cat"><summary><span><span class="t">Categories</span><small>Groups for layers</small></span></summary><div class="fold-body">
           <p class="sn">Categories group the layers (Layers tab).</p>
           <ul id="catList" class="langs"></ul>
           <div id="catAdmin"></div>
@@ -292,6 +297,33 @@
         
       </div>
       </div>
+      <footer id="pfoot">
+        <div class="pf-line">
+          <div class="seg" role="group" aria-label="Period or moment">
+            <button type="button" id="pfPeriod" class="on" title="Show places that existed in a range of years">Period</button>
+            <button type="button" id="tbOpen" title="Show the map at one moment of history">Moment</button>
+          </div>
+          <span id="pfLabel">Any</span>
+          <button type="button" id="pfReset" class="icon-btn" title="Reset the period" aria-label="Reset the period" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
+        </div>
+        <div id="pfPeriodBox">
+          <div class="pf-track" style="--lo: 0%; --hi: 100%">
+            <div id="pfHist" class="pf-hist" aria-hidden="true"></div>
+            <input type="range" id="pfFrom" min="-1200" max="1500" step="10" value="-1200" aria-label="Period from, year" />
+            <input type="range" id="pfTo" min="-1200" max="1500" step="10" value="1500" aria-label="Period to, year" />
+          </div>
+          <div class="pf-ticks"><span>1200 BCE</span><span>0</span><span>1500 CE</span></div>
+        </div>
+        <div id="timebar" hidden>
+          <button id="tbPlay" type="button" class="icon-btn" aria-label="Play">▶</button>
+          <input id="tbSlider" type="range" min="0" max="1000" step="1" aria-label="Moment" />
+          <span id="tbLabel"></span>
+          <div id="tbAt"></div>
+          <select id="tbSpeed" aria-label="Speed, years per second"></select>
+          <label><input id="tbUndated" type="checkbox" checked /> Show undated</label>
+          <button id="tbOff" type="button">Off</button>
+        </div>
+      </footer>
       <div
         id="resizer"
         role="separator"
@@ -307,19 +339,9 @@
     <div id="map"></div>
     <!-- /region:map -->
     <!-- region:sidebar -->
-    <button id="tbOpen" type="button" title="Show the map at one moment of history">Time</button>
-    <div id="timebar" hidden>
-      <button id="tbPlay" type="button" aria-label="Play">▶</button>
-      <input id="tbSlider" type="range" min="0" max="1000" step="1" aria-label="Moment" />
-      <span id="tbLabel"></span>
-      <div id="tbAt"></div>
-      <select id="tbSpeed" aria-label="Speed, years per second"></select>
-      <label><input id="tbUndated" type="checkbox" checked /> Show undated</label>
-      <button id="tbOff" type="button">Off</button>
-    </div>
     <dialog id="dlg">
       <b id="dTitle"></b>
-      <div id="dPlace"><div id="dPlaceForm"></div></div>
+      <div id="dPlace"><div class="pf-hint">Drag the red pin on the map to place it, or type the coordinates below.</div><div id="dPlaceForm"></div></div>
       <div id="dLayersPlace"></div>
       <hr />
       <b id="dNoteHead">Note (optional for a new place)</b>
@@ -333,20 +355,20 @@
       <div id="nDate"></div>
       <input id="nTitle" placeholder="title" />
       <textarea id="nText" rows="5" placeholder="text"></textarea>
+      <div id="dErr" class="sn"></div>
       <div class="row">
         <button id="dSave" class="primary">Save</button>
         <button id="dCancel">Cancel</button>
       </div>
-      <div id="dErr" class="sn"></div>
     </dialog>
     <dialog id="lyDlg">
       <b id="lyTitle"></b>
       <div id="lyForm" class="pf"></div>
+      <div id="lyErr2" class="sn"></div>
       <div class="row">
         <button id="lySave" class="primary">Save</button>
         <button id="lyCancel">Cancel</button>
       </div>
-      <div id="lyErr2" class="sn"></div>
     </dialog>
     <!-- /region:sidebar -->
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.1/dist/maplibre-gl.js"></script>

@@ -1,5 +1,155 @@
 # Change log of the sidebar domain
 
+## 2026-11-23 — Prototype look, slice 19: open cards unfold under their row (T-070)
+
+- **What:** the open border, route and layer card now sits under its row in the list instead of the bottom dock; the dock keeps the place card only. `dockSync` places the cards, `dockPark` takes one out before its list is redrawn.
+- **Why:** prototype screens s74, s81, s86.
+- **Files:** `app/js/sidebar/layout.js`, `shapes.js`, `routes.js`, `layers.js`, `app/css/sidebar.css`, `tests/js/lib/ctx.js`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; open a border, a layer, then Choose places.
+- **Follow-ups:** route card checked only through the shared code (no routes in the sample data).
+
+## 2026-11-22 — Prototype look, slice 18: footer only on Explore, Add pinned, icons (T-070)
+
+- **What:** the Period | Moment bar shows only on Explore (and while a moment is on); "+ Add border/route/layer" is pinned to the bottom of its tab; Fit map is an icon; the collapse handle is a ‹ in the header on desktop. CSS only.
+- **Why:** prototype screens s73, s80, s85.
+- **Files:** `app/css/sidebar.css`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; open Borders, Routes, Layers, Explore.
+- **Follow-ups:** open cards inline in the list instead of the dock.
+
+## 2026-11-22 — Prototype look, slice 17: Add border replaces the list (T-070)
+
+- **What:** while the "Add a border" panel is open the border list and the other cards of the Borders tab are hidden and Close is a bar at the bottom of the panel. CSS only (`:has()`), applied only when the panel has a Close button, so the Rivers tab keeps its list.
+- **Why:** prototype screen s75.
+- **Files:** `app/css/sidebar.css`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; Borders, "+ Add border", Close.
+- **Follow-ups:** the "Found" list with + buttons and the "Or draw it" icon pair of s79.
+
+## 2026-11-22 — Prototype look, slice 16: histogram behind the period slider (T-070)
+
+- **What:** 15 bars behind the footer slider show how many dated places existed in each 180-year stretch of 1200 BCE to 1500 CE (`pfHist` in `period.js`, redrawn only when the data changes; undated places and mountains are not counted). The reset ✕ is always shown and dimmed until a period is set.
+- **Why:** prototype screens s1 and s2.
+- **Files:** `app/index.html`, `app/js/sidebar/{period,places}.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`; drag a handle and watch the bars stay put.
+- **Follow-ups:** the bars count all places, not the filtered ones; the moment slider has no bars.
+
+## 2026-11-22 — Prototype look, slice 15: forms as a panel (T-070)
+
+- **What:** the place, note and layer forms (`#dlg`, `#lyDlg`) are no longer a centred modal. They open non-modally (`show()` instead of `showModal()`, Esc closes them) over the sidebar under its header and tabs, with a title, a scrolling body and a sticky Save | Cancel footer; on a phone they are a bottom sheet. A hint card with a pin icon ("Drag the red pin on the map…") sits on top of the place form. Names are cards with a row of language pills and the name on its own line; "Add another name" is a dashed pill. The error line moved above the footer in both forms. The map stays usable, so the pin can be dragged.
+- **Why:** prototype screens s64 to s67.
+- **Files:** `app/index.html`, `app/js/sidebar/{actions,layers,placeform}.js`, `app/css/sidebar.css`, `tests/js/lib/ctx.js` (the stand-in element gets `show()`), `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: click the map, "Add place here"; drag the pin; pick a language, a type, a date mode; Save; press Esc.
+- **Follow-ups:** the dialogs of a border, route and the confirmations stay modal; the form footer on the closed rail; the second name starts with the same language.
+
+## 2026-11-22 — Prototype look, slice 14: lists and phone header (T-070)
+
+- **What:** bottom padding under the Borders, Routes and Layers lists so the sticky "Add" footer no longer covers the last row; a compact header (no subtitle, smaller logo) in the phone sheet.
+- **Why:** a bug found in slice 5 and prototype screen s99.
+- **Files:** `app/css/sidebar.css`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; Borders list scrolled to the end; a 390px wide window.
+- **Not mine:** a yellow development badge from a feature scaffold overlaps the footer on a small screen; it belongs to that feature's own domain.
+
+## 2026-11-22 — Prototype look, slice 13: Find rivers and Add border panels (T-070)
+
+- **What:** the search row of the Find rivers and Add border panels (input and a blue Find / Search button), full-width quiet buttons for draw, import and Close. CSS only.
+- **Why:** prototype screens s78, s79 and s75.
+- **Files:** `app/css/sidebar.css`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; Rivers tab, Borders tab then "+ Add border".
+- **Follow-ups:** the "Found" list with + buttons, "Or draw it" as an icon pair with a "Follow a river" toggle (needs markup changes in `shapes.js`); the Select rivers card controls.
+
+## 2026-11-22 — Prototype look, slice 12: filter button (T-070)
+
+- **What:** the search field is the first row of Explore, with a filter icon button at its right (aria-expanded, a number badge with the count of active filters); the filters open under it. The "Filters" summary is hidden, "Reset" moved to the bottom of the filters, and the From/To period fields moved into a hidden block because the footer slider fills them. Active chips use the dark blue.
+- **Why:** prototype screens s1 and s2.
+- **Files:** `app/index.html`, `app/js/sidebar/places.js` (`#fbtn` handler, `#fcount` is a bare number), `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: the filter button, pick a type, Reset.
+- **Follow-ups:** typing an exact period date is no longer possible in the UI (only the slider, 10-year steps); decide whether to bring the date fields back as a "Dates" option.
+
+## 2026-11-22 — Prototype look, slice 11: form controls (T-070)
+
+- **What:** the date "how sure" select is now a segmented switch (Unknown, Exact, Approx., Range; in the Explore period filter Any, Exact) in every date field; the place type is a row of pills with the type icon. The original selects stay in the page, visually hidden, and are the source of truth, so the keyboard, the readers of the form and the tests work as before. New: `dfHTML` seg markup and a click handler in `dfWire` (`datefield.js`); `typePills` and its click handler in `placeform.js`.
+- **Why:** prototype screens s64 and s48.
+- **Files:** `app/js/sidebar/{datefield,placeform}.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: Add place; click a type; click Exact under "Began".
+- **Follow-ups:** the form still opens as a dialog (the prototype shows it inside the panel); language pills for names; the rest of the forms (note, border, route, layer).
+
+## 2026-11-22 — Prototype look, slice 10: note count on rows (T-070)
+
+- **What:** each Explore row shows a document icon and the number of notes of the place at its right end (`span.nn` in `placeRowHTML`, no badge when there are no notes). Data: `by[place.id]`, already loaded.
+- **Why:** prototype screen s3.
+- **Files:** `app/js/sidebar/places.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`; the Explore list.
+
+## 2026-11-22 — Prototype look, slice 9: closed rail (T-070)
+
+- **What:** on a desktop the closed sidebar is a 60px rail with the logo tile and the six tab icons (titles as tooltips) instead of sliding away. A click on a tab icon opens the panel on that tab; the logo tile (role=button, Enter/Space) and the chevron both toggle the panel; map controls move 60px right. Phones keep the bottom sheet.
+- **Why:** prototype screens s50 to s52.
+- **Files:** `app/index.html`, `app/css/sidebar.css`, `app/js/sidebar/layout.js`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: click the logo, then a tab icon, then the chevron.
+- **Follow-ups:** the hover popover and the "Time" dot (s51); the rail rule for map controls is written in `sidebar.css`, the map domain may want it in `map.css`.
+
+## 2026-11-22 — Prototype look, slice 8: Period | Moment footer (T-070)
+
+- **What:** a footer at the bottom of the panel. Segmented switch Period | Moment, a label ("Any", "200 BCE – 300"), a reset ✕ and a two-handle year slider (1200 BCE to 1500 CE, step 10) that fills the same From and To date fields of the Explore filters, so the list, chips and map follow as before. Moment mode shows the existing time bar (play, slider, speed, undated, Off) in the same slot. The floating "Time" button and bar over the map are gone; their ids are unchanged. New in `period.js`: `periodSync`, `pfSlide`, `periodLabel`; `tbOpen` does nothing when the moment is already on; `tbRender` also toggles the switch.
+- **Why:** prototype screens s1, s2 and s22.
+- **Files:** `app/index.html`, `app/js/sidebar/{period,timebar}.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: drag a handle, the list narrows and the chip "period" appears; ✕ resets; Moment shows the bar, Period hides it.
+- **Follow-ups:** the histogram of places behind the slider; a slider step finer than 10 years; Moment controls restyled (the date field is still the old one).
+
+## 2026-11-22 — Prototype look, slice 7: Rivers and Routes (T-070)
+
+- **What:** Rivers find card and selection card, Routes path finder as an accordion card; the blue sticky footer only for the "Add border" button (not for the river panel).
+- **Why:** these panels still looked like the old design.
+- **Files:** `app/css/sidebar.css`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; compare Routes and Rivers with prototype screens s80 and s78.
+- **Follow-ups:** icon for the finder card, open layer/border/route cards (s74, s83, s86), Period footer, closed rail, phone sheet, forms.
+
+## 2026-11-22 — Prototype look, slice 6: Layers (T-070)
+
+- **What:** each layer is a card with a colour edge, serif name, category line and a three-state switch (show / only / hide) built from `btn join-item` buttons with CSS-mask icons. `lyRowHTML` in `layers.js` emits the new markup; a click on the new `show` button turns off whichever of `only` / `hide` is on. Intro and Add footer fixed (`#ly-add`).
+- **Why:** Layers still showed the old Only/Hide text buttons.
+- **Files:** `app/js/sidebar/layers.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`; compare Layers with prototype screen s85.
+- **Follow-ups:** open layer card (s86), Rivers panel, Routes finder, Period footer, closed rail, phone sheet, forms.
+
+## 2026-11-22 — Prototype look, slice 5 (T-070)
+
+- **What:** "Atlas look, part 3" in `app/css/sidebar.css`: intro paragraphs with an info icon, search fields with an icon on every tab (label for screen readers only), sticky blue "Add border/route/layer" footer, eye toggles for the visibility checkboxes, marker-tile rows in Borders and Routes, and More sections as accordion cards with an icon and a sub line (`<small>` added to the five `summary` elements in `app/index.html`).
+- **Why:** the other tabs still looked like the old design.
+- **Files:** `app/css/sidebar.css`, `app/index.html`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`; compare Borders and More with prototype screens s73 and s19.
+- **Follow-ups:** Layers cards with the three-state Only/Hide switch, Rivers panel, Routes finder card, Period footer with histogram, closed rail, phone sheet.
+
+## 2026-11-22 — Prototype look, slice 4 (T-070)
+
+- **What:** "Atlas look, part 2" at the end of `app/css/sidebar.css`: small uppercase labels, Filters as a pill with an icon, flat chips, 8px buttons, place card with serif title and a timeline of notes.
+- **Why:** the prototype design was only partly visible.
+- **Files:** `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`; compare the place card with prototype screen s3.
+- **Follow-ups:** Period footer with histogram (new JS), Borders, Routes, Rivers, Layers, More tabs, closed rail, phone sheet.
+
+## 2026-11-22 — Prototype look, slice 3 (T-070)
+
+- **What:** new "Atlas look" block at the end of `app/css/sidebar.css`: header with logo tile, tabs with icons and a blue bar, search field with an icon, quiet count bar, list rows with a marker tile and a serif name. Header and tab icons are static inline SVG in `app/index.html`. It does not need daisyUI to draw.
+- **Why:** slices 1 and 2 changed too little; the prototype design was not visible.
+- **Files:** `app/css/sidebar.css`, `app/index.html`, `app/js/sidebar/layout.js` (a click on a tab icon now selects the tab), `app/dist/`
+- **How to verify:** `node tests/js/run.js`. By hand: compare Explore with prototype screen s1.
+- **Follow-ups:** period footer, filters panel, place card (accordion), other tabs.
+## 2026-11-22 — daisyUI Explore, slice 2 (T-070)
+
+- **What:** search field = daisyUI `input input-sm` wrapper with a bare `input.grow`; type, certainty and source chips are `btn btn-xs`; Reset and Fit map are `btn btn-sm`; sort and language are `select select-sm`. Legacy global `button`, `select`, `input` rules now skip `.btn`, `.select`, `.grow` so daisyUI styles them.
+- **Why:** same item, next slice (Explore header and filters).
+- **Files:** `app/index.html`, `app/css/sidebar.css`, `app/js/sidebar/{places,searchfield}.js`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: Explore search, ✕, chips, sort.
+- **Follow-ups:** list rows and the place card (slice 3); not seen in a browser.
+
+## 2026-11-22 — daisyUI shell, slice 1 (T-070)
+
+- **What:** `daisyui@5` CSS linked in `app/index.html` (CDN, before the `ahm:css` block); forum palette mapped to daisyUI variables in `base.css`; the six tabs use `tabs tabs-border` / `tab` / `tab-active` (`role=tablist`, `aria-selected`); old `.tabs button` rules replaced.
+- **Why:** owner asked to replace the sidebar design with daisyUI step by step.
+- **Files:** `app/index.html`, `app/css/{base,sidebar}.css`, `app/js/sidebar/layout.js`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`. By hand: switch tabs; the active one has the blue bar.
+- **Follow-ups:** variable names are from daisyUI 5 docs, not checked against the CDN file (no network here).
+
 ## 2026-11-12 — Place types are a dictionary (T-025, I-8)
 
 - **What:** More tab → "Place types" (list with markers and counts; admins: add, edit, remove, live preview); the place form and the filter chips use the dictionary; the old `PLACE_TYPES` list is gone.

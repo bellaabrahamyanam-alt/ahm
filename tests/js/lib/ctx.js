@@ -41,6 +41,7 @@ function fakeEl(sel) {
     focus() {},
     close() {},
     showModal() {},
+    show() {},
     insertAdjacentHTML() {},
     scrollIntoView() {},
     prepend() {},
@@ -112,6 +113,7 @@ const UI_STANDINS = `
   function show(id) { __calls.push('show:' + id); }
   function closeDetail() { __calls.push('closeDetail'); }
   function dockSync() {}
+  function dockPark(d) {}
   function revealRow() {}
   const typeIcon = () => ''; // typeLabel comes from core/data.js
 `;

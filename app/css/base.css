@@ -76,6 +76,25 @@
   --label-color: #425067;
 }
 
+/* daisyUI theme: the forum palette above, mapped to the daisyUI variables (daisyui.css is linked before this file) */
+:root {
+  color-scheme: light;
+  --color-base-100: var(--bg2-bg-color);
+  --color-base-200: var(--base-bg);
+  --color-base-300: var(--bg1-bg-color);
+  --color-base-content: var(--content-color);
+  --color-primary: var(--a);
+  --color-primary-content: #ffffff;
+  --color-neutral: var(--content-color);
+  --color-neutral-content: var(--bg2-bg-color);
+  --color-error: var(--error-color);
+  --color-error-content: #ffffff;
+  --radius-selector: var(--radius-pill);
+  --radius-field: var(--radius-m);
+  --radius-box: 12px;
+  --depth: 0;
+}
+
 * {
   box-sizing: border-box;
 }

@@ -37,7 +37,7 @@ function fillTypes() {
     .sort((a, b) => typeLabel(a, l).localeCompare(typeLabel(b, l)))
     .map(
       (t) =>
-        `<button class="chip${state.types.has(t) ? " on" : ""}" data-t="${esc(t)}">${typeIcon(t)}${esc(typeLabel(t, l))} <span>${c[t]}</span></button>`,
+        `<button class="chip btn btn-xs${state.types.has(t) ? " on" : ""}" data-t="${esc(t)}">${typeIcon(t)}${esc(typeLabel(t, l))} <span>${c[t]}</span></button>`,
     )
     .join("");
   renderTypes(); // the list of the Place types fold shows the same names and counts
@@ -52,12 +52,12 @@ function fillEvidence() {
     (p.sources || []).forEach((s) => (sc[s] = (sc[s] || 0) + 1));
   });
   $('#certChips').innerHTML = Object.keys(CERT_LABELS)
-    .map((k) => `<button class="chip${state.certainty.has(k) ? ' on' : ''}" data-cert="${k}">${CERT_LABELS[k]} <span>${cc[k] || 0}</span></button>`)
+    .map((k) => `<button class="chip btn btn-xs${state.certainty.has(k) ? ' on' : ''}" data-cert="${k}">${CERT_LABELS[k]} <span>${cc[k] || 0}</span></button>`)
     .join('');
   const used = sources.filter((s) => sc[s.id]);
   $('#srcLabel').hidden = $('#srcChips').hidden = !used.length;
   $('#srcChips').innerHTML = used
-    .map((s) => `<button class="chip${state.sources.has(s.id) ? ' on' : ''}" data-src="${s.id}" title="${esc(s.citation || '')}">${esc(s.title)} <span>${sc[s.id]}</span></button>`)
+    .map((s) => `<button class="chip btn btn-xs${state.sources.has(s.id) ? ' on' : ''}" data-src="${s.id}" title="${esc(s.citation || '')}">${esc(s.title)} <span>${sc[s.id]}</span></button>`)
     .join('');
 }
 function setData(p, n) {
@@ -70,7 +70,7 @@ function setData(p, n) {
 }
 function placeRowHTML(p, hits, l, q) {
   return (
-    `<li data-id="${p.id}"><div class="t"><span class="tmark" title="${esc(typeLabel(p.type, l))}">${typeIcon(p.type)}</span><b>${esc(label(p, l))}</b></div>` +
+    `<li data-id="${p.id}"><div class="t"><span class="tmark" title="${esc(typeLabel(p.type, l))}">${typeIcon(p.type)}</span><b>${esc(label(p, l))}</b>${(by[p.id] || []).length ? `<span class="nn" title="${by[p.id].length} notes">${by[p.id].length}</span>` : ""}</div>` +
     (placeWhen(p) ? `<div class="sn">${esc(placeWhen(p))}</div>` : "") +
     (nameMatch(p, q, l) ? `<div class="sn">also called ${esc(nameMatch(p, q, l))}</div>` : "") + // an old name found by the search (T-043)
     (hits[0] ? `<div class="sn">${mark(hits[0].text, q)}</div>` : "") +
@@ -102,11 +102,12 @@ function placeDetail() {
 /** What run() needs from the sidebar fields (INTERFACES.md I-3). */
 const searchOptions = () => ({ q: $("#q").value, lang: $("#lang").value, sort: $("#sort").value, period: periodBounds(), certainty: state.certainty, sources: state.sources });
 function update() {
+  pfHist();
   const r = run(searchOptions()),
     l = $("#lang").value,
     q = $("#q").value.trim();
   const nf = state.types.size + state.certainty.size + state.sources.size + (l ? 1 : 0) + (periodActive() ? 1 : 0) + (timeActive() ? 1 : 0) + lyFilterCount();
-  $("#fcount").textContent = nf ? `(${nf})` : "";
+  $("#fcount").textContent = nf ? String(nf) : "";
   const chip = (k, t) => `<button class="chip on" data-clear="${k}" title="Remove this filter">${t} ✕</button>`;
   // the selected types and the language are shown inside Filters, so only the period is repeated here
   $("#fActive").innerHTML = (periodActive() ? chip("period", "period") : "") + (timeActive() ? chip("time", "Time: " + dateText({ fmt: "y", ts: timeState.at, mode: "exact", ts_to: null })) : "");
@@ -178,6 +179,12 @@ $("#srcChips").addEventListener("click", (e) => {
   fillEvidence();
   update();
 });
+$("#fbtn").onclick = () => {
+  const d = $("details.filters");
+  d.open = !d.open;
+  $("#fbtn").setAttribute("aria-expanded", String(d.open));
+  $("#fbtn").classList.toggle("on", d.open);
+};
 $("#reset").onclick = () => {
   ["q", "lang"].forEach((i) => ($("#" + i).value = ""));
   initPeriod();

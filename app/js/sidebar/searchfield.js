@@ -2,7 +2,7 @@
 // One search field used everywhere: an input plus a clear (✕) button that shows while there is text.
 function searchFieldHTML(id, placeholder, label) {
   return (
-    `<div class="field"><input id="${id}" type="search" placeholder="${esc(placeholder)}" autocomplete="off" aria-label="${esc(label || placeholder)}">` +
+    `<div class="field input input-sm"><input class="grow" id="${id}" type="search" placeholder="${esc(placeholder)}" autocomplete="off" aria-label="${esc(label || placeholder)}">` +
     `<button type="button" class="clear" data-clearfor="${id}" title="Clear" aria-label="Clear" hidden>✕</button></div>`
   );
 }

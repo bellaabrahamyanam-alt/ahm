@@ -17,7 +17,11 @@ function tab(n) {
   curTab = top;
   document
     .querySelectorAll(".tabs button")
-    .forEach((b) => b.classList.toggle("on", b.dataset.tab === top));
+    .forEach((b) => {
+      b.classList.toggle("on", b.dataset.tab === top);
+      b.classList.toggle("tab-active", b.dataset.tab === top);
+      b.setAttribute("aria-selected", b.dataset.tab === top);
+    });
   document
     .querySelectorAll("#side section")
     .forEach((s) => (s.hidden = s.id !== "tab-" + (top === "rivers" ? "shapes" : top))); // the Rivers tab shows the panel of the Borders tab, in its own mode
@@ -32,7 +36,10 @@ function tab(n) {
   rtRenderView(); // and the route card to the Routes tab
 }
 document.querySelector(".tabs").addEventListener("click", (e) => {
-  if (e.target.dataset.tab) tab(e.target.dataset.tab);
+  const b = e.target.closest("[data-tab]"); // the click may land on the icon inside the button
+  if (!b) return;
+  if (document.body.classList.contains("collapsed") && !mobile()) toggleSide(false); // on the closed rail a click opens the panel on that tab
+  tab(b.dataset.tab);
 });
 // the handle on the right edge of the sidebar: one button, the icon and the label say what it does now
 function sideHandle(h) {
@@ -48,11 +55,34 @@ const toggleSide = (h) => {
   setTimeout(() => AHM.emit("sidebar:resized"), 250);
 };
 $("#collapse").onclick = () => toggleSide(!document.body.classList.contains("collapsed"));
+// the logo tile is a second toggle (on the closed rail it is the only thing besides the tab icons)
+$(".hd .logo").onclick = () => $("#collapse").click();
+$(".hd .logo").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") $("#collapse").click();
+});
 sideHandle(false);
 // ---- the details dock: a pane under the lists; the place details (#detail) and the layer details (#lyDetail) live in it ----
 $(".stack").append($("#dock"));
+// The open border, route or layer card sits under its row in the list; the place card stays in the dock.
+const INLINE = [["#shDetail", "#shList"], ["#rtDetail", "#rtList"], ["#lyDetail", "#lyList"]];
+// a list is about to be redrawn: take its card out first
+function dockPark(d) {
+  $("#dock").append($(d));
+}
 function dockSync() {
-  $("#dock").hidden = $("#detail").hidden && $("#lyDetail").hidden && $("#shDetail").hidden && $("#rtDetail").hidden;
+  const dock = $("#dock");
+  let used = !$("#detail").hidden;
+  INLINE.forEach(([d, l]) => {
+    const el = $(d),
+      li = !el.hidden && $(l + " li.on");
+    if (li) {
+      if (li.nextElementSibling !== el) li.after(el);
+    } else {
+      if (el.parentNode !== dock) dock.append(el);
+      used = used || !el.hidden;
+    }
+  });
+  dock.hidden = !used;
 }
 // The dock covers the lower half of the panel: if a row is hidden behind it, scroll the list just enough to centre the row.
 function revealRow(li) {

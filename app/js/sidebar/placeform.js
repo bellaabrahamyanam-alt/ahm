@@ -11,6 +11,16 @@ const langOptions = (cur) => {
   );
 };
 /** <option>s of the point types of the dictionary (sorted by name in language l). A type that is not in the dictionary is kept visible. */
+/** The same types as pills (T-070): a click sets the hidden select, which keeps doing the work. */
+const typePills = (cur, l) => {
+  const list = types.filter((t) => t.geometry === 'point').map((t) => t.code);
+  if (cur && !list.includes(cur)) list.push(cur);
+  return `<div class="pills pf-typepills" role="group" aria-label="Type">${list
+    .sort((a, b) => typeLabel(a, l).localeCompare(typeLabel(b, l)))
+    .map((c) => `<button type="button" class="pill${c === cur ? ' on' : ''}" data-type="${esc(c)}">${typeIcon(c)}${esc(typeLabel(c, l))}</button>`)
+    .join('')}</div>`;
+};
+const formLang = () => (typeof document !== 'undefined' && document.getElementById ? (document.getElementById('lang') || {}).value : 'en');
 const typeOptions = (cur, l) => {
   const list = types.filter((t) => t.geometry === 'point').map((t) => t.code);
   if (cur && !list.includes(cur)) list.push(cur);
@@ -63,8 +73,15 @@ function svgToPath(text) {
 }
 const TYPE_HINT = 'Type missing? Ask an administrator to add it (More tab, Place types).';
 const LANG_HINT = 'Language missing? Ask an administrator to add it (Languages tab).';
+/** The languages as one row of pills (T-070); the select next to them stays the source of truth. */
+const langPills = (cur) =>
+  `<div class="pills pf-langpills" role="group" aria-label="Language">${languages
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((l) => `<button type="button" class="pill${l.code === cur ? ' on' : ''}" data-lang="${esc(l.code)}" title="${esc(l.name)}">${esc(l.code)}</button>`)
+    .join('')}</div>`;
 const pfRow = (n) =>
-  `<div class="row pf-name"><select class="nl" aria-label="Language" title="${LANG_HINT}">${langOptions(n.lang)}</select>` +
+  `<div class="row pf-name"><select class="nl" aria-label="Language" title="${LANG_HINT}">${langOptions(n.lang)}</select>${langPills(n.lang)}` +
   `<input class="nn" value="${esc(n.name)}" placeholder="name" aria-label="Name">` +
   `<button type="button" class="pf-up" title="Move up: the first name of a language is the one shown on the map">↑</button>` +
   `<button type="button" class="pf-del" title="Remove this name">✕</button></div>`;
@@ -170,7 +187,7 @@ function placeFormHTML(p) {
     `<div class="pf"><div class="label">Names</div><div class="pf-names" data-dated="1">${names.map((n) => pfRowDated(n)).join('')}</div>` +
     `<button type="button" class="pf-add">+ Add another name</button>` +
     `<div class="sn">A place can have several names, even in one language (Ararat and Masis). The first name of each language is shown on the map. ${LANG_HINT}</div>` +
-    `<div class="label">Type</div><select class="pf-type" title="${TYPE_HINT}">${typeOptions(p.type, typeof document !== 'undefined' && document.getElementById ? (document.getElementById('lang') || {}).value : 'en')}</select>` +
+    `<div class="label">Type</div><select class="pf-type" title="${TYPE_HINT}">${typeOptions(p.type, formLang())}</select>${typePills(p.type, formLang())}` +
     `<div class="pf-when"${mountain ? ' hidden' : ''}><div class="label">Dates (optional)</div>` +
     `<div class="sn">Leave “Unknown” when you do not know a date. Choose “Approximate” or “Range” when you only know roughly.</div>` +
     `<div class="pf-sub">Began / founded</div>${dfHTML('pf-from', p.date_from)}` +
@@ -187,12 +204,31 @@ function placeFormHTML(p) {
 function placeFormWire(root) {
   dfWire(root);
   root.addEventListener('change', (e) => {
+    if (e.target.matches('.pf-name .nl')) {
+      e.target.closest('.pf-name').querySelectorAll('.pf-langpills .pill').forEach((b) => b.classList.toggle('on', b.dataset.lang === e.target.value));
+      return;
+    }
     if (!e.target.matches('.pf-type')) return;
+    root.querySelectorAll('.pf-typepills .pill').forEach((b) => b.classList.toggle('on', b.dataset.type === e.target.value));
     const mountain = e.target.value === 'mountain'; // a mountain has a height instead of dates
     root.querySelector('.pf-when').hidden = mountain;
     root.querySelector('.pf-height').hidden = !mountain;
   });
   root.addEventListener('click', (e) => {
+    const lp = e.target.closest('.pf-langpills .pill');
+    if (lp) {
+      const sel = lp.closest('.pf-name').querySelector('.nl');
+      sel.value = lp.dataset.lang;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
+    const tp = e.target.closest('.pf-typepills .pill');
+    if (tp) {
+      const sel = root.querySelector('.pf-type');
+      sel.value = tp.dataset.type;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
     if (e.target.closest('.pf-srcadd')) return evidenceAddSource(root); // T-046
     const b = e.target.closest('.pf-add, .pf-del, .pf-up');
     if (!b) return;

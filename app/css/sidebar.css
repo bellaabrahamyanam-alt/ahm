@@ -60,8 +60,8 @@ b {
 }
 
 /* ---- form controls (inputbox / select / button, as in forms.css + buttons.css) ---- */
-input,
-select,
+input:not(.grow),
+select:not(.select),
 textarea {
   width: 100%;
   margin: 3px 0;
@@ -74,10 +74,10 @@ textarea {
   border-radius: var(--radius-s);
   caret-color: var(--carter-color);
 }
-input:hover,
-input:focus,
-select:hover,
-select:focus,
+input:not(.grow):hover,
+input:not(.grow):focus,
+select:not(.select):hover,
+select:not(.select):focus,
 textarea:hover,
 textarea:focus {
   border-color: var(--inputbox-border-hover);
@@ -92,13 +92,13 @@ input:focus::placeholder,
 textarea:focus::placeholder {
   color: transparent;
 }
-select {
+select:not(.select) {
   background: var(--select-bg);
   border-color: var(--select-border-color);
   cursor: pointer;
 }
-select:hover,
-select:focus {
+select:not(.select):hover,
+select:not(.select):focus {
   border-color: var(--inputbox-border-hover);
 }
 textarea {
@@ -117,7 +117,7 @@ input[type="range"] {
   background: none;
   accent-color: var(--a);
 }
-button {
+button:not(.btn) {
   font: 600 13px/1.4 var(--font-btn);
   color: var(--a);
   background: var(--page-btn-bg-focus);
@@ -129,11 +129,11 @@ button {
   white-space: nowrap;
 }
 /* hover and press have their own greys (the forum grey is the same as the button grey); a clicked button does not stay "hovered" */
-button:hover:not(:disabled) {
+button:hover:not(:disabled):not(.btn) {
   color: var(--btn-fg-hover);
   background: var(--btn-hover-bg);
 }
-button:active:not(:disabled) {
+button:active:not(:disabled):not(.btn) {
   background: var(--btn-press-bg);
 }
 button:focus {
@@ -286,38 +286,26 @@ button.wide {
   flex: 1 1 0;
 }
 
-/* ---- tabs (cp.css tabs: rounded top, active uses the panel colour) ---- */
+/* ---- tabs: daisyUI `tabs tabs-border`; only the paper-and-pencil look is set here ---- */
 .tabs {
-  display: flex;
-  gap: 2px;
-  border-bottom: 1px solid var(--li-row-border-bottom-color);
   margin: 4px 14px 6px;
+  border-bottom: 1px solid var(--li-row-border-bottom-color);
 }
-.tabs button {
+.tabs .tab {
   flex: 1;
   min-width: 0;
-  padding: 8px 4px;
+  padding-inline: 4px;
   font-family: var(--font-head);
   font-size: 13px;
   font-weight: bold;
-  color: var(--content-color);
-  background: transparent;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 5px 5px 0 0;
+  --tab-border-color: transparent;
 }
-.tabs button:hover {
-  background: var(--tab-bg-hover);
+.tabs .tab:hover {
   color: var(--tab-color-hover);
 }
-.tabs .on,
-.tabs .on:hover {
-  background: var(--panel-container-panel-bg-color);
+.tabs .tab.tab-active {
   color: var(--header);
-  border-bottom-color: var(--a);
-}
-.tabs .on:hover {
-  color: var(--a-hover);
+  --tab-border-color: var(--a);
 }
 
 /* ---- labels = small h3 (uppercase, bottom rule) ---- */
@@ -378,7 +366,7 @@ summary:hover {
   flex-wrap: wrap;
   gap: var(--gap);
 }
-.chip {
+.chip:not(.btn) {
   font: 600 12px var(--font-btn);
   border-radius: var(--radius-pill);
   padding: 3px 11px;
@@ -389,8 +377,12 @@ summary:hover {
   margin-left: 2px;
   font-weight: normal;
 }
+.chip {
+  border-radius: var(--radius-pill);
+}
 .chip.on {
   background: var(--a);
+  border-color: var(--a);
   color: #fff;
 }
 .chip.on:hover {
@@ -709,22 +701,27 @@ dialog > b {
 }
 
 /* ---- search box with a clear (✕) button inside; invalid date filter ---- */
+/* daisyUI `input` on the wrapper; the inner <input class="grow"> is bare */
 .field {
   position: relative;
   flex: 1;
+  width: auto;
+  margin: 3px 0;
 }
-.field input {
-  padding-right: 24px;
+.field input.grow {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
 }
 input[type="search"]::-webkit-search-cancel-button {
   display: none;
 }
 .clear {
-  position: absolute;
-  right: 3px;
-  top: 50%;
-  transform: translateY(-50%);
   padding: 0 5px;
+  min-height: 0;
   background: none;
   color: var(--muted-color);
 }
@@ -1218,59 +1215,154 @@ select {
 }
 
 
-/* ---- the time bar (T-040): a bar over the map at the bottom, right of the panel; on phones above the panel ---- */
-#tbOpen {
-  position: fixed;
-  left: calc(var(--side-w, 380px) + 12px);
-  bottom: 30px;
-  z-index: 5;
+/* ---- the footer (T-040, T-070): Period | Moment switch, label, two-handle slider; the moment controls replace the slider ---- */
+#pfoot {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px 14px;
+  background: var(--base-bg);
+  border-top: 1px solid var(--at-line);
+}
+#pfoot[hidden],
+#pfPeriodBox[hidden],
+#timebar[hidden],
+#pfLabel[hidden],
+#pfReset[hidden] {
+  display: none;
+}
+.pf-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#pfoot .seg {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  background: var(--at-sunk);
+  border-radius: var(--at-ctl);
+}
+#pfoot .seg button {
+  height: 28px;
+  min-height: 0;
+  padding: 0 16px;
+  font: 500 12px var(--font);
+  color: var(--at-ink2);
+  background: none;
+  border: 0;
+  border-radius: 6px;
+}
+#pfoot .seg button.on {
+  background: var(--at-surface);
+  color: var(--at-blue);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+#pfLabel {
+  flex: 1;
+  text-align: right;
+  font-weight: 600;
+  color: var(--at-ink);
 }
 #timebar {
-  position: fixed;
-  left: calc(var(--side-w, 380px) + 12px);
-  right: 12px;
-  bottom: 30px;
-  z-index: 5;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
-  background: var(--base-bg);
-  color: var(--content-color);
-  border: 1px solid #0003;
-  border-radius: 6px;
-  box-shadow: 0 1px 4px #0003;
-}
-#timebar[hidden],
-#tbOpen[hidden] {
-  display: none;
 }
 #tbSlider {
-  flex: 1 1 160px;
-  min-width: 120px;
+  flex: 1 1 140px;
+  min-width: 100px;
+  accent-color: var(--at-blue);
 }
 #tbLabel {
   min-width: 5.5em;
-  font-weight: bold;
+  font: 600 18px var(--at-serif);
+  color: var(--at-ink);
 }
 #tbAt .row {
   margin: 0;
 }
-body.collapsed #tbOpen,
-body.collapsed #timebar {
-  left: 12px;
+#tbPlay {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--at-blue);
+  color: #fff;
 }
-@media (max-width: 700px) {
-  #tbOpen,
-  #timebar {
-    left: 12px;
-    bottom: calc(var(--side-h, 52vh) + 30px);
-  }
-  body.collapsed #tbOpen,
-  body.collapsed #timebar {
-    bottom: 30px;
-  }
+.pf-track {
+  position: relative;
+  height: 22px;
+  background:
+    linear-gradient(var(--at-blue), var(--at-blue)) 0 / 100% 3px no-repeat,
+    transparent;
+}
+.pf-track::before,
+.pf-track::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9px;
+  height: 3px;
+  border-radius: 2px;
+}
+.pf-track::before {
+  background: var(--at-line);
+}
+.pf-track::after {
+  left: var(--lo);
+  right: calc(100% - var(--hi));
+  background: var(--at-blue);
+}
+.pf-track input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  appearance: none;
+  pointer-events: none;
+  z-index: 1;
+}
+.pf-track input[type="range"]::-webkit-slider-runnable-track {
+  height: 22px;
+  background: none;
+}
+.pf-track input[type="range"]::-moz-range-track {
+  background: none;
+}
+.pf-track input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 4px;
+  background: #fff;
+  border: 2px solid var(--at-blue);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+  cursor: grab;
+}
+.pf-track input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border: 2px solid var(--at-blue);
+  border-radius: 50%;
+  pointer-events: auto;
+  cursor: grab;
+}
+.pf-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--at-muted);
 }
 
 /* ---- certainty and sources in the forms (T-046) ---- */
@@ -1286,4 +1378,1374 @@ body.collapsed #timebar {
 }
 .pf-srcerr:empty {
   display: none;
+}
+
+/* Atlas look (sidebar domain, T-070): the prototype design on top of sidebar.css. Self-contained: it does not need daisyUI to draw.
+   Loaded last in the ahm:css block. Tokens are the prototype's; the forum palette in base.css is unchanged. */
+:root {
+  --at-line: #e3dec4;
+  --at-sunk: #edeada;
+  --at-surface: #f8f5e4;
+  --at-ink: #333c43;
+  --at-ink2: #5c6a72;
+  --at-muted: #7b858b;
+  --at-blue: #115098;
+  --at-serif: Georgia, Gelasio, "Times New Roman", serif;
+  --at-ctl: 8px;
+  --at-card: 12px;
+  --at-t: 150ms ease-out;
+}
+
+/* ---- header: logo tile, title, subtitle ---- */
+.hd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 12px 20px;
+}
+.hd .logo {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--at-ctl);
+  background: var(--at-blue);
+  color: var(--at-surface);
+}
+.hd h1 {
+  margin: 0;
+  font: 600 17px/1.15 var(--at-serif);
+  color: var(--at-ink);
+}
+.hd p {
+  margin: 1px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--at-muted);
+}
+
+/* ---- tabs: icon above the label, blue bar under the active one ---- */
+.tabs {
+  display: flex;
+  gap: 0;
+  margin: 0;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--at-line);
+}
+.tabs .tab {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  height: auto;
+  padding: 8px 0 9px;
+  font: 500 11px/1 var(--font);
+  color: var(--at-ink2);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  transition: color var(--at-t);
+}
+.tabs .tab svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tabs .tab:hover {
+  background: none;
+  color: var(--a-hover);
+}
+.tabs .tab.on {
+  color: var(--at-blue);
+  background: none;
+}
+.tabs .tab.on::after {
+  content: "";
+  position: absolute;
+  inset: auto 18% -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--at-blue);
+}
+
+/* ---- search: icon inside the field, flat sunk field ---- */
+.searchbar {
+  align-items: center;
+  padding: 10px 0 6px;
+}
+.field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 10px 0 34px;
+  background: var(--at-sunk);
+  border: 1px solid var(--inputbox-border);
+  border-radius: var(--at-ctl);
+}
+.field::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  background: var(--at-muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.field:focus-within {
+  border-color: var(--at-blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--at-blue) 14%, transparent);
+}
+.field input {
+  flex: 1;
+  height: 100%;
+  font-size: 13px;
+  color: var(--at-ink);
+}
+#reset {
+  height: 38px;
+  background: var(--select-bg);
+  border: 1px solid var(--select-border-color);
+  border-radius: var(--at-ctl);
+}
+
+/* ---- count bar: quiet, icon-weight buttons ---- */
+.bar {
+  margin: 12px 2px 4px;
+  font-size: 12px;
+}
+.bar #count {
+  color: var(--at-ink2);
+}
+.bar button {
+  background: none;
+  border: 0;
+  color: var(--at-blue);
+  font-weight: 600;
+}
+.bar select {
+  background: none;
+  border-color: transparent;
+  color: var(--at-blue);
+  font-weight: 600;
+}
+
+/* ---- list rows: marker tile, serif name, quiet detail line ---- */
+#list li ,
+#side #shList li ,
+#side #rtList li  {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  column-gap: 12px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--at-ctl);
+  transition: background var(--at-t);
+}
+#list li:first-child ,
+#side #shList li:first-child ,
+#side #rtList li:first-child  {
+  border-top: 0;
+}
+#list li .t ,
+#side #shList li .t ,
+#side #rtList li .t  {
+  display: contents;
+}
+#list li .tmark ,
+#side #shList li .tmark ,
+#side #rtList li .tmark  {
+  grid-row: 1 / span 3;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-ctl);
+}
+#list li .t > b,
+#list li b {
+  font: 600 15px/1.2 var(--at-serif);
+  color: var(--at-ink);
+}
+#list li .sn ,
+#side #shList li .sn ,
+#side #rtList li .sn  {
+  grid-column: 2;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--at-ink2);
+}
+#list li.on ,
+#side #shList li.on ,
+#side #rtList li.on  {
+  background: var(--at-surface);
+}
+#list li.empty ,
+#side #shList li.empty ,
+#side #rtList li.empty  {
+  display: block;
+}
+
+/* ---- Atlas look, part 2: labels, filters, place card, notes, buttons ---- */
+.label {
+  margin: 16px 0 8px;
+  padding: 0;
+  border: 0;
+  font: 600 11px/1 var(--font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--at-muted);
+}
+details.filters {
+  margin: 2px 0 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+details.filters > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px 0 10px;
+  list-style: none;
+  font: 500 12px var(--font);
+  color: var(--at-blue);
+  background: var(--select-bg);
+  border-radius: 14px;
+  cursor: pointer;
+}
+details.filters > summary::-webkit-details-marker {
+  display: none;
+}
+details.filters > summary::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 7h9M19 7h1M4 17h1M11 17h9'/%3E%3Ccircle cx='16' cy='7' r='2.2'/%3E%3Ccircle cx='8' cy='17' r='2.2'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 7h9M19 7h1M4 17h1M11 17h9'/%3E%3Ccircle cx='16' cy='7' r='2.2'/%3E%3Ccircle cx='8' cy='17' r='2.2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+details.filters[open] > summary {
+  margin-bottom: 4px;
+}
+.chip {
+  height: 28px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  color: var(--at-ink);
+}
+button.primary {
+  height: 34px;
+  border-radius: var(--at-ctl);
+}
+button:not(.btn):not(.tab):not(.chip) {
+  border-radius: var(--at-ctl);
+}
+.icon-btn {
+  border-radius: var(--at-ctl);
+  background: none;
+  color: var(--at-blue);
+}
+.icon-btn:hover {
+  background: var(--at-sunk);
+}
+
+/* the place card in the dock */
+#dock {
+  background: var(--at-surface);
+  border-top: 1px solid var(--at-line);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12);
+}
+.dock-head {
+  padding: 10px 12px;
+}
+.dock-title {
+  font: 600 17px/1.2 var(--at-serif);
+  color: var(--at-blue);
+}
+#detail .names {
+  font: 15px/1.2 var(--at-serif);
+  color: var(--at-ink);
+}
+#detail .note,
+#detail .ly-note {
+  position: relative;
+  margin: 0 0 14px 4px;
+  padding: 0 0 0 18px;
+  background: none;
+  border: 0;
+  border-left: 1px solid var(--at-line);
+  border-radius: 0;
+}
+#detail .note::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--base-bg);
+  border: 2px solid var(--at-blue);
+}
+#detail .note-meta b {
+  font: 600 14px/1.25 var(--at-serif);
+  color: var(--at-ink);
+}
+#detail .note .sn {
+  color: var(--at-muted);
+}
+
+/* ---- Atlas look, part 3: other tabs (intro, search, add footer, eye toggles, More accordions) ---- */
+:root {
+  --m-eye: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+  --m-eyeoff: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18M10.5 6.2A9.6 9.6 0 0112 6c6 0 10 6 10 6a17 17 0 01-3.2 3.7M6.4 7.6C3.7 9.4 2 12 2 12s4 7 10 7c1.6 0 3-.4 4.3-1M9.9 9.9a3 3 0 004.2 4.2'/%3E%3C/svg%3E");
+  --m-map: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z'/%3E%3Cpath d='M9 4v14M15 6v14'/%3E%3C/svg%3E");
+  --m-nav: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11L21 3l-8 18-2-8z'/%3E%3C/svg%3E");
+  --m-lang: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h9M8.5 4v2M6 6c.5 3 3 6 6 7M12 6c-.5 3-3 6-6.5 7.5'/%3E%3Cpath d='M13 20l4-9 4 9M14.4 17h5.2'/%3E%3C/svg%3E");
+  --m-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12V4h8l10 10-8 8z'/%3E%3Ccircle cx='7.5' cy='8.5' r='1.2'/%3E%3C/svg%3E");
+  --m-folder: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z'/%3E%3C/svg%3E");
+  --m-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  --m-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v5M12 8v.01'/%3E%3C/svg%3E");
+}
+.mask-ic,
+#side .fold > summary::before,
+#side .fold > summary::after,
+#side :is(section, #lyListView) > p.sn:first-child::before {
+  content: "";
+  flex: none;
+  background: currentColor;
+  -webkit-mask: var(--mi) center / contain no-repeat;
+  mask: var(--mi) center / contain no-repeat;
+}
+#side .tabs .tab,
+#side .tabs .tab:hover,
+#side .tabs .tab.on {
+  background: none;
+  box-shadow: none;
+}
+/* intro paragraph with an info icon */
+#side :is(section, #lyListView) > p.sn:first-child {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--at-muted);
+}
+#side :is(section, #lyListView) > p.sn:first-child::before {
+  --mi: var(--m-info);
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin: 0 8px 0 0;
+  vertical-align: -2px;
+  color: var(--at-blue);
+}
+/* search label is read by screen readers only; the field carries the placeholder */
+.label:has(+ [data-searchfield]),
+.label:has(+ div .field),
+#lyListView > .label,
+#shSearchLbl {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+/* sticky "Add ..." footer */
+#side :is(#shAdd:has(> [data-shadd="open"]), #rtAdd, #ly-add) {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 12px -16px 0;
+  padding: 10px 16px 14px;
+  background: var(--base-bg);
+  border-top: 1px solid var(--at-line);
+}
+#side :is(#shAdd:has(> [data-shadd="open"]), #rtAdd, #ly-add) button {
+  width: 100%;
+  height: 44px;
+  font-size: 14px;
+  color: #fff;
+  background: var(--at-blue);
+  border: 0;
+}
+#side :is(#shAdd:has(> [data-shadd="open"]), #rtAdd, #ly-add) button:hover {
+  background: var(--a-hover);
+}
+/* visibility checkboxes in lists look like the prototype's eye buttons */
+#shList input[type="checkbox"],
+#rtList input[type="checkbox"],
+#rvList input[type="checkbox"] {
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--at-ctl);
+  background: var(--at-blue);
+  -webkit-mask: var(--m-eyeoff) center / 18px no-repeat;
+  mask: var(--m-eyeoff) center / 18px no-repeat;
+  cursor: pointer;
+}
+#shList input[type="checkbox"]:checked,
+#rtList input[type="checkbox"]:checked,
+#rvList input[type="checkbox"]:checked {
+  -webkit-mask-image: var(--m-eye);
+  mask-image: var(--m-eye);
+}
+/* More: every section is one accordion card */
+#side .fold {
+  margin: 0 0 8px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+  overflow: hidden;
+}
+#side .fold[open] {
+  box-shadow: inset 3px 0 0 var(--at-blue);
+}
+#side .fold > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  list-style: none;
+  font: 600 15px/1.2 var(--at-serif);
+  color: var(--at-ink);
+  background: none;
+  cursor: pointer;
+}
+#side .fold > summary::-webkit-details-marker {
+  display: none;
+}
+#side .fold > summary::before {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--at-ctl);
+  background-color: var(--at-blue);
+  -webkit-mask-size: 18px;
+  mask-size: 18px;
+  box-sizing: border-box;
+  /* tile: icon is the mask, so the tile edge is drawn by the summary's own gradient */
+}
+#side .fold > summary small {
+  display: block;
+  margin-top: 3px;
+  font: 400 11.5px/1.2 var(--font);
+  color: var(--at-muted);
+}
+#side .fold > summary::after {
+  --mi: var(--m-down);
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  color: var(--at-muted);
+  transition: transform var(--at-t);
+}
+#side .fold[open] > summary::after {
+  transform: rotate(180deg);
+}
+#side .fold[open] > summary .t {
+  color: var(--at-blue);
+}
+#more-maps > summary::before { --mi: var(--m-map); }
+#more-route > summary::before { --mi: var(--m-nav); }
+#more-lang > summary::before { --mi: var(--m-lang); }
+#more-types > summary::before { --mi: var(--m-tag); }
+#more-cat > summary::before { --mi: var(--m-folder); }
+#side .fold > .fold-body {
+  margin: 0 14px;
+  padding: 12px 0 14px;
+  border-top: 1px solid var(--at-line);
+}
+
+#side #shList li b,
+#side #rtList li b {
+  font: 600 15px/1.2 var(--at-serif);
+  color: var(--at-ink);
+}
+#side #shList li.on,
+#side #rtList li.on {
+  background: var(--at-surface);
+}
+#side .sh-eye {
+  grid-column: 3;
+  grid-row: 1 / span 3;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  margin: 0;
+  padding: 0;
+}
+#side #shList li,
+#side #rtList li {
+  grid-template-columns: 32px 1fr auto;
+}
+
+/* layers: a card with a colour edge and a three-state switch (show / only / hide) */
+:root {
+  --m-only: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='3' fill='black'/%3E%3C/svg%3E");
+}
+#side #lyList li.ly-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 11px 12px 11px 18px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+  overflow: hidden;
+}
+#side #lyList li.ly-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--lc, var(--at-blue));
+}
+#lyList .ly-main {
+  flex: 1;
+  min-width: 0;
+}
+#lyList .ly-main b {
+  display: block;
+  font: 600 15.5px/1.2 var(--at-serif);
+  color: var(--at-ink);
+}
+#lyList li.is-hidden .ly-main b {
+  color: var(--at-muted);
+}
+#lyList .ly-cat {
+  display: block;
+  margin-top: 4px;
+  font-size: 10.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--at-muted);
+}
+#lyList .ly-main .sn {
+  display: block;
+  margin-top: 2px;
+}
+#lyList .ly-btns {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 3px;
+  background: var(--selbg, #e9e9e9);
+  border-radius: 10px;
+}
+#lyList .ly-btns button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 30px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  box-shadow: none;
+  color: var(--at-ink2);
+}
+#lyList .ly-btns button::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  -webkit-mask: var(--mi) center / contain no-repeat;
+  mask: var(--mi) center / contain no-repeat;
+}
+#lyList .ly-show { --mi: var(--m-eye); }
+#lyList .ly-only { --mi: var(--m-only); }
+#lyList .ly-hide { --mi: var(--m-eyeoff); }
+#lyList .ly-btns button.on {
+  background: var(--at-surface);
+  color: var(--at-blue);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+
+#lyCat {
+  height: 38px;
+  margin: 6px 0 0;
+  border-radius: var(--at-ctl);
+}
+
+/* Rivers: find card and selection card */
+.sh-banner,
+#rvSel {
+  position: relative;
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+  overflow: hidden;
+}
+.sh-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--at-blue);
+}
+.sh-banner > b {
+  display: block;
+  margin-bottom: 3px;
+  font: 600 16px var(--at-serif);
+  color: var(--at-ink);
+}
+#rvSel .bar {
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin: 8px 0 4px;
+}
+#rvSel .bar #rvCount {
+  flex: 1 0 100%;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--at-ink);
+}
+#rvSel .bar button {
+  padding: 0;
+  height: 28px;
+  font-size: 12px;
+}
+/* Routes: the path finder is a card like the More sections */
+#rtFinder {
+  margin: 0 0 12px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+  overflow: hidden;
+}
+#rtFinder > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  list-style: none;
+  font: 600 15px/1.2 var(--at-serif);
+  color: var(--at-ink);
+  cursor: pointer;
+}
+#rtFinder > summary::-webkit-details-marker {
+  display: none;
+}
+#rtFinder > summary::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  background: var(--at-muted);
+  -webkit-mask: var(--m-down) center / contain no-repeat;
+  mask: var(--m-down) center / contain no-repeat;
+}
+#rtFinder[open] {
+  box-shadow: inset 3px 0 0 var(--at-blue);
+}
+#rtFinder[open] > summary {
+  color: var(--at-blue);
+}
+#rtFinder[open] > summary::after {
+  transform: rotate(180deg);
+}
+#rtFinder > :not(summary) {
+  margin-left: 14px;
+  margin-right: 14px;
+}
+#rtFinder > summary + * {
+  padding-top: 12px;
+  border-top: 1px solid var(--at-line);
+  margin-top: 0;
+}
+#rtFinder > :last-child {
+  margin-bottom: 14px;
+}
+
+/* ---- closed sidebar on a desktop: a 60px rail, the logo tile and the six tab icons (T-070) ---- */
+.hd .logo {
+  cursor: pointer;
+}
+@media (min-width: 701px) {
+  body.collapsed aside {
+    transform: none;
+    width: 60px;
+    overflow: visible;
+  }
+  body.collapsed aside .stack,
+  body.collapsed aside #pfoot,
+  body.collapsed aside #pick,
+  body.collapsed aside .hd > div:last-child {
+    display: none;
+  }
+  body.collapsed .hd {
+    justify-content: center;
+    padding: 14px 0 10px;
+    border-bottom: 1px solid var(--at-line);
+  }
+  body.collapsed .tabs {
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 8px;
+    border: 0;
+  }
+  body.collapsed .tabs .tab {
+    flex: none;
+    height: 40px;
+    padding: 0;
+    font-size: 0;
+    border-radius: var(--at-ctl);
+  }
+  body.collapsed .tabs .tab:hover {
+    background: var(--at-sunk);
+  }
+  body.collapsed .tabs .tab.on {
+    background: var(--at-sunk);
+  }
+  body.collapsed .tabs .tab.on::after {
+    display: none;
+  }
+  /* the handle becomes the small chevron on the logo tile */
+  body.collapsed #collapse {
+    top: 34px;
+    right: auto;
+    left: 38px;
+    width: 18px;
+    height: 18px;
+    min-height: 0;
+    padding: 0;
+    transform: none;
+    border: 1px solid var(--at-line);
+    border-radius: 50%;
+  }
+  /* the map controls sit right of the rail */
+  body.collapsed .maplibregl-ctrl-top-left,
+  body.collapsed .maplibregl-ctrl-bottom-left {
+    margin-left: 60px;
+  }
+}
+
+/* the note count at the right end of a row: a document icon and the number */
+:root {
+  --m-doc: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 3h8l4 4v14H6z'/%3E%3Cpath d='M14 3v4h4M9 12h6M9 16h6'/%3E%3C/svg%3E");
+}
+#list li {
+  grid-template-columns: 32px 1fr auto;
+}
+#list li .nn {
+  grid-column: 3;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 8px;
+  font: 500 11px var(--font);
+  color: var(--at-muted);
+}
+#list li .nn::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask: var(--m-doc) center / contain no-repeat;
+  mask: var(--m-doc) center / contain no-repeat;
+}
+
+/* the "how sure is the date" control is a segmented switch; the select stays for keyboards, tests and screen readers */
+.df > .row .df-mode {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.df {
+  position: relative;
+}
+.df-seg {
+  display: flex;
+  gap: 2px;
+  margin: 0 0 6px;
+  padding: 3px;
+  background: var(--at-sunk);
+  border-radius: 10px;
+}
+.df-seg button {
+  flex: 1;
+  height: 28px;
+  min-height: 0;
+  padding: 0 4px;
+  font: 500 12px var(--font);
+  color: var(--at-ink2);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+}
+.df-seg button.on {
+  background: var(--at-surface);
+  color: var(--at-blue);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.df .row {
+  display: flex;
+  gap: 6px;
+}
+.df .row .df-fmt {
+  flex: 1;
+}
+
+/* pills: the place type in the form; the select next to them is hidden but stays the source of truth */
+select.pf-type {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 6px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font: 500 13px var(--font);
+  color: var(--at-ink);
+  background: var(--at-sunk);
+  border: 0;
+  border-radius: 16px;
+}
+.pills .pill,
+.pills .pill:hover:not(:disabled) {
+  color: var(--at-ink);
+  background: var(--at-sunk);
+}
+.pills .pill.on,
+.pills .pill.on:hover:not(:disabled) {
+  color: #fff;
+  background: var(--at-blue);
+}
+.pill svg {
+  flex: none;
+}
+
+/* the filter button beside the search; the details summary is replaced by it */
+details.filters > summary {
+  display: none;
+}
+details.filters {
+  margin: 6px 0 0;
+}
+details.filters[open] {
+  padding: 4px 0 10px;
+}
+.searchbar .fbtn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  min-height: 0;
+  padding: 0;
+  margin-left: 8px;
+  color: var(--at-blue);
+  background: var(--at-sunk);
+  border: 1px solid var(--inputbox-border);
+  border-radius: var(--at-ctl);
+}
+.searchbar .fbtn.on {
+  color: #fff;
+  background: var(--at-blue);
+  border-color: var(--at-blue);
+}
+#fcount:not(:empty) {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font: 600 10px/16px var(--font);
+  text-align: center;
+  color: #fff;
+  background: var(--at-blue);
+  border-radius: 8px;
+}
+details.filters > #reset {
+  margin-top: 12px;
+  width: 100%;
+  height: 34px;
+}
+
+.chip.on,
+.chip.on:hover:not(:disabled) {
+  background: var(--at-blue);
+  border-color: var(--at-blue);
+  color: #fff;
+}
+
+/* Add border / Find rivers: search row with a blue action, draw and import as quiet full-width buttons */
+.sh-banner .row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+.sh-banner .row > input,
+.sh-banner .row > .field {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  background: var(--at-sunk);
+  border-radius: var(--at-ctl);
+}
+.sh-banner button[data-shadd="rvfind"],
+.sh-banner button[data-shadd="search"] {
+  height: 38px;
+  padding: 0 18px;
+  color: #fff;
+  background: var(--at-blue);
+  border: 0;
+}
+.sh-banner button[data-shadd="rvfind"]:hover:not(:disabled),
+.sh-banner button[data-shadd="search"]:hover:not(:disabled) {
+  background: var(--a-hover);
+  color: #fff;
+}
+#shAdd button.wide:not([data-shadd="open"]),
+.sh-banner button[data-shadd="drawarea"],
+.sh-banner button[data-shadd="drawline"],
+.sh-banner button[data-shadd="import"],
+#shAdd button[data-shadd="import"],
+.sh-banner button[data-shadd="closeadd"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 38px;
+  margin: 4px 0;
+  color: var(--at-blue);
+  background: var(--at-sunk);
+  border: 0;
+}
+.sh-banner .row > button[data-shadd="drawarea"],
+.sh-banner .row > button[data-shadd="drawline"] {
+  flex: 1;
+}
+.sh-banner button[data-shadd="closeadd"] {
+  margin-top: 12px;
+}
+#shAdd > .row {
+  margin: 4px 0;
+}
+
+/* room under the lists for the sticky "Add" footer, so the last row can scroll clear of it */
+#shList,
+#rtList,
+#lyList {
+  padding-bottom: 64px;
+}
+
+/* phone: a compact header in the bottom sheet (T-070) */
+@media (max-width: 700px) {
+  .hd {
+    padding: 10px 16px 6px;
+  }
+  .hd p {
+    display: none;
+  }
+  .hd h1 {
+    font-size: 15px;
+  }
+  .hd .logo {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* ---- the forms are a panel over the sidebar (T-070): a title, a scrolling body, a sticky Save | Cancel footer ---- */
+:root {
+  --m-pin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z'/%3E%3Ccircle cx='12' cy='9.5' r='2.4'/%3E%3C/svg%3E");
+}
+#dlg[open],
+#lyDlg[open] {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  width: var(--side-w, 380px);
+  max-width: none;
+  height: 100vh;
+  max-height: none;
+  margin: 0;
+  padding: 18px 16px 0;
+  overflow-y: auto;
+  background: var(--base-bg);
+  border: 0;
+  border-right: 1px solid var(--at-line);
+  border-radius: 0;
+  box-shadow: var(--dropdown-shadow);
+}
+@media (max-width: 700px) {
+  #dlg[open],
+  #lyDlg[open] {
+    inset: auto 0 0 0;
+    width: 100%;
+    height: var(--side-h, 52vh);
+    border-right: 0;
+    border-top: 1px solid var(--at-line);
+  }
+}
+#dlg > *,
+#lyDlg > * {
+  flex: none;
+}
+#dTitle,
+#lyTitle {
+  display: block;
+  margin: 0 0 12px;
+  font: 600 22px/1.2 var(--at-serif);
+  color: var(--at-ink);
+}
+#dNoteHead {
+  display: block;
+  margin: 4px 0 8px;
+  font: 600 16px var(--at-serif);
+  color: var(--at-ink);
+}
+#dlg hr {
+  width: 100%;
+  margin: 16px 0 12px;
+  border: 0;
+  border-top: 1px solid var(--at-line);
+}
+.pf-hint {
+  position: relative;
+  margin: 0 0 12px;
+  padding: 12px 14px 12px 44px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--at-ink2);
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+  overflow: hidden;
+}
+.pf-hint::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  width: 18px;
+  height: 18px;
+  background: var(--at-blue);
+  -webkit-mask: var(--m-pin) center / contain no-repeat;
+  mask: var(--m-pin) center / contain no-repeat;
+}
+.pf-hint::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--at-blue);
+}
+#dlg > .row:has(#dSave),
+#lyDlg > .row:has(#lySave) {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+  margin: auto -16px 0;
+  padding: 12px 16px 14px;
+  background: var(--base-bg);
+  border-top: 1px solid var(--at-line);
+}
+#dSave,
+#lySave {
+  flex: 1.6;
+  height: 44px;
+  font-size: 14px;
+  color: #fff;
+  background: var(--at-blue);
+  border: 0;
+}
+#dSave:hover:not(:disabled),
+#lySave:hover:not(:disabled) {
+  background: var(--a-hover);
+  color: #fff;
+}
+#dCancel,
+#lyCancel {
+  flex: 1;
+  height: 44px;
+  font-size: 14px;
+  color: var(--at-blue);
+  background: var(--at-sunk);
+  border: 0;
+}
+#dErr:not(:empty),
+#lyErr2:not(:empty) {
+  margin: 8px 0 0;
+  color: var(--error-color);
+}
+
+/* a name is a card: language pills, the name on its own line, then the optional period */
+.pf .pf-name {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 12px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+}
+.pf-name select.nl {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.pf-name .pf-langpills {
+  grid-column: 1 / -1;
+  flex-wrap: nowrap;
+  margin: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pf-langpills .pill {
+  flex: none;
+  height: 28px;
+  padding: 0 11px;
+  font-size: 12.5px;
+}
+.pf-name .nn {
+  grid-column: 1;
+  height: 40px;
+  background: var(--at-sunk);
+  border-radius: var(--at-ctl);
+}
+.pf-name .pf-up,
+.pf-name .pf-del {
+  height: 32px;
+  min-height: 0;
+  padding: 0 8px;
+  color: var(--at-ink2);
+  background: none;
+  border: 0;
+}
+.pf-name .pf-period {
+  grid-column: 1 / -1;
+}
+button.pf-add {
+  height: 36px;
+  padding: 0 14px;
+  color: var(--at-blue);
+  background: none;
+  border: 1px dashed var(--at-blue);
+  border-radius: 18px;
+}
+/* the form sits under the header and the tabs of the panel on a desktop */
+@media (min-width: 701px) {
+  #dlg[open],
+  #lyDlg[open] {
+    top: 116px;
+    height: calc(100vh - 116px);
+  }
+}
+
+/* the footer slider with the bars of the places behind it */
+.pf-track {
+  height: 40px;
+  background: none;
+}
+.pf-track::before,
+.pf-track::after {
+  top: 27px;
+}
+.pf-track input[type="range"] {
+  inset: auto 0 0 0;
+  top: auto;
+  bottom: 0;
+}
+.pf-hist {
+  position: absolute;
+  inset: auto 0 13px 0;
+  height: 22px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  padding: 0 7px;
+  pointer-events: none;
+}
+.pf-hist i {
+  flex: 1;
+  background: color-mix(in srgb, var(--at-blue) 55%, var(--at-surface));
+  border-radius: 2px 2px 0 0;
+}
+#pfReset:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+#pfReset,
+#pfReset:disabled {
+  background: none;
+  border: 0;
+  color: var(--at-blue);
+}
+#pfReset:hover:not(:disabled) {
+  background: var(--at-sunk);
+}
+
+/* adding a border or finding a river replaces the list; Close is the bottom bar (prototype s75, s79) */
+#tab-shapes:has(#shAdd [data-shadd="closeadd"]) > :not(#shAdd) {
+  display: none;
+}
+#shAdd:has([data-shadd="closeadd"]) {
+  display: flex;
+  flex-direction: column;
+}
+#shAdd button[data-shadd="closeadd"] {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  width: calc(100% + 32px);
+  height: 44px;
+  margin: 16px -16px 0;
+  border-radius: 0;
+  box-shadow: 0 -10px 0 var(--base-bg);
+}
+
+/* ---- prototype details (T-070): the period footer is for Explore; "Add" is pinned to the bottom; Fit map is an icon; ‹ sits in the header ---- */
+:root {
+  --m-fit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9V5a1 1 0 011-1h4M15 4h4a1 1 0 011 1v4M20 15v4a1 1 0 01-1 1h-4M9 20H5a1 1 0 01-1-1v-4'/%3E%3C/svg%3E");
+  --m-chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 6l-6 6 6 6'/%3E%3C/svg%3E");
+}
+/* the Period | Moment bar belongs to Explore; the moment bar stays wherever it is on */
+body:has(.tabs .tab.on:not([data-tab="explore"])) #pfoot:has(> #timebar[hidden]) {
+  display: none;
+}
+/* the "Add ..." button sits at the bottom of the panel even when the list is short */
+#tab-shapes:not([hidden]),
+#tab-routes:not([hidden]),
+#tab-layers:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+#side #tab-shapes > #shAdd:has(> [data-shadd="open"]),
+#side #tab-routes > #rtAdd,
+#side #tab-layers #ly-add {
+  margin-top: auto;
+}
+#shFit,
+#rtFit {
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  font-size: 0;
+  color: var(--at-blue);
+}
+#shFit::before,
+#rtFit::before {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: auto;
+  background: currentColor;
+  -webkit-mask: var(--m-fit) center / contain no-repeat;
+  mask: var(--m-fit) center / contain no-repeat;
+}
+@media (min-width: 701px) {
+  body:not(.collapsed) #collapse {
+    top: 22px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    min-height: 0;
+    padding: 0;
+    transform: none;
+    background: none;
+    border: 0;
+    border-radius: var(--at-ctl);
+    box-shadow: none;
+    color: var(--at-blue);
+  }
+  body:not(.collapsed) #collapse svg {
+    display: none;
+  }
+  body:not(.collapsed) #collapse::before {
+    content: "";
+    display: block;
+    width: 20px;
+    height: 20px;
+    margin: auto;
+    background: currentColor;
+    -webkit-mask: var(--m-chev) center / contain no-repeat;
+    mask: var(--m-chev) center / contain no-repeat;
+  }
+  body:not(.collapsed) #collapse:hover {
+    background: var(--at-sunk);
+  }
+}
+#tab-shapes:not([hidden]) > *,
+#tab-routes:not([hidden]) > *,
+#tab-layers:not([hidden]) > * {
+  flex: none;
+}
+
+/* the open border, route or layer card unfolds under its row (prototype s74, s81, s86) */
+#side :is(#shDetail, #rtDetail, #lyDetail):not(#dock > *) {
+  flex: none;
+  display: flex;
+  margin: 4px 0 10px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+  overflow: hidden;
+}
+#side :is(#shDetail, #rtDetail, #lyDetail):not(#dock > *)[hidden] {
+  display: none;
+}
+#side :is(#shDetail, #rtDetail, #lyDetail):not(#dock > *) .dock-body {
+  overflow: visible;
+  flex: none;
+}
+#side :is(#shList, #rtList, #lyList) > li.on {
+  background: var(--at-surface);
+  border-radius: var(--at-card) var(--at-card) 0 0;
 }
