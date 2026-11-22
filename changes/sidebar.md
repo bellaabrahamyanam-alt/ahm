@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 4 (T-070)
+
+- **What:** "Atlas look, part 2" at the end of `app/css/sidebar.css`: small uppercase labels, Filters as a pill with an icon, flat chips, 8px buttons, place card with serif title and a timeline of notes.
+- **Why:** the prototype design was only partly visible.
+- **Files:** `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`; compare the place card with prototype screen s3.
+- **Follow-ups:** Period footer with histogram (new JS), Borders, Routes, Rivers, Layers, More tabs, closed rail, phone sheet.
+
 ## 2026-11-22 — Prototype look, slice 3 (T-070)
 
 - **What:** new "Atlas look" block at the end of `app/css/sidebar.css`: header with logo tile, tabs with icons and a blue bar, search field with an icon, quiet count bar, list rows with a marker tile and a serif name. Header and tab icons are static inline SVG in `app/index.html`. It does not need daisyUI to draw.

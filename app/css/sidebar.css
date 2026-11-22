@@ -1489,3 +1489,114 @@ body.collapsed #timebar {
 #list li.empty {
   display: block;
 }
+
+/* ---- Atlas look, part 2: labels, filters, place card, notes, buttons ---- */
+.label {
+  margin: 16px 0 8px;
+  padding: 0;
+  border: 0;
+  font: 600 11px/1 var(--font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--at-muted);
+}
+details.filters {
+  margin: 2px 0 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+details.filters > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px 0 10px;
+  list-style: none;
+  font: 500 12px var(--font);
+  color: var(--at-blue);
+  background: var(--select-bg);
+  border-radius: 14px;
+  cursor: pointer;
+}
+details.filters > summary::-webkit-details-marker {
+  display: none;
+}
+details.filters > summary::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 7h9M19 7h1M4 17h1M11 17h9'/%3E%3Ccircle cx='16' cy='7' r='2.2'/%3E%3Ccircle cx='8' cy='17' r='2.2'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 7h9M19 7h1M4 17h1M11 17h9'/%3E%3Ccircle cx='16' cy='7' r='2.2'/%3E%3Ccircle cx='8' cy='17' r='2.2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+details.filters[open] > summary {
+  margin-bottom: 4px;
+}
+.chip {
+  height: 28px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  color: var(--at-ink);
+}
+button.primary {
+  height: 34px;
+  border-radius: var(--at-ctl);
+}
+button:not(.btn):not(.tab):not(.chip) {
+  border-radius: var(--at-ctl);
+}
+.icon-btn {
+  border-radius: var(--at-ctl);
+  background: none;
+  color: var(--at-blue);
+}
+.icon-btn:hover {
+  background: var(--at-sunk);
+}
+
+/* the place card in the dock */
+#dock {
+  background: var(--at-surface);
+  border-top: 1px solid var(--at-line);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.12);
+}
+.dock-head {
+  padding: 10px 12px;
+}
+.dock-title {
+  font: 600 17px/1.2 var(--at-serif);
+  color: var(--at-blue);
+}
+#detail .names {
+  font: 15px/1.2 var(--at-serif);
+  color: var(--at-ink);
+}
+#detail .note,
+#detail .ly-note {
+  position: relative;
+  margin: 0 0 14px 4px;
+  padding: 0 0 0 18px;
+  background: none;
+  border: 0;
+  border-left: 1px solid var(--at-line);
+  border-radius: 0;
+}
+#detail .note::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 4px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--base-bg);
+  border: 2px solid var(--at-blue);
+}
+#detail .note-meta b {
+  font: 600 14px/1.25 var(--at-serif);
+  color: var(--at-ink);
+}
+#detail .note .sn {
+  color: var(--at-muted);
+}
