@@ -1,5 +1,5 @@
 {
-  "hash": "09b4fbfadddb1e0cd33f06d8e872ca8cdabe7d3a34f00feb36b0ef1c2499829c",
+  "hash": "2d1353f137af149d37ec8038b18f2c9b2dc37d02a87d8d36ad59fe80bae3646b",
   "js": [
     "js/config.js",
     "js/ahm.js",
@@ -33,7 +33,6 @@
   ],
   "css": [
     "css/base.css",
-    "css/theme.css",
     "css/sidebar.css",
     "css/map.css",
     "css/shapes.css"

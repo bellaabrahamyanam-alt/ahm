@@ -78,6 +78,42 @@
   --label-color: #425067;
 }
 
+/* ---------------------------------------------------------------------------
+   daisyUI theme "paper-and-pencil" (daisyUI 5.8.2 from the CDN, see index.html). Only maps
+   daisyUI variables to the tokens above; no colour is defined here.
+   --------------------------------------------------------------------------- */
+:root[data-theme='paper-and-pencil'] {
+  color-scheme: light;
+  --color-base-100: var(--panel-container-panel-bg-color);
+  --color-base-200: var(--bg1-bg-color);
+  --color-base-300: var(--border-color);
+  --color-base-content: var(--content-color);
+  --color-primary: var(--base-href-color);
+  --color-primary-content: var(--inputbox-bg);
+  --color-secondary: var(--btn-hover-bg);
+  --color-secondary-content: var(--content-color);
+  --color-accent: var(--base-fg-hover);
+  --color-accent-content: var(--inputbox-bg);
+  --color-neutral: var(--html-body-color);
+  --color-neutral-content: var(--base-bg);
+  --color-info: var(--route-b);
+  --color-info-content: var(--inputbox-bg);
+  --color-success: var(--route-a);
+  --color-success-content: var(--inputbox-bg);
+  --color-warning: var(--warning-color);
+  --color-warning-content: var(--content-color);
+  --color-error: var(--error-color);
+  --color-error-content: var(--inputbox-bg);
+  --radius-selector: var(--radius-pill);
+  --radius-field: var(--radius-s);
+  --radius-box: var(--radius-m);
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
 * {
   box-sizing: border-box;
 }

@@ -11,7 +11,7 @@ test('build: index.html marks the scripts and styles to bundle (the page loads t
   const s = b.sources();
   ok(s.js.length >= 20, 'found the scripts: ' + s.js.join(','));
   ok(s.js[0] === 'js/config.js' && s.js.at(-1) === 'js/features.js', 'first config.js, last features.js: ' + s.js[0] + ' ' + s.js.at(-1));
-  eq(['css/base.css', 'css/theme.css', 'css/sidebar.css', 'css/map.css', 'css/shapes.css'], s.css);
+  eq(['css/base.css', 'css/sidebar.css', 'css/map.css', 'css/shapes.css'], s.css);
   const html = fs.readFileSync(path.join(ROOT, 'app', 'index.html'), 'utf8');
   const all = [...html.matchAll(/<script src="(js\/[^"]+)"/g)].map((m) => m[1]);
   eq(all, s.js); // no local script outside the marked block: it would be missing from the bundle

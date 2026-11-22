@@ -22,12 +22,12 @@ Smaller option: one PR for F1+F2, one for F3..F6. Do not split further.
 ## F1 Design tokens and daisyUI theme
 
 - Routes/views: none (CSS only).
-- Do: move colours, spacing, radius, type scale, z-index and shadow to custom properties in the first `:root` block of `app/css/base.css`; add `app/css/theme.css` with the daisyUI theme `paper-and-pencil` mapped to those tokens; link it in the `<!-- ahm:css -->` block of `app/index.html`.
+- Do: move colours, spacing, radius, type scale, z-index and shadow to custom properties in the first `:root` block of `app/css/base.css`; add the daisyUI theme `paper-and-pencil` as a block in `app/css/base.css`, mapped to those tokens (a new css file needs an owner line in the protected `tools/domains.json`, so none is created); load daisyUI from the CDN before the `<!-- ahm:css -->` block of `app/index.html`.
 - Never create or link `app/css/colours.css` (`AGENTS.md`, "Facts").
-- Files owned: `app/css/base.css`, `app/css/theme.css` (new), `app/index.html` (css block only), vendored daisyUI file per D1.
+- Files owned: `app/css/base.css`, `app/index.html` (css block only).
 - Must NOT modify: `app/css/sidebar.css`, `app/css/map.css`, `app/css/shapes.css`, any `app/js/`.
 - Acceptance: no visual change on any screen except where a token replaces an equal value; one source for every colour.
-- Tests: `tests/js/ui-components.test.js` checks `theme.css` is linked in `index.html` and every token used in `theme.css` is defined in `base.css`.
+- Tests: in `tests/js/sidebar.test.js` (a new test file needs an owner line in the protected `tools/domains.json`): the CDN link has an exact version, and every token used in the theme block is defined in `base.css`.
 
 ## F2 App shell integration
 
@@ -37,7 +37,7 @@ Smaller option: one PR for F1+F2, one for F3..F6. Do not split further.
 - Files owned: `app/js/sidebar/layout.js`, `app/js/sidebar/ui.js`, `app/index.html` (tab bar and shell markup only, not the `<section id="tab-...">` bodies).
 - Must NOT modify: the bodies of `#tab-*` sections, `app/js/map/`, `app/js/core/`, `service/`.
 - Acceptance: all six tabs open and close sheets as before; keyboard and narrow-screen behaviour unchanged; `node tests/js/run.js 2>&1 | tail -15` passes.
-- Tests: extend `tests/js/sidebar.test.js` only for what existed; new cases in `tests/js/ui-components.test.js`.
+- Tests: extend `tests/js/sidebar.test.js` only for what existed; new cases in `tests/js/sidebar.test.js`.
 
 ## F3 Shared component interfaces
 
@@ -54,7 +54,7 @@ One file `app/js/sidebar/components.js`, registered in the `<!-- ahm:js -->` blo
 | Style | `styleEditor({ kind, style })` | colour, opacity, width, pattern, symbol, size |
 
 - Acceptance: every component has an empty, filled and invalid state; interface comments written once at the top of `components.js`.
-- Tests: `tests/js/ui-components.test.js`, one block per component (shape of the value, invalid input, `set`/`get` round trip).
+- Tests: `tests/js/sidebar.test.js`, one block per component (shape of the value, invalid input, `set`/`get` round trip).
 
 ## F4 Historical date editor
 
@@ -63,7 +63,7 @@ One file `app/js/sidebar/components.js`, registered in the `<!-- ahm:js -->` blo
 - Files owned: `app/js/sidebar/datefield.js`, `app/js/sidebar/components.js`.
 - Must NOT modify: `app/js/core/dates.js`, `service/dates.php` (the model is fixed).
 - Acceptance: 1200 BCE round trips to `-001199-01-01T00:00:00Z`; a range with `ts_to` before `ts` shows an error and does not save.
-- Tests: in `tests/js/ui-components.test.js`, using `tests/fixtures/dates-vectors.json` indirectly through `dates.js` (never open that fixture).
+- Tests: in `tests/js/sidebar.test.js`, using `tests/fixtures/dates-vectors.json` indirectly through `dates.js` (never open that fixture).
 
 ## F5 Period and Moment components
 
