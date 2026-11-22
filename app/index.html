@@ -294,6 +294,32 @@
         
       </div>
       </div>
+      <footer id="pfoot">
+        <div class="pf-line">
+          <div class="seg" role="group" aria-label="Period or moment">
+            <button type="button" id="pfPeriod" class="on" title="Show places that existed in a range of years">Period</button>
+            <button type="button" id="tbOpen" title="Show the map at one moment of history">Moment</button>
+          </div>
+          <span id="pfLabel">Any</span>
+          <button type="button" id="pfReset" class="icon-btn" title="Reset the period" aria-label="Reset the period" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
+        </div>
+        <div id="pfPeriodBox">
+          <div class="pf-track" style="--lo: 0%; --hi: 100%">
+            <input type="range" id="pfFrom" min="-1200" max="1500" step="10" value="-1200" aria-label="Period from, year" />
+            <input type="range" id="pfTo" min="-1200" max="1500" step="10" value="1500" aria-label="Period to, year" />
+          </div>
+          <div class="pf-ticks"><span>1200 BCE</span><span>0</span><span>1500 CE</span></div>
+        </div>
+        <div id="timebar" hidden>
+          <button id="tbPlay" type="button" class="icon-btn" aria-label="Play">▶</button>
+          <input id="tbSlider" type="range" min="0" max="1000" step="1" aria-label="Moment" />
+          <span id="tbLabel"></span>
+          <div id="tbAt"></div>
+          <select id="tbSpeed" aria-label="Speed, years per second"></select>
+          <label><input id="tbUndated" type="checkbox" checked /> Show undated</label>
+          <button id="tbOff" type="button">Off</button>
+        </div>
+      </footer>
       <div
         id="resizer"
         role="separator"
@@ -309,16 +335,6 @@
     <div id="map"></div>
     <!-- /region:map -->
     <!-- region:sidebar -->
-    <button id="tbOpen" type="button" title="Show the map at one moment of history">Time</button>
-    <div id="timebar" hidden>
-      <button id="tbPlay" type="button" aria-label="Play">▶</button>
-      <input id="tbSlider" type="range" min="0" max="1000" step="1" aria-label="Moment" />
-      <span id="tbLabel"></span>
-      <div id="tbAt"></div>
-      <select id="tbSpeed" aria-label="Speed, years per second"></select>
-      <label><input id="tbUndated" type="checkbox" checked /> Show undated</label>
-      <button id="tbOff" type="button">Off</button>
-    </div>
     <dialog id="dlg">
       <b id="dTitle"></b>
       <div id="dPlace"><div id="dPlaceForm"></div></div>

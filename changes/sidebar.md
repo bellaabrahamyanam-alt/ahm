@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 8: Period | Moment footer (T-070)
+
+- **What:** a footer at the bottom of the panel. Segmented switch Period | Moment, a label ("Any", "200 BCE – 300"), a reset ✕ and a two-handle year slider (1200 BCE to 1500 CE, step 10) that fills the same From and To date fields of the Explore filters, so the list, chips and map follow as before. Moment mode shows the existing time bar (play, slider, speed, undated, Off) in the same slot. The floating "Time" button and bar over the map are gone; their ids are unchanged. New in `period.js`: `periodSync`, `pfSlide`, `periodLabel`; `tbOpen` does nothing when the moment is already on; `tbRender` also toggles the switch.
+- **Why:** prototype screens s1, s2 and s22.
+- **Files:** `app/index.html`, `app/js/sidebar/{period,timebar}.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: drag a handle, the list narrows and the chip "period" appears; ✕ resets; Moment shows the bar, Period hides it.
+- **Follow-ups:** the histogram of places behind the slider; a slider step finer than 10 years; Moment controls restyled (the date field is still the old one).
+
 ## 2026-11-22 — Prototype look, slice 7: Rivers and Routes (T-070)
 
 - **What:** Rivers find card and selection card, Routes path finder as an accordion card; the blue sticky footer only for the "Add border" button (not for the river panel).

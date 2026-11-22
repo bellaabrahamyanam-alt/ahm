@@ -8,6 +8,7 @@ const tbPatch = (p) => AHM.state.patch('time', p);
 const tbSpan = () => timeSpan([...places, ...shapes]);
 /** The "Time" button: switch the bar on at the earliest date of the data (nothing happens while no object has a date). */
 function tbOpen() {
+  if (AHM.state.get('time').at !== null) return; // already on: the segment button does nothing
   const span = tbSpan();
   if (span) tbPatch({ at: secToIso(span[0]) });
 }
@@ -42,9 +43,13 @@ function tbTick(dtMs) {
 function tbRender() {
   const t = AHM.state.get('time'),
     span = tbSpan();
-  $('#timebar').hidden = t.at === null;
-  $('#tbOpen').hidden = t.at !== null;
-  if (t.at === null) return;
+  const on = t.at !== null;
+  $('#timebar').hidden = !on;
+  $('#tbOpen').classList.toggle('on', on); // Period | Moment switch of the footer
+  $('#pfPeriod').classList.toggle('on', !on);
+  $('#pfPeriodBox').hidden = on;
+  $('#pfLabel').hidden = on;
+  if (!on) return;
   const d = { fmt: 'y', ts: t.at, mode: 'exact', ts_to: null };
   $('#tbPlay').textContent = t.playing ? '⏸' : '▶';
   $('#tbPlay').setAttribute('aria-label', t.playing ? 'Pause' : 'Play');
@@ -59,6 +64,7 @@ function tbRender() {
 $('#tbSpeed').innerHTML = TB_SPEEDS.map((v) => `<option value="${v}">${v} y/s</option>`).join('');
 $('#tbOpen').onclick = tbOpen;
 $('#tbOff').onclick = tbOff;
+$('#pfPeriod').onclick = tbOff;
 $('#tbPlay').onclick = () => tbPlay(!AHM.state.get('time').playing);
 $('#tbSpeed').addEventListener('change', () => tbPatch({ speed: Number($('#tbSpeed').value) }));
 $('#tbUndated').addEventListener('change', () => tbPatch({ undated: $('#tbUndated').checked }));
