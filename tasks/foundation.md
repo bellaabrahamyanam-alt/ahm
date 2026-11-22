@@ -16,7 +16,7 @@ Smaller option: one PR for F1+F2, one for F3..F6. Do not split further.
 
 ## Needs you (blocks F1)
 
-- D1 daisyUI delivery. The project has no build step in development (`AGENTS.md` section 4) and no daisyUI today. Options: 1. vendored, version-pinned prebuilt CSS file in `app/vendor/`; 2. CDN `<link>` (like maplibre); 3. skip daisyUI and keep hand CSS. Recommendation: 1. Not verified: that the prebuilt daisyUI CSS gives the component classes without Tailwind.
+- D1 daisyUI delivery: ANSWERED 2026-11-23 by the owner: CDN `<link>`. Built in F1 as `https://cdn.jsdelivr.net/npm/daisyui@5.8.2/daisyui.css` (exact version, no Tailwind script). The file is layered (`@layer`), so our unlayered css wins. Not verified in a browser: that component classes look right without Tailwind (two `--tw-` variables exist in the tab rules).
 - D2 `tools/domains.json` is protected. New test files `tests/js/ui-*.test.js` need an entry in the `sidebar` domain. Needs an `Approved:` line. Not verified: how `tools/check-domain.js` treats an unlisted test file.
 
 ## F1 Design tokens and daisyUI theme

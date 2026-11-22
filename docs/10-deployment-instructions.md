@@ -6,7 +6,7 @@
 
 - phpBB **3.2 or 3.3** (the extension declares `>=3.2.0,<4.0.0`) and PHP **7.1.3 or newer**.
 - The web server user can **write** to the forum's `store/` folder (phpBB already needs this).
-- Visitors' browsers can reach the outside services: the base map and fonts (OpenFreeMap), the satellite tiles (EOX), directions (OSRM), place search (Nominatim) and the MapLibre library from the jsDelivr CDN.
+- Visitors' browsers can reach the outside services: the base map and fonts (OpenFreeMap), the satellite tiles (EOX), directions (OSRM), place search (Nominatim) the MapLibre library and the daisyUI stylesheet (`daisyui@5.8.2`, exact version) from the jsDelivr CDN.
 
 ### First installation
 

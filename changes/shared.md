@@ -155,3 +155,12 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Not changed:** `tools/build.js` and `app/dist` of this repository. With the Bun engine the new tool gives byte-identical `app.min.js` / `app.min.css` (checked). Moving the map bundle to terser is a separate decision: it changes `app/dist`.
 - **Files:** `tools/assets/*`, `tests/js/build.test.js` (5 tests added, engine `none`, no minifier needed).
 - **How to verify:** `node tests/js/run.js "assets:"`. NOT verified: terser and lightningcss output (the packages are not installed in the sandbox, network for packages is off), the size gain, the phpBB template wiring in the README (not seen on a forum).
+
+## 2026-11-23 — F1: design tokens and daisyUI theme (tasks/foundation.md)
+
+- **What:** daisyUI 5.8.2 from the jsDelivr CDN (exact version, before the bundled css block, so it is not bundled); new `app/css/theme.css` with the theme `paper-and-pencil` that only maps daisyUI variables to the tokens of `base.css`; `data-theme="paper-and-pencil"` on `<html>`; one new token `--warning-color`.
+- **Why:** the owner chose the CDN (D1). The shared components and the six screen tasks build on one theme.
+- **Files:** `app/css/theme.css`, `app/css/base.css`, `app/index.html`, `app/dist/`, `tests/js/ui-components.test.js`, `docs/04`, `docs/10`, `docs/12`, `tasks/foundation.md`.
+- **How to verify:** `node tests/js/run.js "foundation F1"`.
+- **Not verified:** that no screen changes visually (no browser run here); daisyUI's `.tabs` and `.tab` class names collide with `nav.tabs` in `app/index.html`, and its `:root`/`html` rules set background, font and scrollbar (layered, so ours win). Check these in a browser first.
+- **Follow-ups:** F2 (shell) next; D2 (`tools/domains.json`) still open.

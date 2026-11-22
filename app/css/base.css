@@ -67,6 +67,8 @@
   /* route markers (A = start, B = destination) */
   --route-a: #2a8f4f;
   --route-b: #1d6fd1;
+  /* warning colour (used by the daisyUI theme in theme.css) */
+  --warning-color: #b7791f;
   /* handles used to fit an image overlay to the map */
   --handle-corner: var(--error-color);
   --handle-center: var(--a);
