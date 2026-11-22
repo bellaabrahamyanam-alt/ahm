@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 5 (T-070)
+
+- **What:** "Atlas look, part 3" in `app/css/sidebar.css`: intro paragraphs with an info icon, search fields with an icon on every tab (label for screen readers only), sticky blue "Add border/route/layer" footer, eye toggles for the visibility checkboxes, marker-tile rows in Borders and Routes, and More sections as accordion cards with an icon and a sub line (`<small>` added to the five `summary` elements in `app/index.html`).
+- **Why:** the other tabs still looked like the old design.
+- **Files:** `app/css/sidebar.css`, `app/index.html`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`; compare Borders and More with prototype screens s73 and s19.
+- **Follow-ups:** Layers cards with the three-state Only/Hide switch, Rivers panel, Routes finder card, Period footer with histogram, closed rail, phone sheet.
+
 ## 2026-11-22 — Prototype look, slice 4 (T-070)
 
 - **What:** "Atlas look, part 2" at the end of `app/css/sidebar.css`: small uppercase labels, Filters as a pill with an icon, flat chips, 8px buttons, place card with serif title and a timeline of notes.

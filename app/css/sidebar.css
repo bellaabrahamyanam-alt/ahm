@@ -1386,7 +1386,7 @@ body.collapsed #timebar {
   align-items: center;
   padding: 10px 0 6px;
 }
-.searchbar .field {
+.field {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1396,7 +1396,7 @@ body.collapsed #timebar {
   border: 1px solid var(--inputbox-border);
   border-radius: var(--at-ctl);
 }
-.searchbar .field::before {
+.field::before {
   content: "";
   position: absolute;
   left: 11px;
@@ -1408,11 +1408,11 @@ body.collapsed #timebar {
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E") center / contain no-repeat;
 }
-.searchbar .field:focus-within {
+.field:focus-within {
   border-color: var(--at-blue);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--at-blue) 14%, transparent);
 }
-.searchbar .field input {
+.field input {
   flex: 1;
   height: 100%;
   font-size: 13px;
@@ -1447,7 +1447,9 @@ body.collapsed #timebar {
 }
 
 /* ---- list rows: marker tile, serif name, quiet detail line ---- */
-#list li {
+#list li ,
+#side #shList li ,
+#side #rtList li  {
   display: grid;
   grid-template-columns: 32px 1fr;
   column-gap: 12px;
@@ -1457,13 +1459,19 @@ body.collapsed #timebar {
   border-radius: var(--at-ctl);
   transition: background var(--at-t);
 }
-#list li:first-child {
+#list li:first-child ,
+#side #shList li:first-child ,
+#side #rtList li:first-child  {
   border-top: 0;
 }
-#list li .t {
+#list li .t ,
+#side #shList li .t ,
+#side #rtList li .t  {
   display: contents;
 }
-#list li .tmark {
+#list li .tmark ,
+#side #shList li .tmark ,
+#side #rtList li .tmark  {
   grid-row: 1 / span 3;
   justify-content: center;
   width: 32px;
@@ -1477,16 +1485,22 @@ body.collapsed #timebar {
   font: 600 15px/1.2 var(--at-serif);
   color: var(--at-ink);
 }
-#list li .sn {
+#list li .sn ,
+#side #shList li .sn ,
+#side #rtList li .sn  {
   grid-column: 2;
   margin-top: 3px;
   font-size: 12px;
   color: var(--at-ink2);
 }
-#list li.on {
+#list li.on ,
+#side #shList li.on ,
+#side #rtList li.on  {
   background: var(--at-surface);
 }
-#list li.empty {
+#list li.empty ,
+#side #shList li.empty ,
+#side #rtList li.empty  {
   display: block;
 }
 
@@ -1599,4 +1613,191 @@ button:not(.btn):not(.tab):not(.chip) {
 }
 #detail .note .sn {
   color: var(--at-muted);
+}
+
+/* ---- Atlas look, part 3: other tabs (intro, search, add footer, eye toggles, More accordions) ---- */
+:root {
+  --m-eye: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+  --m-eyeoff: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18M10.5 6.2A9.6 9.6 0 0112 6c6 0 10 6 10 6a17 17 0 01-3.2 3.7M6.4 7.6C3.7 9.4 2 12 2 12s4 7 10 7c1.6 0 3-.4 4.3-1M9.9 9.9a3 3 0 004.2 4.2'/%3E%3C/svg%3E");
+  --m-map: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z'/%3E%3Cpath d='M9 4v14M15 6v14'/%3E%3C/svg%3E");
+  --m-nav: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11L21 3l-8 18-2-8z'/%3E%3C/svg%3E");
+  --m-lang: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h9M8.5 4v2M6 6c.5 3 3 6 6 7M12 6c-.5 3-3 6-6.5 7.5'/%3E%3Cpath d='M13 20l4-9 4 9M14.4 17h5.2'/%3E%3C/svg%3E");
+  --m-tag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 12V4h8l10 10-8 8z'/%3E%3Ccircle cx='7.5' cy='8.5' r='1.2'/%3E%3C/svg%3E");
+  --m-folder: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z'/%3E%3C/svg%3E");
+  --m-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  --m-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 11v5M12 8v.01'/%3E%3C/svg%3E");
+}
+.mask-ic,
+#side .fold > summary::before,
+#side .fold > summary::after,
+#side section > p.sn:first-child::before {
+  content: "";
+  flex: none;
+  background: currentColor;
+  -webkit-mask: var(--mi) center / contain no-repeat;
+  mask: var(--mi) center / contain no-repeat;
+}
+#side .tabs .tab,
+#side .tabs .tab:hover,
+#side .tabs .tab.on {
+  background: none;
+  box-shadow: none;
+}
+/* intro paragraph with an info icon */
+#side section > p.sn:first-child {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--at-muted);
+}
+#side section > p.sn:first-child::before {
+  --mi: var(--m-info);
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  color: var(--at-blue);
+}
+/* search label is read by screen readers only; the field carries the placeholder */
+.label:has(+ [data-searchfield]),
+.label:has(+ div .field),
+#shSearchLbl {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+/* sticky "Add ..." footer */
+#side :is(#shAdd, #rtAdd, #lyAdd) {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 12px -16px 0;
+  padding: 10px 16px 14px;
+  background: var(--base-bg);
+  border-top: 1px solid var(--at-line);
+}
+#side :is(#shAdd, #rtAdd, #lyAdd) button {
+  width: 100%;
+  height: 44px;
+  font-size: 14px;
+  color: #fff;
+  background: var(--at-blue);
+  border: 0;
+}
+#side :is(#shAdd, #rtAdd, #lyAdd) button:hover {
+  background: var(--a-hover);
+}
+/* visibility checkboxes in lists look like the prototype's eye buttons */
+#shList input[type="checkbox"],
+#rtList input[type="checkbox"],
+#rvList input[type="checkbox"] {
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--at-ctl);
+  background: var(--at-blue);
+  -webkit-mask: var(--m-eyeoff) center / 18px no-repeat;
+  mask: var(--m-eyeoff) center / 18px no-repeat;
+  cursor: pointer;
+}
+#shList input[type="checkbox"]:checked,
+#rtList input[type="checkbox"]:checked,
+#rvList input[type="checkbox"]:checked {
+  -webkit-mask-image: var(--m-eye);
+  mask-image: var(--m-eye);
+}
+/* More: every section is one accordion card */
+#side .fold {
+  margin: 0 0 8px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+  overflow: hidden;
+}
+#side .fold[open] {
+  box-shadow: inset 3px 0 0 var(--at-blue);
+}
+#side .fold > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  list-style: none;
+  font: 600 15px/1.2 var(--at-serif);
+  color: var(--at-ink);
+  background: none;
+  cursor: pointer;
+}
+#side .fold > summary::-webkit-details-marker {
+  display: none;
+}
+#side .fold > summary::before {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--at-ctl);
+  background-color: var(--at-blue);
+  -webkit-mask-size: 18px;
+  mask-size: 18px;
+  box-sizing: border-box;
+  /* tile: icon is the mask, so the tile edge is drawn by the summary's own gradient */
+}
+#side .fold > summary small {
+  display: block;
+  margin-top: 3px;
+  font: 400 11.5px/1.2 var(--font);
+  color: var(--at-muted);
+}
+#side .fold > summary::after {
+  --mi: var(--m-down);
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  color: var(--at-muted);
+  transition: transform var(--at-t);
+}
+#side .fold[open] > summary::after {
+  transform: rotate(180deg);
+}
+#side .fold[open] > summary .t {
+  color: var(--at-blue);
+}
+#more-maps > summary::before { --mi: var(--m-map); }
+#more-route > summary::before { --mi: var(--m-nav); }
+#more-lang > summary::before { --mi: var(--m-lang); }
+#more-types > summary::before { --mi: var(--m-tag); }
+#more-cat > summary::before { --mi: var(--m-folder); }
+#side .fold > .fold-body {
+  margin: 0 14px;
+  padding: 12px 0 14px;
+  border-top: 1px solid var(--at-line);
+}
+
+#side #shList li b,
+#side #rtList li b {
+  font: 600 15px/1.2 var(--at-serif);
+  color: var(--at-ink);
+}
+#side #shList li.on,
+#side #rtList li.on {
+  background: var(--at-surface);
+}
+#side .sh-eye {
+  grid-column: 3;
+  grid-row: 1 / span 3;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  margin: 0;
+  padding: 0;
+}
+#side #shList li,
+#side #rtList li {
+  grid-template-columns: 32px 1fr auto;
 }
