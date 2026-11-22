@@ -3722,3 +3722,9 @@ body:has(#dock.inline:not([hidden])) #ly-add {
 #more-cat .langs li.tr > b {
   font: 500 15px var(--ui);
 }
+#more-cat .langs li.tr > b {
+  color: var(--content-color);
+}
+#more-cat .langs li.tr > .sn {
+  font: 12px var(--ui);
+}
