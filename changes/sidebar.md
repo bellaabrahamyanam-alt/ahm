@@ -1,5 +1,12 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 3 (T-070)
+
+- **What:** new "Atlas look" block at the end of `app/css/sidebar.css`: header with logo tile, tabs with icons and a blue bar, search field with an icon, quiet count bar, list rows with a marker tile and a serif name. Header and tab icons are static inline SVG in `app/index.html`. It does not need daisyUI to draw.
+- **Why:** slices 1 and 2 changed too little; the prototype design was not visible.
+- **Files:** `app/css/sidebar.css`, `app/index.html`, `app/js/sidebar/layout.js` (a click on a tab icon now selects the tab), `app/dist/`
+- **How to verify:** `node tests/js/run.js`. By hand: compare Explore with prototype screen s1.
+- **Follow-ups:** period footer, filters panel, place card (accordion), other tabs.
 ## 2026-11-22 — daisyUI Explore, slice 2 (T-070)
 
 - **What:** search field = daisyUI `input input-sm` wrapper with a bare `input.grow`; type, certainty and source chips are `btn btn-xs`; Reset and Fit map are `btn btn-sm`; sort and language are `select select-sm`. Legacy global `button`, `select`, `input` rules now skip `.btn`, `.select`, `.grow` so daisyUI styles them.

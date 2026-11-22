@@ -1284,3 +1284,208 @@ body.collapsed #timebar {
 .pf-srcerr:empty {
   display: none;
 }
+
+/* Atlas look (sidebar domain, T-070): the prototype design on top of sidebar.css. Self-contained: it does not need daisyUI to draw.
+   Loaded last in the ahm:css block. Tokens are the prototype's; the forum palette in base.css is unchanged. */
+:root {
+  --at-line: #e3dec4;
+  --at-sunk: #edeada;
+  --at-surface: #f8f5e4;
+  --at-ink: #333c43;
+  --at-ink2: #5c6a72;
+  --at-muted: #7b858b;
+  --at-blue: #115098;
+  --at-serif: Georgia, Gelasio, "Times New Roman", serif;
+  --at-ctl: 8px;
+  --at-card: 12px;
+  --at-t: 150ms ease-out;
+}
+
+/* ---- header: logo tile, title, subtitle ---- */
+.hd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 12px 20px;
+}
+.hd .logo {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--at-ctl);
+  background: var(--at-blue);
+  color: var(--at-surface);
+}
+.hd h1 {
+  margin: 0;
+  font: 600 17px/1.15 var(--at-serif);
+  color: var(--at-ink);
+}
+.hd p {
+  margin: 1px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--at-muted);
+}
+
+/* ---- tabs: icon above the label, blue bar under the active one ---- */
+.tabs {
+  display: flex;
+  gap: 0;
+  margin: 0;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--at-line);
+}
+.tabs .tab {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  height: auto;
+  padding: 8px 0 9px;
+  font: 500 11px/1 var(--font);
+  color: var(--at-ink2);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  transition: color var(--at-t);
+}
+.tabs .tab svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.tabs .tab:hover {
+  background: none;
+  color: var(--a-hover);
+}
+.tabs .tab.on {
+  color: var(--at-blue);
+  background: none;
+}
+.tabs .tab.on::after {
+  content: "";
+  position: absolute;
+  inset: auto 18% -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--at-blue);
+}
+
+/* ---- search: icon inside the field, flat sunk field ---- */
+.searchbar {
+  align-items: center;
+  padding: 10px 0 6px;
+}
+.searchbar .field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 10px 0 34px;
+  background: var(--at-sunk);
+  border: 1px solid var(--inputbox-border);
+  border-radius: var(--at-ctl);
+}
+.searchbar .field::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  background: var(--at-muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M20 20l-4.2-4.2'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.searchbar .field:focus-within {
+  border-color: var(--at-blue);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--at-blue) 14%, transparent);
+}
+.searchbar .field input {
+  flex: 1;
+  height: 100%;
+  font-size: 13px;
+  color: var(--at-ink);
+}
+#reset {
+  height: 38px;
+  background: var(--select-bg);
+  border: 1px solid var(--select-border-color);
+  border-radius: var(--at-ctl);
+}
+
+/* ---- count bar: quiet, icon-weight buttons ---- */
+.bar {
+  margin: 12px 2px 4px;
+  font-size: 12px;
+}
+.bar #count {
+  color: var(--at-ink2);
+}
+.bar button {
+  background: none;
+  border: 0;
+  color: var(--at-blue);
+  font-weight: 600;
+}
+.bar select {
+  background: none;
+  border-color: transparent;
+  color: var(--at-blue);
+  font-weight: 600;
+}
+
+/* ---- list rows: marker tile, serif name, quiet detail line ---- */
+#list li {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  column-gap: 12px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--at-ctl);
+  transition: background var(--at-t);
+}
+#list li:first-child {
+  border-top: 0;
+}
+#list li .t {
+  display: contents;
+}
+#list li .tmark {
+  grid-row: 1 / span 3;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-ctl);
+}
+#list li .t > b,
+#list li b {
+  font: 600 15px/1.2 var(--at-serif);
+  color: var(--at-ink);
+}
+#list li .sn {
+  grid-column: 2;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--at-ink2);
+}
+#list li.on {
+  background: var(--at-surface);
+}
+#list li.empty {
+  display: block;
+}

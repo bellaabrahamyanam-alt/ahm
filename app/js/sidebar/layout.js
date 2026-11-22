@@ -36,7 +36,8 @@ function tab(n) {
   rtRenderView(); // and the route card to the Routes tab
 }
 document.querySelector(".tabs").addEventListener("click", (e) => {
-  if (e.target.dataset.tab) tab(e.target.dataset.tab);
+  const b = e.target.closest("[data-tab]"); // the click may land on the icon inside the button
+  if (b) tab(b.dataset.tab);
 });
 // the handle on the right edge of the sidebar: one button, the icon and the label say what it does now
 function sideHandle(h) {
