@@ -17,9 +17,11 @@ Rebuild on the F0 components, no behaviour change:
 
 ## Prototype screenshot references
 
-Not provided. Slots: `prototype/routes-list.png`, `route-card.png`, `route-draw.png`, `route-stops.png`. Do not start before they exist.
+Prototype frames: `docs/prototype/png/s34.png` route form after drawing. The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
 
-## Missing screens and states (ASSUMED, check against prototype)
+## Missing screens and states
+
+No frame for: routes list, route card, drawing mode, stops list, notes, empty and error states, read-only visitor. The list below is ASSUMED from the code.
 
 - Empty list, no match.
 - Drawing active, Cancel, fewer than 2 points.

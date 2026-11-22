@@ -20,9 +20,11 @@ Rebuild on the F0 components, no behaviour change:
 
 ## Prototype screenshot references
 
-Not provided. Slots: `prototype/more-maps.png`, `more-overlay-editor.png`, `more-3d.png`, `more-directions.png`, `more-languages.png`, `more-types.png`. Do not start before they exist.
+Prototype frames: `docs/prototype/png/s19.png` More as accordion cards; `s20.png` place type editor; `s21.png` historical maps and categories; `s41.png` add a language, rename a category; `s43.png` route / river type editor; `s44.png` area type editor. The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
 
-## Missing screens and states (ASSUMED, check against prototype)
+## Missing screens and states
+
+No frame for: overlay corner editor, 3D and terrain controls, Directions, upload errors, read-only visitor. The list below is ASSUMED from the code.
 
 - Overlay upload: too large, wrong type, shrinking, saving, error.
 - Terrain not configured (control hidden or explained).

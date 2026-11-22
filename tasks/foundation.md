@@ -1,6 +1,6 @@
 # Task F0: shared foundation (must merge before every other task)
 
-Source `02-shared-components.md` and the prototype screenshots were NOT available when this was written. Everything marked `ASSUMED` is derived from `docs/02-implemented-features.md` and the code, and must be checked against the prototype before building.
+Source: the prototype in `docs/prototype/` (received 2026-11-23: `sidebar.html`, `sidebar.css`, `sidebar.js`, 19 screenshots in `png/`). `02-shared-components.md` was NOT received. The prototype is custom CSS (no daisyUI) with the same palette as `base.css`; its helpers in `sidebar.js` (`dateF`, `pfoot`, `mfoot`, `nameRow`, `typePills`, `shapePills`, `fld`, `ffoot`, `sel`, `pills`, `colr`, `symT`, `patT`) are the model of the shared components. Frames: `s47.png`, `s48.png` date formats, `s49.png` Period vs Moment, `s28.png` period of a name.
 
 ## Dependencies
 

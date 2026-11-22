@@ -18,9 +18,11 @@ Rebuild on the F0 components, no behaviour change:
 
 ## Prototype screenshot references
 
-Not provided. Slots: `prototype/layers-list.png`, `layer-sheet.png`, `layer-choose-places.png`, `categories.png`. Do not start before they exist.
+Prototype frames: none for the Layers tab (`s21.png`, categories, is in More and belongs to task `more`; check whether categories move). The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
 
-## Missing screens and states (ASSUMED, check against prototype)
+## Missing screens and states
+
+No frame for any Layers screen: list, layer sheet, Choose places, Only / Hide, categories in the tab. The list below is ASSUMED from the code.
 
 - No layers yet, no match, empty category.
 - Layer with no places; layer whose place was deleted.

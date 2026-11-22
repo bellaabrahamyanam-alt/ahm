@@ -18,9 +18,11 @@ Rebuild on the F0 components, no behaviour change:
 
 ## Prototype screenshot references
 
-Not provided. Slots: `prototype/borders-list.png`, `border-card.png`, `border-draw.png`, `border-notes.png`. Do not start before they exist.
+Prototype frames: `docs/prototype/png/s33.png` border, new version in time (Add another name, date field). The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
 
-## Missing screens and states (ASSUMED, check against prototype)
+## Missing screens and states
+
+No frame for: borders list, border card (colour, opacity, width), drawing mode, notes, empty and error states, read-only visitor. The list below is ASSUMED from the code.
 
 - Empty list, no match, no border in the current period.
 - Drawing active with Cancel (Esc) and a point counter; too few points.

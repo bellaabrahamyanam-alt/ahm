@@ -12,7 +12,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 | state | 1 | 44 | `app/js/state/state.js` (44) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
 | data | 8 | 4134 | `service/store.php` (2055) |
-| shared | 5 | 262 | `app/js/config.js` (155) |
+| shared | 6 | 518 | `docs/prototype/sidebar.js` (256) |
 
 ## Flags
 
@@ -41,14 +41,14 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 
 ## Where to look (by file name)
 
-- sidebar: app/js/sidebar/actions.js, app/js/sidebar/admin.js, app/js/sidebar/datefield.js +10
+- sidebar: app/js/sidebar/actions.js, app/js/sidebar/admin.js, app/js/sidebar/datefield.js +11
 - map: app/js/map/map.js, app/js/map/overlays.js, app/js/map/shapes.js +1
 - layer: app/js/core/layer-rules.js, app/js/sidebar/layers.js
 - search: app/js/core/search.js, app/js/sidebar/searchfield.js
 - date: app/js/core/dates.js, app/js/sidebar/datefield.js, service/dates.php
 - state: app/js/state/state.js
 - campaign: app/features/campaigns/main.js
-- type: app/js/map/typeicons.js
+- type: app/js/map/typeicons.js, docs/prototype/sidebar.js
 - shape: app/js/core/shapes.js, app/js/map/shapes.js, app/js/sidebar/shapes.js
 - route: app/js/core/routes.js, app/js/sidebar/routes.js
 - place: app/js/sidebar/placeform.js, app/js/sidebar/places.js

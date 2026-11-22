@@ -20,9 +20,11 @@ Restyle and rebuild these on the F0 components, with no behaviour change:
 
 ## Prototype screenshot references
 
-Not provided. Slots to fill by the owner: `prototype/explore-list.png`, `explore-filters.png`, `place-sheet.png`, `place-form.png`, `note-dialog.png`, `time-bar.png`, `point-card.png`. Do not start before they exist.
+Prototype frames (`docs/prototype/png/`, titles from `docs/prototype/sidebar.js`): `s1.png` Explore with Period footer and Time-travel button; `s2.png` filters (type, certainty, language, Period From/To); `s3.png` place details as one card; `s7.png` edit a place; `s28.png` period of a name; `s45.png` notes; `s46.png` note edit (new date field); `s22.png` Moment (time travel); `s49.png` Period vs Moment. The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
 
-## Missing screens and states (ASSUMED, check against prototype)
+## Missing screens and states
+
+No frame for: place list rows with no filters, hover popup, point card, Nominatim results, empty and error states, read-only visitor, add-place from the map. The list below is ASSUMED from the code.
 
 - Empty data (no places yet), no search results, no results for the current period.
 - Nominatim: running, no result, error, throttled.

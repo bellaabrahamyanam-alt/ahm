@@ -17,9 +17,11 @@ Rebuild on the F0 components, no behaviour change:
 
 ## Prototype screenshot references
 
-Not provided. Slots: `prototype/rivers-list.png`, `river-card.png`, `rivers-select.png`. Do not start before they exist.
+Prototype frames: `docs/prototype/png/s43.png` route / river type editor (Add another name). The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
 
-## Missing screens and states (ASSUMED, check against prototype)
+## Missing screens and states
+
+No frame for: rivers list, river card, Select by rectangle / by area, river size, empty and error states, read-only visitor. The list below is ASSUMED from the code.
 
 - Empty list, no match.
 - Selection: running, nothing found, N rivers selected with Clear, Esc hint.
