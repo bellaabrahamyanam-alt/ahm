@@ -70,7 +70,7 @@ function setData(p, n) {
 }
 function placeRowHTML(p, hits, l, q) {
   return (
-    `<li data-id="${p.id}"><div class="t"><span class="tmark" title="${esc(typeLabel(p.type, l))}">${typeIcon(p.type)}</span><b>${esc(label(p, l))}</b></div>` +
+    `<li data-id="${p.id}"><div class="t"><span class="tmark" title="${esc(typeLabel(p.type, l))}">${typeIcon(p.type)}</span><b>${esc(label(p, l))}</b>${(by[p.id] || []).length ? `<span class="nn" title="${by[p.id].length} notes">${by[p.id].length}</span>` : ""}</div>` +
     (placeWhen(p) ? `<div class="sn">${esc(placeWhen(p))}</div>` : "") +
     (nameMatch(p, q, l) ? `<div class="sn">also called ${esc(nameMatch(p, q, l))}</div>` : "") + // an old name found by the search (T-043)
     (hits[0] ? `<div class="sn">${mark(hits[0].text, q)}</div>` : "") +

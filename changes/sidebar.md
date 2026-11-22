@@ -1,5 +1,12 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 10: note count on rows (T-070)
+
+- **What:** each Explore row shows a document icon and the number of notes of the place at its right end (`span.nn` in `placeRowHTML`, no badge when there are no notes). Data: `by[place.id]`, already loaded.
+- **Why:** prototype screen s3.
+- **Files:** `app/js/sidebar/places.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`; the Explore list.
+
 ## 2026-11-22 — Prototype look, slice 9: closed rail (T-070)
 
 - **What:** on a desktop the closed sidebar is a 60px rail with the logo tile and the six tab icons (titles as tooltips) instead of sliding away. A click on a tab icon opens the panel on that tab; the logo tile (role=button, Enter/Space) and the chevron both toggle the panel; map controls move 60px right. Phones keep the bottom sheet.
