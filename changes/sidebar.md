@@ -6,7 +6,7 @@
 - **Why:** a bug found in slice 5 and prototype screen s99.
 - **Files:** `app/css/sidebar.css`, `app/dist/`
 - **How to verify:** `node tests/js/run.js`; Borders list scrolled to the end; a 390px wide window.
-- **Not mine:** the "Campaigns (development)" badge is the scaffold of `app/features/campaigns`; it overlaps the footer on a small screen.
+- **Not mine:** a yellow development badge from a feature scaffold overlaps the footer on a small screen; it belongs to that feature's own domain.
 
 ## 2026-11-22 — Prototype look, slice 13: Find rivers and Add border panels (T-070)
 
