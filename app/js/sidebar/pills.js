@@ -6,7 +6,13 @@ const PL_MAX = 5;
 const PL_CHEV = '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 const plIsLang = (sel) => sel.matches(".nl, #nLang, #lang");
 // the base map choice shows cards with a small colour sample (T-080): plain map, satellite pictures, relief
-const plSample = (o) => (o.value === "" ? "#e6e1c6" : /relief/i.test(o.value + o.textContent) ? "linear-gradient(135deg,#a8c98b,#e9dfa8 55%,#a58a6a)" : "linear-gradient(135deg,#4d6b4a,#8a8f5a 60%,#6b5a43)");
+const plSample = (o) => {
+  const t = (o.value + " " + o.textContent).toLowerCase();
+  if (/relief/.test(t)) return "linear-gradient(135deg,#c9a77a,#a8855c 55%,#6f4f33)";
+  if (/satellite|aerial|photo|sat\b/.test(t)) return "linear-gradient(135deg,#4d6b4a,#8a8f5a 60%,#6b5a43)";
+  if (/terrain/.test(t)) return "linear-gradient(135deg,#a8c98b,#d8dfae 55%,#e9e2b5)";
+  return "#e6e1c6";
+};
 
 /** Redraw the pills of one select from its options and its value. */
 function plRender(sel) {
