@@ -89,10 +89,9 @@ function lyRowHTML(ly, l) {
     ns = ly.members.length - np,
     meta = [catName(c, l), lyWhen(ly), np + (np === 1 ? ' place' : ' places'), ns ? ns + (ns === 1 ? ' border' : ' borders') : ''].filter(Boolean);
   return (
-    `<li data-lid="${ly.id}"><div class="t"><b>${lySwatch(ly.color)}${esc(lyName(ly, l))}</b>` +
+    `<li data-lid="${ly.id}" ${ly.color ? ` style="--lc:${esc(ly.color)}"` : ''}><div class="t"><div class="lyt"><b>${lySwatch(ly.color)}${esc(lyName(ly, l))}</b><div class="sn">${esc(meta.join(' · '))}</div></div>` +
     `<span class="ly-btns"><button class="${lyState.only.has(ly.id) ? 'on' : ''}" data-lyact="only" data-lid="${ly.id}" title="Show on the map only the places of this layer">Only</button>` +
-    `<button class="${lyState.hide.has(ly.id) ? 'on' : ''}" data-lyact="hide" data-lid="${ly.id}" title="Hide the places of this layer">Hide</button></span></div>` +
-    `<div class="sn">${esc(meta.join(' · '))}</div></li>`
+    `<button class="${lyState.hide.has(ly.id) ? 'on' : ''}" data-lyact="hide" data-lid="${ly.id}" title="Hide the places of this layer">Hide</button></span></div></li>`
   );
 }
 function lyRenderList() {
