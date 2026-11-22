@@ -37,7 +37,7 @@ function fillTypes() {
     .sort((a, b) => typeLabel(a, l).localeCompare(typeLabel(b, l)))
     .map(
       (t) =>
-        `<button class="chip${state.types.has(t) ? " on" : ""}" data-t="${esc(t)}">${typeIcon(t)}${esc(typeLabel(t, l))} <span>${c[t]}</span></button>`,
+        `<button class="chip btn btn-xs${state.types.has(t) ? " on" : ""}" data-t="${esc(t)}">${typeIcon(t)}${esc(typeLabel(t, l))} <span>${c[t]}</span></button>`,
     )
     .join("");
   renderTypes(); // the list of the Place types fold shows the same names and counts
@@ -52,12 +52,12 @@ function fillEvidence() {
     (p.sources || []).forEach((s) => (sc[s] = (sc[s] || 0) + 1));
   });
   $('#certChips').innerHTML = Object.keys(CERT_LABELS)
-    .map((k) => `<button class="chip${state.certainty.has(k) ? ' on' : ''}" data-cert="${k}">${CERT_LABELS[k]} <span>${cc[k] || 0}</span></button>`)
+    .map((k) => `<button class="chip btn btn-xs${state.certainty.has(k) ? ' on' : ''}" data-cert="${k}">${CERT_LABELS[k]} <span>${cc[k] || 0}</span></button>`)
     .join('');
   const used = sources.filter((s) => sc[s.id]);
   $('#srcLabel').hidden = $('#srcChips').hidden = !used.length;
   $('#srcChips').innerHTML = used
-    .map((s) => `<button class="chip${state.sources.has(s.id) ? ' on' : ''}" data-src="${s.id}" title="${esc(s.citation || '')}">${esc(s.title)} <span>${sc[s.id]}</span></button>`)
+    .map((s) => `<button class="chip btn btn-xs${state.sources.has(s.id) ? ' on' : ''}" data-src="${s.id}" title="${esc(s.citation || '')}">${esc(s.title)} <span>${sc[s.id]}</span></button>`)
     .join('');
 }
 function setData(p, n) {

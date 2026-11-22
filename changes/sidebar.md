@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — daisyUI Explore, slice 2 (T-070)
+
+- **What:** search field = daisyUI `input input-sm` wrapper with a bare `input.grow`; type, certainty and source chips are `btn btn-xs`; Reset and Fit map are `btn btn-sm`; sort and language are `select select-sm`. Legacy global `button`, `select`, `input` rules now skip `.btn`, `.select`, `.grow` so daisyUI styles them.
+- **Why:** same item, next slice (Explore header and filters).
+- **Files:** `app/index.html`, `app/css/sidebar.css`, `app/js/sidebar/{places,searchfield}.js`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: Explore search, ✕, chips, sort.
+- **Follow-ups:** list rows and the place card (slice 3); not seen in a browser.
+
 ## 2026-11-22 — daisyUI shell, slice 1 (T-070)
 
 - **What:** `daisyui@5` CSS linked in `app/index.html` (CDN, before the `ahm:css` block); forum palette mapped to daisyUI variables in `base.css`; the six tabs use `tabs tabs-border` / `tab` / `tab-active` (`role=tablist`, `aria-selected`); old `.tabs button` rules replaced.
