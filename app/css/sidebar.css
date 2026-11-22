@@ -2309,3 +2309,59 @@ details.filters > #reset {
   border-color: var(--at-blue);
   color: #fff;
 }
+
+/* Add border / Find rivers: search row with a blue action, draw and import as quiet full-width buttons */
+.sh-banner .row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+.sh-banner .row > input,
+.sh-banner .row > .field {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  background: var(--at-sunk);
+  border-radius: var(--at-ctl);
+}
+.sh-banner button[data-shadd="rvfind"],
+.sh-banner button[data-shadd="search"] {
+  height: 38px;
+  padding: 0 18px;
+  color: #fff;
+  background: var(--at-blue);
+  border: 0;
+}
+.sh-banner button[data-shadd="rvfind"]:hover:not(:disabled),
+.sh-banner button[data-shadd="search"]:hover:not(:disabled) {
+  background: var(--a-hover);
+  color: #fff;
+}
+#shAdd button.wide:not([data-shadd="open"]),
+.sh-banner button[data-shadd="drawarea"],
+.sh-banner button[data-shadd="drawline"],
+.sh-banner button[data-shadd="import"],
+#shAdd button[data-shadd="import"],
+.sh-banner button[data-shadd="closeadd"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 38px;
+  margin: 4px 0;
+  color: var(--at-blue);
+  background: var(--at-sunk);
+  border: 0;
+}
+.sh-banner .row > button[data-shadd="drawarea"],
+.sh-banner .row > button[data-shadd="drawline"] {
+  flex: 1;
+}
+.sh-banner button[data-shadd="closeadd"] {
+  margin-top: 12px;
+}
+#shAdd > .row {
+  margin: 4px 0;
+}

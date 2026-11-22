@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 13: Find rivers and Add border panels (T-070)
+
+- **What:** the search row of the Find rivers and Add border panels (input and a blue Find / Search button), full-width quiet buttons for draw, import and Close. CSS only.
+- **Why:** prototype screens s78, s79 and s75.
+- **Files:** `app/css/sidebar.css`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; Rivers tab, Borders tab then "+ Add border".
+- **Follow-ups:** the "Found" list with + buttons, "Or draw it" as an icon pair with a "Follow a river" toggle (needs markup changes in `shapes.js`); the Select rivers card controls.
+
 ## 2026-11-22 — Prototype look, slice 12: filter button (T-070)
 
 - **What:** the search field is the first row of Explore, with a filter icon button at its right (aria-expanded, a number badge with the count of active filters); the filters open under it. The "Filters" summary is hidden, "Reset" moved to the bottom of the filters, and the From/To period fields moved into a hidden block because the footer slider fills them. Active chips use the dark blue.
