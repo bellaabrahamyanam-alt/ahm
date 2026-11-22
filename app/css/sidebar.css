@@ -2169,3 +2169,87 @@ button:not(.btn):not(.tab):not(.chip) {
   -webkit-mask: var(--m-doc) center / contain no-repeat;
   mask: var(--m-doc) center / contain no-repeat;
 }
+
+/* the "how sure is the date" control is a segmented switch; the select stays for keyboards, tests and screen readers */
+.df > .row .df-mode {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.df {
+  position: relative;
+}
+.df-seg {
+  display: flex;
+  gap: 2px;
+  margin: 0 0 6px;
+  padding: 3px;
+  background: var(--at-sunk);
+  border-radius: 10px;
+}
+.df-seg button {
+  flex: 1;
+  height: 28px;
+  min-height: 0;
+  padding: 0 4px;
+  font: 500 12px var(--font);
+  color: var(--at-ink2);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+}
+.df-seg button.on {
+  background: var(--at-surface);
+  color: var(--at-blue);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+.df .row {
+  display: flex;
+  gap: 6px;
+}
+.df .row .df-fmt {
+  flex: 1;
+}
+
+/* pills: the place type in the form; the select next to them is hidden but stays the source of truth */
+select.pf-type {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 6px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font: 500 13px var(--font);
+  color: var(--at-ink);
+  background: var(--at-sunk);
+  border: 0;
+  border-radius: 16px;
+}
+.pills .pill,
+.pills .pill:hover:not(:disabled) {
+  color: var(--at-ink);
+  background: var(--at-sunk);
+}
+.pills .pill.on,
+.pills .pill.on:hover:not(:disabled) {
+  color: #fff;
+  background: var(--at-blue);
+}
+.pill svg {
+  flex: none;
+}

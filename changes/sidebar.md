@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 11: form controls (T-070)
+
+- **What:** the date "how sure" select is now a segmented switch (Unknown, Exact, Approx., Range; in the Explore period filter Any, Exact) in every date field; the place type is a row of pills with the type icon. The original selects stay in the page, visually hidden, and are the source of truth, so the keyboard, the readers of the form and the tests work as before. New: `dfHTML` seg markup and a click handler in `dfWire` (`datefield.js`); `typePills` and its click handler in `placeform.js`.
+- **Why:** prototype screens s64 and s48.
+- **Files:** `app/js/sidebar/{datefield,placeform}.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: Add place; click a type; click Exact under "Began".
+- **Follow-ups:** the form still opens as a dialog (the prototype shows it inside the panel); language pills for names; the rest of the forms (note, border, route, layer).
+
 ## 2026-11-22 — Prototype look, slice 10: note count on rows (T-070)
 
 - **What:** each Explore row shows a document icon and the number of notes of the place at its right end (`span.nn` in `placeRowHTML`, no badge when there are no notes). Data: `by[place.id]`, already loaded.

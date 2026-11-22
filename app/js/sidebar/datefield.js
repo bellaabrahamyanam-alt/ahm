@@ -47,7 +47,9 @@ function dfHTML(cls, date, opts) {
     mode = date ? date.mode : 'none',
     fmt = date ? date.fmt : opts.fmt || 'y';
   return (
-    `<div class="df ${cls}" data-mode="${mode}" data-fmt="${fmt}"><div class="row">` +
+    `<div class="df ${cls}" data-mode="${mode}" data-fmt="${fmt}"><div class="df-seg" role="group" aria-label="How sure is the date">${modes
+      .map((m) => `<button type="button" class="${m === mode ? 'on' : ''}" data-mode="${m}">${(names[m] || '').replace('Approximate (c.)', 'Approx.')}</button>`)
+      .join('')}</div><div class="row">` +
     `<select class="df-mode" aria-label="How sure is the date">${dfOptions(
       modes.map((m) => [m, names[m]]),
       mode
@@ -93,9 +95,18 @@ function dfSafe(el) {
 
 /** Makes the "how sure" and "format" selects of every date field inside root work. Call once per container. */
 function dfWire(root) {
+  root.addEventListener('click', (e) => {
+    const b = e.target.closest('.df-seg button'); // the segmented "how sure": sets the hidden select, which does the work
+    if (!b) return;
+    const sel = b.closest('.df').querySelector('.df-mode');
+    if (sel.value === b.dataset.mode) return;
+    sel.value = b.dataset.mode;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  });
   root.addEventListener('change', (e) => {
     const el = e.target.closest('.df');
     if (!el || !e.target.matches('.df-mode, .df-fmt')) return;
+    el.querySelectorAll('.df-seg button').forEach((b) => b.classList.toggle('on', b.dataset.mode === el.querySelector('.df-mode').value));
     let keep = null;
     try {
       keep = dfRead(el, 'Date', { mode: el.dataset.mode, fmt: el.dataset.fmt }); // what was typed, in the OLD format
