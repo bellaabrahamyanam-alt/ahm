@@ -3627,3 +3627,19 @@ body:has(#dock.inline:not([hidden])) #ly-add {
 .pills .pl.on .cn {
   color: rgba(255, 255, 255, 0.8);
 }
+.ly-btns button[data-lyact="show"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
+}
+
+/* layer rows: the three visibility buttons fit the row; the card does not repeat them */
+.ly-btns {
+  flex: none;
+}
+.ly-btns button {
+  width: 30px;
+  background-size: 16px !important;
+}
+#lyDetail :not(.ly-btns) > button[data-lyact="only"],
+#lyDetail :not(.ly-btns) > button[data-lyact="hide"] {
+  display: none;
+}

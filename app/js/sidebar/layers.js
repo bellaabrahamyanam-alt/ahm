@@ -90,7 +90,7 @@ function lyRowHTML(ly, l) {
     meta = [catName(c, l), lyWhen(ly), np + (np === 1 ? ' place' : ' places'), ns ? ns + (ns === 1 ? ' border' : ' borders') : ''].filter(Boolean);
   return (
     `<li data-lid="${ly.id}" ${ly.color ? ` style="--lc:${esc(ly.color)}"` : ''}><div class="t"><div class="lyt"><b>${lySwatch(ly.color)}${esc(lyName(ly, l))}</b><div class="sn">${esc(meta.join(' · '))}</div></div>` +
-    `<span class="ly-btns"><button class="${lyState.only.has(ly.id) ? 'on' : ''}" data-lyact="only" data-lid="${ly.id}" title="Show on the map only the places of this layer">Only</button>` +
+    `<span class="ly-btns"><button class="${!lyState.only.has(ly.id) && !lyState.hide.has(ly.id) ? 'on' : ''}" data-lyact="show" data-lid="${ly.id}" title="Show this layer as usual">Show</button><button class="${lyState.only.has(ly.id) ? 'on' : ''}" data-lyact="only" data-lid="${ly.id}" title="Show on the map only the places of this layer">Only</button>` +
     `<button class="${lyState.hide.has(ly.id) ? 'on' : ''}" data-lyact="hide" data-lid="${ly.id}" title="Hide the places of this layer">Hide</button></span></div></li>`
   );
 }
@@ -574,6 +574,12 @@ $('#lyDetail').addEventListener('click', async (e) => {
   if (!a || !ly) return;
   const act = a.dataset.lyact;
   if (act === 'only' || act === 'hide') lyToggleFilter(act, ly.id);
+  else if (act === 'show') {
+    lyState.only.delete(ly.id);
+    lyState.hide.delete(ly.id);
+    AHM.state.patch('layers', {});
+    lyChanged();
+  }
   else if (act === 'fit') lyFit();
   else if (act === 'close') lyClose();
   else if (act === 'editlayer') lyOpenForm(ly);
