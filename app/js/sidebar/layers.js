@@ -105,6 +105,7 @@ function lyRenderList() {
       .filter((ly) => (!cat || ly.category === cat) && (!q || lyHay(ly).includes(q)))
       .sort((a, b) => lyName(a, l).localeCompare(lyName(b, l)));
   $('#lyCount').textContent = rows.length + ' of ' + layers.length + ' layers';
+  dockPark('#lyDetail');
   $('#lyList').innerHTML = rows.length ? rows.map((ly) => lyRowHTML(ly, l)).join('') : '<li class="empty">No layers match.</li>';
   lyPlaceDetail();
 }

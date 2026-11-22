@@ -63,8 +63,26 @@ $(".hd .logo").addEventListener("keydown", (e) => {
 sideHandle(false);
 // ---- the details dock: a pane under the lists; the place details (#detail) and the layer details (#lyDetail) live in it ----
 $(".stack").append($("#dock"));
+// The open border, route or layer card sits under its row in the list; the place card stays in the dock.
+const INLINE = [["#shDetail", "#shList"], ["#rtDetail", "#rtList"], ["#lyDetail", "#lyList"]];
+// a list is about to be redrawn: take its card out first
+function dockPark(d) {
+  $("#dock").append($(d));
+}
 function dockSync() {
-  $("#dock").hidden = $("#detail").hidden && $("#lyDetail").hidden && $("#shDetail").hidden && $("#rtDetail").hidden;
+  const dock = $("#dock");
+  let used = !$("#detail").hidden;
+  INLINE.forEach(([d, l]) => {
+    const el = $(d),
+      li = !el.hidden && $(l + " li.on");
+    if (li) {
+      if (li.nextElementSibling !== el) li.after(el);
+    } else {
+      if (el.parentNode !== dock) dock.append(el);
+      used = used || !el.hidden;
+    }
+  });
+  dock.hidden = !used;
 }
 // The dock covers the lower half of the panel: if a row is hidden behind it, scroll the list just enough to centre the row.
 function revealRow(li) {

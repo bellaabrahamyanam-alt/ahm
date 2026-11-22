@@ -2727,3 +2727,25 @@ body:has(.tabs .tab.on:not([data-tab="explore"])) #pfoot:has(> #timebar[hidden])
 #tab-layers:not([hidden]) > * {
   flex: none;
 }
+
+/* the open border, route or layer card unfolds under its row (prototype s74, s81, s86) */
+#side :is(#shDetail, #rtDetail, #lyDetail):not(#dock > *) {
+  flex: none;
+  display: flex;
+  margin: 4px 0 10px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+  overflow: hidden;
+}
+#side :is(#shDetail, #rtDetail, #lyDetail):not(#dock > *)[hidden] {
+  display: none;
+}
+#side :is(#shDetail, #rtDetail, #lyDetail):not(#dock > *) .dock-body {
+  overflow: visible;
+  flex: none;
+}
+#side :is(#shList, #rtList, #lyList) > li.on {
+  background: var(--at-surface);
+  border-radius: var(--at-card) var(--at-card) 0 0;
+}

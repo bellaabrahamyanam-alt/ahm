@@ -77,6 +77,7 @@ function rtRenderList() {
     .map((t) => `<button class="chip${rts.types.has(t) ? ' on' : ''}" data-t="${t}">${shIcon(t)}${esc(SHAPE_TYPES[t].label)} <span>${c[t] || 0}</span></button>`)
     .join('');
   $('#rtCount').textContent = rows.length + ' of ' + all.length + ' routes';
+  dockPark('#rtDetail');
   $('#rtList').innerHTML = rows.length
     ? rows
         .map((s) => {

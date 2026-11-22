@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-23 — Prototype look, slice 19: open cards unfold under their row (T-070)
+
+- **What:** the open border, route and layer card now sits under its row in the list instead of the bottom dock; the dock keeps the place card only. `dockSync` places the cards, `dockPark` takes one out before its list is redrawn.
+- **Why:** prototype screens s74, s81, s86.
+- **Files:** `app/js/sidebar/layout.js`, `shapes.js`, `routes.js`, `layers.js`, `app/css/sidebar.css`, `tests/js/lib/ctx.js`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; open a border, a layer, then Choose places.
+- **Follow-ups:** route card checked only through the shared code (no routes in the sample data).
+
 ## 2026-11-22 — Prototype look, slice 18: footer only on Explore, Add pinned, icons (T-070)
 
 - **What:** the Period | Moment bar shows only on Explore (and while a moment is on); "+ Add border/route/layer" is pinned to the bottom of its tab; Fit map is an icon; the collapse handle is a ‹ in the header on desktop. CSS only.

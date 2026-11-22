@@ -153,6 +153,7 @@ function shRenderList() {
     rows = shVisible();
   shRenderTypes();
   $('#shCount').textContent = rows.length + ' of ' + shapes.filter((s) => shapeGroup(s) === SH_GROUP[sh.mode]).length + ' ' + shWord();
+  dockPark('#shDetail');
   $('#shList').innerHTML = rows.length
     ? rows
         .map((s) => {
