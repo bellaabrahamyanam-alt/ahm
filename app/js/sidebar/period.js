@@ -34,7 +34,7 @@ function periodSync() {
     hi = b ? Math.max(PF_MIN, Math.min(PF_MAX, pfYear(b))) : PF_MAX,
     pct = (v) => ((v - PF_MIN) / (PF_MAX - PF_MIN)) * 100 + '%';
   $('#pfLabel').textContent = periodLabel();
-  $('#pfReset').hidden = !periodActive();
+  $('#pfReset').disabled = !periodActive();
   if (document.activeElement !== $('#pfFrom')) $('#pfFrom').value = String(lo);
   if (document.activeElement !== $('#pfTo')) $('#pfTo').value = String(hi);
   $('#pfFrom').parentElement.style.cssText = `--lo:${pct(lo)};--hi:${pct(hi)}`;
@@ -56,3 +56,21 @@ $('#pfReset').onclick = () => {
   periodSync();
 };
 ['#fFrom', '#fTo'].forEach((s) => ['input', 'change'].forEach((ev) => $(s).addEventListener(ev, periodSync)));
+
+/** The bars behind the slider: how many dated places existed in each of 15 stretches of the scale. Redrawn only when the data changes. */
+function pfHist() {
+  if (pfHist.src === places) return;
+  pfHist.src = places;
+  const n = 15,
+    step = (PF_MAX - PF_MIN) / n,
+    edge = Array.from({ length: n + 1 }, (_, i) => isoToSec(pfTs(PF_MIN + Math.round(i * step)))),
+    c = new Array(n).fill(0);
+  places.forEach((p) => {
+    if (!p.date_from && !p.date_to) return; // undated places (and mountains) are not on the scale
+    const s = p.date_from ? dateBounds(p.date_from)[0] : -Infinity,
+      e = p.date_to ? dateBounds(p.date_to)[1] : Infinity;
+    for (let i = 0; i < n; i++) if (s < edge[i + 1] && e > edge[i]) c[i]++;
+  });
+  const m = Math.max(1, ...c);
+  $('#pfHist').innerHTML = c.map((v) => `<i style="height:${v ? 12 + Math.round((48 * v) / m) : 5}%"></i>`).join('');
+}

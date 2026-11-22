@@ -102,6 +102,7 @@ function placeDetail() {
 /** What run() needs from the sidebar fields (INTERFACES.md I-3). */
 const searchOptions = () => ({ q: $("#q").value, lang: $("#lang").value, sort: $("#sort").value, period: periodBounds(), certainty: state.certainty, sources: state.sources });
 function update() {
+  pfHist();
   const r = run(searchOptions()),
     l = $("#lang").value,
     q = $("#q").value.trim();

@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 16: histogram behind the period slider (T-070)
+
+- **What:** 15 bars behind the footer slider show how many dated places existed in each 180-year stretch of 1200 BCE to 1500 CE (`pfHist` in `period.js`, redrawn only when the data changes; undated places and mountains are not counted). The reset ✕ is always shown and dimmed until a period is set.
+- **Why:** prototype screens s1 and s2.
+- **Files:** `app/index.html`, `app/js/sidebar/{period,places}.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`; drag a handle and watch the bars stay put.
+- **Follow-ups:** the bars count all places, not the filtered ones; the moment slider has no bars.
+
 ## 2026-11-22 — Prototype look, slice 15: forms as a panel (T-070)
 
 - **What:** the place, note and layer forms (`#dlg`, `#lyDlg`) are no longer a centred modal. They open non-modally (`show()` instead of `showModal()`, Esc closes them) over the sidebar under its header and tabs, with a title, a scrolling body and a sticky Save | Cancel footer; on a phone they are a bottom sheet. A hint card with a pin icon ("Drag the red pin on the map…") sits on top of the place form. Names are cards with a row of language pills and the name on its own line; "Add another name" is a dashed pill. The error line moved above the footer in both forms. The map stays usable, so the pin can be dragged.

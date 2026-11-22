@@ -304,10 +304,11 @@
             <button type="button" id="tbOpen" title="Show the map at one moment of history">Moment</button>
           </div>
           <span id="pfLabel">Any</span>
-          <button type="button" id="pfReset" class="icon-btn" title="Reset the period" aria-label="Reset the period" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
+          <button type="button" id="pfReset" class="icon-btn" title="Reset the period" aria-label="Reset the period" disabled><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
         </div>
         <div id="pfPeriodBox">
           <div class="pf-track" style="--lo: 0%; --hi: 100%">
+            <div id="pfHist" class="pf-hist" aria-hidden="true"></div>
             <input type="range" id="pfFrom" min="-1200" max="1500" step="10" value="-1200" aria-label="Period from, year" />
             <input type="range" id="pfTo" min="-1200" max="1500" step="10" value="1500" aria-label="Period to, year" />
           </div>
