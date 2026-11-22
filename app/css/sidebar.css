@@ -1415,7 +1415,7 @@ body.collapsed #timebar {
   height: 32px;
   background: transparent;
 }
-#list li {
+#list > li {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -1423,10 +1423,10 @@ body.collapsed #timebar {
   border: 0;
   border-radius: var(--r-ctl);
 }
-#list li:first-child {
+#list > li:first-child {
   border: 0;
 }
-#list li.empty {
+#list > li.empty {
   display: block;
 }
 #list .tmark {
@@ -1447,7 +1447,7 @@ body.collapsed #timebar {
   font: 600 16px/1.25 var(--serif);
   color: var(--content-color);
 }
-#list li:hover:where(:not(:has(button:hover, a:hover, input:hover))) .rt b {
+#list > li:hover:where(:not(:has(button:hover, a:hover, input:hover))) .rt b {
   color: var(--a);
 }
 #list .rt .sn {
@@ -1895,36 +1895,36 @@ button {
   font-family: var(--ui);
   border-radius: var(--r-ctl);
 }
-#shList li,
-#rtList li,
-#lyList li,
-#rvSelList li {
+#shList > li,
+#rtList > li,
+#lyList > li,
+#rvSelList > li {
   padding: 10px 12px;
   border: 0;
   border-radius: var(--r-ctl);
 }
-#shList li:first-child,
-#rtList li:first-child,
-#lyList li:first-child,
-#rvSelList li:first-child {
+#shList > li:first-child,
+#rtList > li:first-child,
+#lyList > li:first-child,
+#rvSelList > li:first-child {
   border: 0;
 }
-#shList li b,
-#rtList li b,
-#lyList li b,
-#rvSelList li b {
+#shList > li b,
+#rtList > li b,
+#lyList > li b,
+#rvSelList > li b {
   font: 600 16px/1.25 var(--serif);
   color: var(--content-color);
 }
-#shList li:hover b,
-#rtList li:hover b,
-#lyList li:hover b {
+#shList > li:hover b,
+#rtList > li:hover b,
+#lyList > li:hover b {
   color: var(--a);
 }
-#shList li .sn,
-#rtList li .sn,
-#lyList li .sn,
-#rvSelList li .sn {
+#shList > li .sn,
+#rtList > li .sn,
+#lyList > li .sn,
+#rvSelList > li .sn {
   margin-top: 2px;
   font: 13px/1.3 var(--ui);
   color: var(--ink-muted);
@@ -2254,7 +2254,7 @@ button {
 }
 
 /* ---- Empty list (design v3.1, T-081) ---- */
-#list li.empty {
+#list > li.empty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2262,7 +2262,7 @@ button {
   padding: 28px 12px 20px;
   text-align: center;
 }
-#list li.empty .ei {
+#list > li.empty .ei {
   display: grid;
   place-items: center;
   width: 44px;
@@ -2273,21 +2273,21 @@ button {
   border: 1px solid var(--line);
   border-radius: 12px;
 }
-#list li.empty .ei svg {
+#list > li.empty .ei svg {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.7;
   stroke-linecap: round;
 }
-#list li.empty b {
+#list > li.empty b {
   font: 600 17px var(--serif);
   color: var(--content-color);
 }
-#list li.empty .sn {
+#list > li.empty .sn {
   font: 14px var(--ui);
   color: var(--ink-muted);
 }
-#list li.empty button {
+#list > li.empty button {
   margin-top: 12px;
 }
 
@@ -2467,10 +2467,10 @@ button {
 #dock.inline .dock-foot button.primary:only-child {
   flex: none;
 }
-#list li.on,
-#lyList li.on,
-#shList li.on,
-#rtList li.on {
+#list > li.on,
+#lyList > li.on,
+#shList > li.on,
+#rtList > li.on {
   border-radius: var(--r-card) var(--r-card) 0 0;
   border-left: 3px solid var(--a);
   background: var(--bg2-bg-color);
@@ -2507,9 +2507,9 @@ button {
 #tab-layers button.wide:hover {
   background: var(--a-hover);
 }
-#shList li > input[type="checkbox"],
-#shList li .t ~ input[type="checkbox"],
-#rtList li > input[type="checkbox"] {
+#shList > li > input[type="checkbox"],
+#shList > li .t ~ input[type="checkbox"],
+#rtList > li > input[type="checkbox"] {
   flex: none;
   width: 22px;
   height: 22px;
@@ -2521,9 +2521,9 @@ button {
   cursor: pointer;
   background: center / 20px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z'/%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3C/svg%3E");
 }
-#shList li > input[type="checkbox"]:not(:checked),
-#shList li .t ~ input[type="checkbox"]:not(:checked),
-#rtList li > input[type="checkbox"]:not(:checked) {
+#shList > li > input[type="checkbox"]:not(:checked),
+#shList > li .t ~ input[type="checkbox"]:not(:checked),
+#rtList > li > input[type="checkbox"]:not(:checked) {
   opacity: 0.45;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18M10.6 5.1A10 10 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4.1M6.3 6.3A17 17 0 002 12s3.6 7 10 7a10 10 0 004.2-.9M9.9 9.9a3 3 0 004.2 4.2'/%3E%3C/svg%3E");
 }
@@ -2569,19 +2569,19 @@ button {
   background: var(--bg1-bg-color) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E") no-repeat 12px center / 16px;
 }
 /* border and route rows: tile, name, dates, eye */
-#shList li,
-#rtList li {
+#shList > li,
+#rtList > li {
   display: grid;
   grid-template-columns: 40px 1fr auto;
   column-gap: 12px;
   align-items: center;
 }
-#shList li > .t,
-#rtList li > .t {
+#shList > li > .t,
+#rtList > li > .t {
   display: contents;
 }
-#shList li .tmark,
-#rtList li .tmark {
+#shList > li .tmark,
+#rtList > li .tmark {
   grid-column: 1;
   grid-row: 1 / span 2;
   width: 40px;
@@ -2591,14 +2591,14 @@ button {
   border: 1px solid var(--line);
   border-radius: 10px;
 }
-#shList li .t > b,
-#rtList li .t > b {
+#shList > li .t > b,
+#rtList > li .t > b {
   grid-column: 2;
   grid-row: 1;
   align-self: end;
 }
-#shList li > .sn,
-#rtList li > .sn {
+#shList > li > .sn,
+#rtList > li > .sn {
   grid-column: 2;
   grid-row: 2;
   align-self: start;
@@ -2624,7 +2624,7 @@ button {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b858b' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 3l18 18M10.6 5.1A10 10 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4.1M6.3 6.3A17 17 0 002 12s3.6 7 10 7a10 10 0 004.2-.9M9.9 9.9a3 3 0 004.2 4.2'/%3E%3C/svg%3E");
 }
 /* layers: a card per layer, Only and Hide as icons */
-#lyList li {
+#lyList > li {
   margin: 0 0 10px;
   padding: 12px 14px;
   background: var(--bg2-bg-color);
@@ -2632,7 +2632,7 @@ button {
   border-left: 4px solid var(--a);
   border-radius: var(--r-ctl);
 }
-#lyList li .t {
+#lyList > li .t {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2662,7 +2662,7 @@ button {
   background-color: var(--bg2-bg-color);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
-#lyList li .sn {
+#lyList > li .sn {
   margin-top: 4px;
 }
 /* Add buttons stay at the bottom of the panel while the list scrolls */
@@ -2685,14 +2685,14 @@ button {
     display: none;
   }
 }
-#shList li > div.t,
-#rtList li > div.t {
+#shList > li > div.t,
+#rtList > li > div.t {
   display: contents;
 }
-#shList li.empty,
-#rtList li.empty,
-#rvSelList li.empty,
-#lyList li.empty {
+#shList > li.empty,
+#rtList > li.empty,
+#rvSelList > li.empty,
+#lyList > li.empty {
   display: block;
   padding: 12px;
   font: 13px var(--ui);
@@ -2807,7 +2807,7 @@ body:has(#dock.inline:not([hidden])) #ly-add {
 #dock.inline [data-act="closedetail"] {
   display: none; /* the open row folds the card; there is no separate panel size */
 }
-#list li.on::after {
+#list > li.on::after {
   content: "";
   flex: none;
   width: 16px;
@@ -3110,4 +3110,137 @@ body:has(#dock.inline:not([hidden])) #ly-add {
 .dock-foot [data-shact="delete"],
 .dock-foot [data-rtact="delete"] {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c0392b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3'/%3E%3C/svg%3E") !important;
+}
+
+/* ---- More tab as in the prototype (s19): icon tile, title and a muted line, blue edge when open ---- */
+.fold > summary {
+  padding: 12px 14px;
+}
+.fold > summary .fi {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: var(--base-bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.fold > summary .ft {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.fold > summary .ft b {
+  font: 500 15px/1.25 var(--ui);
+  color: var(--content-color);
+}
+.fold > summary .ft small {
+  font: 12px/1.3 var(--ui);
+  color: var(--ink-muted);
+}
+.fold > summary > span:not(.fi, .ft) {
+  flex: 1;
+}
+.fold[open] {
+  border-left: 3px solid var(--a);
+}
+.fold[open] > summary {
+  border-bottom: 1px solid var(--line);
+  margin: 0 14px;
+  padding: 12px 0;
+}
+.fold-body {
+  padding: 12px 14px 14px;
+}
+#more-lang .wide,
+#more-types .wide,
+#more-cat .wide {
+  width: auto;
+  height: 34px;
+  padding: 0 16px;
+  background: transparent;
+  border: 1px dashed var(--a);
+  border-radius: 17px;
+  font-weight: 500;
+}
+.langs li.tr {
+  display: grid;
+  grid-template-columns: 38px 1fr 1fr auto;
+  align-items: center;
+  column-gap: 8px;
+}
+.langs li.tr > button {
+  order: 4;
+}
+.langs li.tr > :first-child {
+  order: 4;
+  justify-self: end;
+}
+.langs li.tr > * {
+  text-align: left;
+  justify-self: start;
+}
+.langs li.tr > :first-child {
+  justify-self: end;
+}
+
+/* ---- Borders, Routes, Layers lists as in the prototype (s73, s80, s85) ---- */
+.intro {
+  padding-left: 22px;
+  background: none;
+  border-radius: 0;
+  font-size: 13px;
+}
+.intro::before {
+  left: 0;
+}
+.intro:not(.open)::after {
+  content: "More";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding-left: 28px;
+  font-weight: 600;
+  color: var(--a);
+  background: linear-gradient(90deg, transparent, var(--base-bg) 55%);
+}
+#shTypes .chip {
+  height: 30px;
+  padding: 0 12px;
+  background: var(--bg2-bg-color);
+  border: 1px solid #d6d2ba;
+  border-radius: 15px;
+}
+#shTypes .chip.on {
+  color: #fff;
+  background: var(--a);
+  border-color: var(--a);
+}
+#shFit,
+#rtFit {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 0;
+  background: center / 18px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23115098' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4'/%3E%3C/svg%3E") !important;
+  border: 0 !important;
+}
+#tab-shapes:not([hidden]),
+#tab-routes:not([hidden]),
+#tab-layers:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+#shAdd,
+#rtAdd,
+#ly-add {
+  margin-top: auto;
+}
+#tab-shapes > *,
+#tab-routes > *,
+#tab-layers > * {
+  flex: none;
 }
