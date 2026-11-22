@@ -340,7 +340,7 @@
     <!-- region:sidebar -->
     <dialog id="dlg">
       <b id="dTitle"></b>
-      <div id="dPlace"><div id="dPlaceForm"></div></div>
+      <div id="dPlace"><div class="pf-hint">Drag the red pin on the map to place it, or type the coordinates below.</div><div id="dPlaceForm"></div></div>
       <div id="dLayersPlace"></div>
       <hr />
       <b id="dNoteHead">Note (optional for a new place)</b>
@@ -354,20 +354,20 @@
       <div id="nDate"></div>
       <input id="nTitle" placeholder="title" />
       <textarea id="nText" rows="5" placeholder="text"></textarea>
+      <div id="dErr" class="sn"></div>
       <div class="row">
         <button id="dSave" class="primary">Save</button>
         <button id="dCancel">Cancel</button>
       </div>
-      <div id="dErr" class="sn"></div>
     </dialog>
     <dialog id="lyDlg">
       <b id="lyTitle"></b>
       <div id="lyForm" class="pf"></div>
+      <div id="lyErr2" class="sn"></div>
       <div class="row">
         <button id="lySave" class="primary">Save</button>
         <button id="lyCancel">Cancel</button>
       </div>
-      <div id="lyErr2" class="sn"></div>
     </dialog>
     <!-- /region:sidebar -->
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.1/dist/maplibre-gl.js"></script>

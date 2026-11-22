@@ -164,9 +164,12 @@ function openDlg(mode, p, note) {
   $("#nDate").innerHTML = dfHTML("n-date", note ? note.date : null);
   $("#nTitle").value = note ? note.title : "";
   $("#nText").value = note ? (noteText[note.id] || note.text).trim() : "";
-  $("#dlg").showModal();
+  $("#dlg").show(); // not modal: the form is a panel over the sidebar and the map stays usable (drag the pin)
 }
 $("#dCancel").onclick = () => $("#dlg").close();
+$("#dlg").addEventListener("keydown", (e) => {
+  if (e.key === "Escape") $("#dlg").close(); // a non-modal dialog does not close itself on Esc
+});
 
 // Sends one change to the server, reloads the data and shows the place.
 async function saveAndShow(body) {

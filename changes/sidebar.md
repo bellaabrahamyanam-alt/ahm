@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 15: forms as a panel (T-070)
+
+- **What:** the place, note and layer forms (`#dlg`, `#lyDlg`) are no longer a centred modal. They open non-modally (`show()` instead of `showModal()`, Esc closes them) over the sidebar under its header and tabs, with a title, a scrolling body and a sticky Save | Cancel footer; on a phone they are a bottom sheet. A hint card with a pin icon ("Drag the red pin on the map…") sits on top of the place form. Names are cards with a row of language pills and the name on its own line; "Add another name" is a dashed pill. The error line moved above the footer in both forms. The map stays usable, so the pin can be dragged.
+- **Why:** prototype screens s64 to s67.
+- **Files:** `app/index.html`, `app/js/sidebar/{actions,layers,placeform}.js`, `app/css/sidebar.css`, `tests/js/lib/ctx.js` (the stand-in element gets `show()`), `app/dist/`, `graph/`
+- **How to verify:** `node tests/js/run.js`. By hand: click the map, "Add place here"; drag the pin; pick a language, a type, a date mode; Save; press Esc.
+- **Follow-ups:** the dialogs of a border, route and the confirmations stay modal; the form footer on the closed rail; the second name starts with the same language.
+
 ## 2026-11-22 — Prototype look, slice 14: lists and phone header (T-070)
 
 - **What:** bottom padding under the Borders, Routes and Layers lists so the sticky "Add" footer no longer covers the last row; a compact header (no subtitle, smaller logo) in the phone sheet.

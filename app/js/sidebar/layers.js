@@ -340,7 +340,7 @@ function lyOpenForm(ly) {
     `<input type="color" id="lyColor" value="${ly && ly.color ? esc(ly.color) : '#9a3b2e'}"></div>`;
   $('#lyErr2').textContent = '';
   lyValidate();
-  $('#lyDlg').showModal();
+  $('#lyDlg').show(); // not modal, like #dlg
 }
 function lyReadForm() {
   const root = $('#lyForm'),
@@ -399,7 +399,7 @@ function lyOpenNoteDlg(ly, note, what = 'layer') {
   $('#nDate').innerHTML = dfHTML('n-date', note ? note.date : null);
   $('#nTitle').value = note ? note.title : '';
   $('#nText').value = note ? note.text : '';
-  $('#dlg').showModal();
+  $('#dlg').show();
 }
 /** Called by the Save button of the note dialog when the note belongs to a layer. */
 async function lyDlgSave() {
@@ -642,6 +642,11 @@ $('#lyForm').addEventListener('click', (e) => {
   else if (e.target.closest('.ly-ddel')) e.target.closest('.ly-desc').remove();
 });
 $('#lyCancel').onclick = () => $('#lyDlg').close();
+['#dlg', '#lyDlg'].forEach((s) =>
+  $(s).addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') $(s).close();
+  })
+);
 // Save is off until the layer has at least one name
 const lyValidate = () => ($('#lySave').disabled = !lyReadNames($('#lyForm')).length);
 $('#lyForm').addEventListener('input', lyValidate);

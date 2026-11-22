@@ -73,8 +73,15 @@ function svgToPath(text) {
 }
 const TYPE_HINT = 'Type missing? Ask an administrator to add it (More tab, Place types).';
 const LANG_HINT = 'Language missing? Ask an administrator to add it (Languages tab).';
+/** The languages as one row of pills (T-070); the select next to them stays the source of truth. */
+const langPills = (cur) =>
+  `<div class="pills pf-langpills" role="group" aria-label="Language">${languages
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((l) => `<button type="button" class="pill${l.code === cur ? ' on' : ''}" data-lang="${esc(l.code)}" title="${esc(l.name)}">${esc(l.code)}</button>`)
+    .join('')}</div>`;
 const pfRow = (n) =>
-  `<div class="row pf-name"><select class="nl" aria-label="Language" title="${LANG_HINT}">${langOptions(n.lang)}</select>` +
+  `<div class="row pf-name"><select class="nl" aria-label="Language" title="${LANG_HINT}">${langOptions(n.lang)}</select>${langPills(n.lang)}` +
   `<input class="nn" value="${esc(n.name)}" placeholder="name" aria-label="Name">` +
   `<button type="button" class="pf-up" title="Move up: the first name of a language is the one shown on the map">↑</button>` +
   `<button type="button" class="pf-del" title="Remove this name">✕</button></div>`;
@@ -197,6 +204,10 @@ function placeFormHTML(p) {
 function placeFormWire(root) {
   dfWire(root);
   root.addEventListener('change', (e) => {
+    if (e.target.matches('.pf-name .nl')) {
+      e.target.closest('.pf-name').querySelectorAll('.pf-langpills .pill').forEach((b) => b.classList.toggle('on', b.dataset.lang === e.target.value));
+      return;
+    }
     if (!e.target.matches('.pf-type')) return;
     root.querySelectorAll('.pf-typepills .pill').forEach((b) => b.classList.toggle('on', b.dataset.type === e.target.value));
     const mountain = e.target.value === 'mountain'; // a mountain has a height instead of dates
@@ -204,6 +215,13 @@ function placeFormWire(root) {
     root.querySelector('.pf-height').hidden = !mountain;
   });
   root.addEventListener('click', (e) => {
+    const lp = e.target.closest('.pf-langpills .pill');
+    if (lp) {
+      const sel = lp.closest('.pf-name').querySelector('.nl');
+      sel.value = lp.dataset.lang;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
     const tp = e.target.closest('.pf-typepills .pill');
     if (tp) {
       const sel = root.querySelector('.pf-type');

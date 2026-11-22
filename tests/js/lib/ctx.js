@@ -41,6 +41,7 @@ function fakeEl(sel) {
     focus() {},
     close() {},
     showModal() {},
+    show() {},
     insertAdjacentHTML() {},
     scrollIntoView() {},
     prepend() {},

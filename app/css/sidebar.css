@@ -2389,3 +2389,199 @@ details.filters > #reset {
     height: 28px;
   }
 }
+
+/* ---- the forms are a panel over the sidebar (T-070): a title, a scrolling body, a sticky Save | Cancel footer ---- */
+:root {
+  --m-pin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z'/%3E%3Ccircle cx='12' cy='9.5' r='2.4'/%3E%3C/svg%3E");
+}
+#dlg[open],
+#lyDlg[open] {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  width: var(--side-w, 380px);
+  max-width: none;
+  height: 100vh;
+  max-height: none;
+  margin: 0;
+  padding: 18px 16px 0;
+  overflow-y: auto;
+  background: var(--base-bg);
+  border: 0;
+  border-right: 1px solid var(--at-line);
+  border-radius: 0;
+  box-shadow: var(--dropdown-shadow);
+}
+@media (max-width: 700px) {
+  #dlg[open],
+  #lyDlg[open] {
+    inset: auto 0 0 0;
+    width: 100%;
+    height: var(--side-h, 52vh);
+    border-right: 0;
+    border-top: 1px solid var(--at-line);
+  }
+}
+#dlg > *,
+#lyDlg > * {
+  flex: none;
+}
+#dTitle,
+#lyTitle {
+  display: block;
+  margin: 0 0 12px;
+  font: 600 22px/1.2 var(--at-serif);
+  color: var(--at-ink);
+}
+#dNoteHead {
+  display: block;
+  margin: 4px 0 8px;
+  font: 600 16px var(--at-serif);
+  color: var(--at-ink);
+}
+#dlg hr {
+  width: 100%;
+  margin: 16px 0 12px;
+  border: 0;
+  border-top: 1px solid var(--at-line);
+}
+.pf-hint {
+  position: relative;
+  margin: 0 0 12px;
+  padding: 12px 14px 12px 44px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--at-ink2);
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+  overflow: hidden;
+}
+.pf-hint::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  width: 18px;
+  height: 18px;
+  background: var(--at-blue);
+  -webkit-mask: var(--m-pin) center / contain no-repeat;
+  mask: var(--m-pin) center / contain no-repeat;
+}
+.pf-hint::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--at-blue);
+}
+#dlg > .row:has(#dSave),
+#lyDlg > .row:has(#lySave) {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+  margin: auto -16px 0;
+  padding: 12px 16px 14px;
+  background: var(--base-bg);
+  border-top: 1px solid var(--at-line);
+}
+#dSave,
+#lySave {
+  flex: 1.6;
+  height: 44px;
+  font-size: 14px;
+  color: #fff;
+  background: var(--at-blue);
+  border: 0;
+}
+#dSave:hover:not(:disabled),
+#lySave:hover:not(:disabled) {
+  background: var(--a-hover);
+  color: #fff;
+}
+#dCancel,
+#lyCancel {
+  flex: 1;
+  height: 44px;
+  font-size: 14px;
+  color: var(--at-blue);
+  background: var(--at-sunk);
+  border: 0;
+}
+#dErr:not(:empty),
+#lyErr2:not(:empty) {
+  margin: 8px 0 0;
+  color: var(--error-color);
+}
+
+/* a name is a card: language pills, the name on its own line, then the optional period */
+.pf .pf-name {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 12px;
+  background: var(--at-surface);
+  border: 1px solid var(--at-line);
+  border-radius: var(--at-card);
+}
+.pf-name select.nl {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.pf-name .pf-langpills {
+  grid-column: 1 / -1;
+  flex-wrap: nowrap;
+  margin: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pf-langpills .pill {
+  flex: none;
+  height: 28px;
+  padding: 0 11px;
+  font-size: 12.5px;
+}
+.pf-name .nn {
+  grid-column: 1;
+  height: 40px;
+  background: var(--at-sunk);
+  border-radius: var(--at-ctl);
+}
+.pf-name .pf-up,
+.pf-name .pf-del {
+  height: 32px;
+  min-height: 0;
+  padding: 0 8px;
+  color: var(--at-ink2);
+  background: none;
+  border: 0;
+}
+.pf-name .pf-period {
+  grid-column: 1 / -1;
+}
+button.pf-add {
+  height: 36px;
+  padding: 0 14px;
+  color: var(--at-blue);
+  background: none;
+  border: 1px dashed var(--at-blue);
+  border-radius: 18px;
+}
+/* the form sits under the header and the tabs of the panel on a desktop */
+@media (min-width: 701px) {
+  #dlg[open],
+  #lyDlg[open] {
+    top: 116px;
+    height: calc(100vh - 116px);
+  }
+}
