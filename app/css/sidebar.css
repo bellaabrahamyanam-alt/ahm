@@ -2706,3 +2706,32 @@ button {
 .intro.open {
   max-height: none;
 }
+
+/* ---- Edit forms in the card: name row on one line, Save and Cancel pinned, no period footer while editing ---- */
+.pf-name .nn {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+body:has(#dock .pf) #pfoot {
+  display: none;
+}
+#dock.inline .dock-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  padding: 10px 16px 12px;
+  background: var(--bg2-bg-color);
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--r-card) 0;
+}
+#dock.inline .dock-foot button.primary:only-child {
+  flex: 1 1 0;
+}
+.pf-name {
+  margin: 10px 0 14px;
+}
+/* an unknown date has nothing to format */
+.df[data-mode="none"] select.df-fmt {
+  display: none;
+}
