@@ -45,7 +45,7 @@ function plEnhance(sel) {
   sel.dataset.pl = "1";
   sel.classList.add("seg-src");
   sel.insertAdjacentHTML("afterend", '<div class="pills"></div>');
-  const desc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+  const desc = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, "value");
   Object.defineProperty(sel, "value", {
     configurable: true,
     get() {
@@ -88,7 +88,7 @@ document.addEventListener("click", (e) => {
 // a change made by anything else (the select itself, a test, an autofill) redraws the pills as well
 document.addEventListener("change", (e) => e.target.dataset && e.target.dataset.pl && plRender(e.target));
 
-new MutationObserver((muts) => {
+new window.MutationObserver((muts) => {
   for (const m of muts) {
     if (m.target.nodeName === "SELECT" && m.target.dataset.pl) plRender(m.target); // options added or replaced
     m.addedNodes.forEach((n) => n.nodeType === 1 && plScan(n));
@@ -112,7 +112,7 @@ function swEnhance(inp) {
   inp.dataset.sw = "1";
   inp.classList.add("seg-src");
   inp.insertAdjacentHTML("afterend", '<div class="swatches"></div>');
-  const desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+  const desc = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
   Object.defineProperty(inp, "value", { configurable: true, get() { return desc.get.call(inp); }, set(v) { desc.set.call(inp, v); swRender(inp); } });
   swRender(inp);
 }
@@ -130,5 +130,5 @@ const swScan = (root) => {
   if (root.matches && root.matches('input[type="color"]')) swEnhance(root);
   if (root.querySelectorAll) root.querySelectorAll('input[type="color"]').forEach(swEnhance);
 };
-new MutationObserver((muts) => muts.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && swScan(n)))).observe(document.body, { childList: true, subtree: true });
+new window.MutationObserver((muts) => muts.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && swScan(n)))).observe(document.body, { childList: true, subtree: true });
 swScan(document.body);
