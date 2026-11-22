@@ -1,5 +1,13 @@
 # Change log of the sidebar domain
 
+## 2026-11-22 — Prototype look, slice 18: footer only on Explore, Add pinned, icons (T-070)
+
+- **What:** the Period | Moment bar shows only on Explore (and while a moment is on); "+ Add border/route/layer" is pinned to the bottom of its tab; Fit map is an icon; the collapse handle is a ‹ in the header on desktop. CSS only.
+- **Why:** prototype screens s73, s80, s85.
+- **Files:** `app/css/sidebar.css`, `app/dist/`
+- **How to verify:** `node tests/js/run.js`; open Borders, Routes, Layers, Explore.
+- **Follow-ups:** open cards inline in the list instead of the dock.
+
 ## 2026-11-22 — Prototype look, slice 17: Add border replaces the list (T-070)
 
 - **What:** while the "Add a border" panel is open the border list and the other cards of the Borders tab are hidden and Close is a bar at the bottom of the panel. CSS only (`:has()`), applied only when the panel has a Close button, so the Rivers tab keeps its list.

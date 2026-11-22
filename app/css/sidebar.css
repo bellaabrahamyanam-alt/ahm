@@ -2647,3 +2647,83 @@ button.pf-add {
   border-radius: 0;
   box-shadow: 0 -10px 0 var(--base-bg);
 }
+
+/* ---- prototype details (T-070): the period footer is for Explore; "Add" is pinned to the bottom; Fit map is an icon; ‹ sits in the header ---- */
+:root {
+  --m-fit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 9V5a1 1 0 011-1h4M15 4h4a1 1 0 011 1v4M20 15v4a1 1 0 01-1 1h-4M9 20H5a1 1 0 01-1-1v-4'/%3E%3C/svg%3E");
+  --m-chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 6l-6 6 6 6'/%3E%3C/svg%3E");
+}
+/* the Period | Moment bar belongs to Explore; the moment bar stays wherever it is on */
+body:has(.tabs .tab.on:not([data-tab="explore"])) #pfoot:has(> #timebar[hidden]) {
+  display: none;
+}
+/* the "Add ..." button sits at the bottom of the panel even when the list is short */
+#tab-shapes:not([hidden]),
+#tab-routes:not([hidden]),
+#tab-layers:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+#side #tab-shapes > #shAdd:has(> [data-shadd="open"]),
+#side #tab-routes > #rtAdd,
+#side #tab-layers #ly-add {
+  margin-top: auto;
+}
+#shFit,
+#rtFit {
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  padding: 0;
+  font-size: 0;
+  color: var(--at-blue);
+}
+#shFit::before,
+#rtFit::before {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: auto;
+  background: currentColor;
+  -webkit-mask: var(--m-fit) center / contain no-repeat;
+  mask: var(--m-fit) center / contain no-repeat;
+}
+@media (min-width: 701px) {
+  body:not(.collapsed) #collapse {
+    top: 22px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    min-height: 0;
+    padding: 0;
+    transform: none;
+    background: none;
+    border: 0;
+    border-radius: var(--at-ctl);
+    box-shadow: none;
+    color: var(--at-blue);
+  }
+  body:not(.collapsed) #collapse svg {
+    display: none;
+  }
+  body:not(.collapsed) #collapse::before {
+    content: "";
+    display: block;
+    width: 20px;
+    height: 20px;
+    margin: auto;
+    background: currentColor;
+    -webkit-mask: var(--m-chev) center / contain no-repeat;
+    mask: var(--m-chev) center / contain no-repeat;
+  }
+  body:not(.collapsed) #collapse:hover {
+    background: var(--at-sunk);
+  }
+}
+#tab-shapes:not([hidden]) > *,
+#tab-routes:not([hidden]) > *,
+#tab-layers:not([hidden]) > * {
+  flex: none;
+}
