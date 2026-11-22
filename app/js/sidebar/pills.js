@@ -89,3 +89,40 @@ new MutationObserver((muts) => {
   }
 }).observe(document.body, { childList: true, subtree: true });
 plScan(document.body);
+
+// Colour inputs show a row of round swatches (design v3.1, s74): six colours and a ring that opens the colour picker.
+// The <input type=color> stays in the page, hidden, and stays the source of the value.
+const SW_COLORS = ["#9a3b2e", "#2f5f8a", "#4f7a3a", "#d4a017", "#7b2d8e", "#3d4f5c"];
+function swRender(inp) {
+  const box = inp.nextElementSibling;
+  if (!box || !box.classList.contains("swatches")) return;
+  const cur = (inp.value || "").toLowerCase();
+  box.innerHTML =
+    SW_COLORS.map((c) => `<button type="button" class="sw${c === cur ? " on" : ""}" data-c="${c}" style="background:${c}" title="${c}" aria-label="Colour ${c}"></button>`).join("") +
+    `<button type="button" class="sw custom${SW_COLORS.includes(cur) ? "" : " on"}" title="Other colour" aria-label="Other colour"${SW_COLORS.includes(cur) ? "" : ` style="--c:${cur}"`}></button>`;
+}
+function swEnhance(inp) {
+  if (inp.dataset.sw || inp.closest("#ovEditPanel")) return;
+  inp.dataset.sw = "1";
+  inp.classList.add("seg-src");
+  inp.insertAdjacentHTML("afterend", '<div class="swatches"></div>');
+  const desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+  Object.defineProperty(inp, "value", { configurable: true, get() { return desc.get.call(inp); }, set(v) { desc.set.call(inp, v); swRender(inp); } });
+  swRender(inp);
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".swatches button");
+  if (!b) return;
+  const inp = b.parentElement.previousElementSibling;
+  if (b.classList.contains("custom")) return inp.showPicker ? inp.showPicker() : inp.click();
+  inp.value = b.dataset.c;
+  inp.dispatchEvent(new Event("input", { bubbles: true }));
+  inp.dispatchEvent(new Event("change", { bubbles: true }));
+});
+document.addEventListener("input", (e) => e.target.dataset && e.target.dataset.sw && swRender(e.target));
+const swScan = (root) => {
+  if (root.matches && root.matches('input[type="color"]')) swEnhance(root);
+  if (root.querySelectorAll) root.querySelectorAll('input[type="color"]').forEach(swEnhance);
+};
+new MutationObserver((muts) => muts.forEach((m) => m.addedNodes.forEach((n) => n.nodeType === 1 && swScan(n)))).observe(document.body, { childList: true, subtree: true });
+swScan(document.body);

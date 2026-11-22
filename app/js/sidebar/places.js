@@ -113,7 +113,8 @@ function update() {
   const chip = (k, t) => `<button class="chip on" data-clear="${k}" title="Remove this filter">${t} ✕</button>`;
   // the selected types and the language are shown inside Filters, so only the period is repeated here
   $("#fActive").innerHTML = (periodActive() ? chip("period", "period") : "") + (timeActive() ? chip("time", "Time: " + dateText({ fmt: "y", ts: timeState.at, mode: "exact", ts_to: null })) : "");
-  $("#count").textContent = r.length + " of " + places.length + " places";
+  $("#count").innerHTML = r.length === places.length ? `<b>${r.length}</b> places` : `<b>${r.length}</b> of ${places.length} places`;
+  $("#reset").hidden = !(q || nf || periodActive() || timeActive()); // nothing to clear: no button (prototype s1)
   if (typeof dockPark === "function") dockPark(); // the details card sits in the list (T-082)
   $("#list").innerHTML = r.length
     ? r.map(({ p, hits }) => placeRowHTML(p, hits, l, q)).join("")
