@@ -3,7 +3,7 @@
  * Fills a phpBB board that runs this extension (tools/dev/phpbb-up.sh): the forum "Map" with the forums Places, Layers and Shapes, the SQL
  * tables from the files of the store, a topic with a card for every place, shape and layer, and the notes as posts with their ahm_note_meta.
  * Usage: php tools/dev/seed.php <phpBB dir> [--check]. It does nothing when the tables already hold objects.
- * The posting calls are here only for the board of development; the class that holds them for the extension is T-079.
+ * The posting calls are here only for the board of development; the class that holds them for the extension is T-099.
  */
 if (PHP_SAPI !== 'cli') {
     exit;

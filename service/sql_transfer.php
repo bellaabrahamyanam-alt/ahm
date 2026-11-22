@@ -2,7 +2,7 @@
 namespace ahm\map\service;
 
 /**
- * The SQL side of the data (T-076): the tables of service/sql/schema.<driver>.sql and the transfer between the files of the store and
+ * The SQL side of the data (T-096): the tables of service/sql/schema.<driver>.sql and the transfer between the files of the store and
  * these tables. It works on PDO (SQLite or MySQL/MariaDB) and knows nothing about phpBB. A note is not kept here: it is a phpBB post
  * (title and text) plus a row of ahm_note_meta (language, date, layers); read_notes(), note_meta() and write_notes() convert the note files
  * for that. The order of places, shapes and layers is the order of the files (column pos).

@@ -198,7 +198,7 @@ Before any file is replaced or an image deleted, the old version is copied here 
 
 ### SQL tables (made, not yet used by the map)
 
-`service/sql/schema.mysql.sql` and `schema.sqlite.sql` define five tables (prefix of the board in front, `phpbb_ahm_objects`, ...); `migrations/m001_storage.php` makes them when the extension is enabled; `service/sql_transfer.php` moves the files of a store into them and back. The files stay the format of the map until T-084.
+`service/sql/schema.mysql.sql` and `schema.sqlite.sql` define five tables (prefix of the board in front, `phpbb_ahm_objects`, ...); `migrations/m001_storage.php` makes them when the extension is enabled; `service/sql_transfer.php` moves the files of a store into them and back. The files stay the format of the map until T-104.
 
 | Table | One row is | Holds |
 | --- | --- | --- |

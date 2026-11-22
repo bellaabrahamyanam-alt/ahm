@@ -2,7 +2,7 @@
 namespace ahm\map\service;
 
 /**
- * The text of the first post of a topic, the "card" (T-079): all names with their languages and periods, the type, the dates, the place,
+ * The text of the first post of a topic, the "card" (T-099): all names with their languages and periods, the type, the dates, the place,
  * the sources. BBCode, made from the data of the object alone, so it is the same every time; the extension rewrites it when the object changes.
  */
 class card

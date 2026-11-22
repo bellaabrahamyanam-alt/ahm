@@ -1,4 +1,4 @@
--- The tables of the extension for SQLite (T-076): the development and test board runs on it. `{p}` is the table prefix of the board.
+-- The tables of the extension for SQLite (T-096): the development and test board runs on it. `{p}` is the table prefix of the board.
 -- The same tables and columns as schema.mysql.sql; `data` is TEXT that must be valid JSON. Statements end with a semicolon at the end of a line.
 CREATE TABLE {p}ahm_objects (
   id TEXT NOT NULL PRIMARY KEY,

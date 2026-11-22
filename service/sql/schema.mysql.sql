@@ -1,4 +1,4 @@
--- The tables of the extension for MySQL and MariaDB (T-076). `{p}` is the table prefix of the board (phpbb_). Types are the same as in
+-- The tables of the extension for MySQL and MariaDB (T-096). `{p}` is the table prefix of the board (phpbb_). Types are the same as in
 -- schema.sqlite.sql (tests/php/SqlSchemaTest.php compares the table and column names). Statements end with a semicolon at the end of a line.
 -- ahm_objects: one row = one place, shape or layer (places.geojson, shapes.geojson, layers.json). `data` is the rest of the entry as JSON.
 CREATE TABLE {p}ahm_objects (
@@ -46,7 +46,7 @@ CREATE TABLE {p}ahm_imports (
   shapes INT UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- ahm_revisions: the history (T-078): the whole state after a change, gzip JSON.
+-- ahm_revisions: the history (T-098): the whole state after a change, gzip JSON.
 CREATE TABLE {p}ahm_revisions (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   entity_kind VARCHAR(8) CHARACTER SET ascii NOT NULL,
