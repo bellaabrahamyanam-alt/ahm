@@ -1,5 +1,8 @@
 # Task: explore
 
+**Depends on:** F0 (F1-F6 done). Parallel with borders, routes, layers.
+**Read first:** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`; do not re-explore.
+
 Needs F0. Parallel with routes, layers, more.
 
 Note (D4 default 1): the Period and Moment footer (F5, s1, s22) is the Explore footer; the old "Time" button over the map goes only if D4 = 1.

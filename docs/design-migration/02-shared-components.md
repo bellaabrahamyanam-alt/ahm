@@ -1,34 +1,48 @@
 # 02 Shared components
 
-This replaces the missing `02-shared-components.md` of the first prompt. Each component is something at least two screens draw: today as copies in several files, in the prototype as one look. Interface style follows the code: a function returns HTML text, a `*Wire(root)` makes it work, a `*Read(el)` gives the value; text from data goes through `esc()`; no module system (classic scripts, one global per function, `ui` prefix in `app/js/sidebar/components.js`). A file per component is not needed; one file is enough (`components.js`, 6 components so far would be ~600 lines: split by first letter of the task if it grows).
+Status 2026-11-23, branch `feat/shared-foundation-tasks`. JS tests pass (310). NOT seen in a browser (CDN and browser blocked in the sandbox): look and layout are unchecked; behaviour is covered only by unit tests of the pure parts.
+Stored data never changes. Deviation from `tasks/foundation.md` F3: it names the name value `{ lang, text, from, to }`; the real model, kept, is `{ lang, name, date_from, date_to }`. Components are plain functions that return HTML text and read from the DOM they made (the existing pattern), not `{el, get, set}` objects.
 
-Status: **built** = in the repo on this branch with tests; **designed** = interface fixed here, not built.
+## Ready / not ready
+| Component | File | Interface | Status |
+|---|---|---|---|
+| Tokens, daisyUI theme | `app/css/base.css`, `index.html:11` | CSS custom properties `--r-card --r-ctl --font-ui --font-serif --shadow-card --transition`; theme `paper-and-pencil` | READY (CDN look unverified) |
+| App shell | `index.html`, `layout.js`, `sidebar.css` | brand header, icon tabs, `#foot` slot under every tab | READY; daisyUI classes on buttons, inputs, sheets NOT done |
+| States | `components.js` | `uiState.html(kind, msg, retry)`; kind = loading, empty, error, readonly; `[data-retry]` reloads | READY; used for load and load error in `ui.js`; read-only state is a block only, no tab uses it yet |
+| Date editor | `datefield.js`, `components.js` | `uiDateEditor.html(cls, date, opts)`, `.read(el, what)`, `.check(el, what)`, `.safe(el)`, `.wire(root)`, `.preview(date)`; `uiDateFormatGroups()` | READY except the format menu is a native grouped select, NOT the popup of s47 |
+| Period footer | `period.js`, `#foot` | `ftRender()`; Period reads/writes `#fFrom` `#fTo`; `periodBounds()`, `periodActive()` unchanged | READY (drag and look unverified) |
+| Moment footer | `period.js`, `timebar.js` | state `time` (`AHM.state`), `tbOpen()`, `tbOff()`, `tbPlay(on)`, `tbTick(ms)`, `tbPatch(p)`; old bar and "Time" button removed | READY |
+| Histogram | `components.js` | `uiHistogram(items, lo, hi, n)` -> counts; undated not counted | READY, tested |
+| Language pills | `placeform.js` | `uiLanguagePills(cur)`; value holder `select.nl` (visually hidden) | READY in every name row (places, borders, routes, rivers, layers, types, categories via `pfRow`); notes and filter language selects unchanged |
+| Name list | `placeform.js` | `pfRow(n)`, `pfRowDated(n)`, `pfReadNames(root)`, `placeFormWire(root)` (add, up, remove); `.pf-name .nl .nn .pf-add .pf-del .pf-up` classes kept | READY (pill card look); name Period row is still a `<details>` "Period of this name", NOT the Set / Edit / Done row of s28 |
+| Type pills | `placeform.js` | `uiTypePills(items, cur)` items `[{code,label,icon}]`; value holder `select.pf-type` or `select[data-type-select]`; `placeTypePills(cur, lang)` | READY for the place form; borders, routes, rivers, type admin still use their own chips/selects: the screen worker switches them to `uiTypePills` |
+| Style editor | `components.js` | `uiStyleEditor.html(kind, color, style, symbols)`, `.read(root)` -> `{ color, style }`; kind = point, line, area, river | READY, unit tested; NOT wired into `admin.js` or the shape cards (workers `more`, `borders`, `routes`, `rivers`) |
+| Chips, add button, accordion | `components.js` | `uiChip(text, {on,count,removable,icon,data})`, `uiAdd(label, cls)`, `uiAccordion(id, icon, title, sub, body, open)` | READY, tested for escaping; not used by any tab yet |
+| List row, note card, form frame (sticky action bar), confirm dialog, toast | none | none | NOT BUILT; each is built once by the first worker that needs it and put in `components.js` after asking the main agent |
 
-| # | Component | Frames | Today in code (copies) | Used by | Proposed interface | Status |
-|---|---|---|---|---|---|---|
-| C1 | **Tokens + theme** | all | `base.css` (palette + map tokens), daisyUI link in `index.html` | everything | CSS custom properties; theme block `paper-and-pencil` | built (F1) |
-| C2 | **App shell** (brand header, icon tabs, collapse) | s1… | `index.html`, `layout.js` `tab`, `toggleSide`, `sideHandle` | shell | markup + `tab(n)`; click via `closest('[data-tab]')` | built (F2); loading / error / read-only states not built |
-| C3 | **Date field** (segmented mode, format menu, CE/BCE, preview, errors) | s46, s47, s48, s28, s33, s34 | `datefield.js` (`dfHTML`, `dfRead`, `dfSafe`, `dfWire`), used 9× | places form, name periods, notes, layers, borders, routes, period filter, time bar | `uiDateEditor.{html,read,check,safe,wire,preview}`; value = date object of `core/dates.js` | built (F3/F4) except the format **popup** of s47 (native grouped select used) |
-| C4 | **Period footer** (histogram + 2 handles, ✕ resets to Any) and **Moment footer** (play, speed, handle, Show undated) | s1, s2, s22, s45, s49 | `period.js` (From/To fields only), `timebar.js` (bar over the map, `state.time`) | every tab (footer slot) | `uiPeriodFooter({ items })` → HTML + `wire`; reads/writes `AHM.state 'time'` and the existing filter state; pure `uiHistogram(dates, steps)` | designed |
-| C5 | **Language pills + names block** (several names per language, per-name Period, ↑ reorder, ✕, "Add another name") | s7, s28, s33, s34, s41, s43, s44 | `placeform.js` `pfRow`, `pfRowDated`, `pfReadNames`; copies in `admin.js` (types, languages), `layers.js`, `shapes.js`, `routes.js`, categories (`catFill`) | places, borders, routes, rivers, layers, types, categories | `uiNames({ names, withPeriod })` → HTML; `uiNamesWire(root)`; `uiNamesRead(root)` → `[{lang,name,date_from?,date_to?}]` | designed |
-| C6 | **Type pills / select** (symbol or line/area swatch in each pill) | s7, s33, s34 | `placeform.js` `typeOptions` (a `<select>`), `shapes.js` `shRenderTypes` (chips), `routes.js` (chips) | place form, border form, route form, filters | `uiTypePills({ kind: point|line|area|river, value, types })` | designed |
-| C7 | **Style editor** (colour swatches + custom, width, opacity, pattern tiles, arrow switch, fill opacity, outline, symbol grid, size, live preview) | s20, s43, s44 | `admin.js` `tyRenderAdmin`, `tyStyle`; `shapes.js` `shStyle`; `routes.js` `rtStyle`; `layers.js` swatches | types editor, border card, route card, layer colour | `uiStyle({ kind, style })` → HTML; `uiStyleWire`; `uiStyleRead` → `{ color, style }` | designed |
-| C8 | **Accordion row / card** (head with symbol tile, title, dates, count, caret; open = blue edge) and **fold card** (icon tile + title + summary) | s3, s19, s21 | `<details class="fold">` (More), dock panels (`#detail`, `#lyDetail`, `#shDetail`, `#rtDetail`), place rows `placeRowHTML` | Explore list, More folds, layers, borders, routes | `uiAcc({ head, body, open })`; `uiFold({ icon, title, summary, body })` | designed |
-| C9 | **Chips / pills** with count, × and "Clear all" | s2 | `.chips`/`.chip` built in `places.js`, `shapes.js`, `routes.js`, `layers.js` (`ly-chip`) | filters, type filters, layer chips, language filter in notes | `uiChip({ label, count, on, removable })`; delegated click | designed |
-| C10 | **Search row** (search input + filter button with badge) | s1, s2 | `searchfield.js` (`searchFieldHTML`), `.searchbar` | all list tabs | extend `searchFieldHTML(id, placeholder, label, { filter: true })` | designed |
-| C11 | **Form footer** (sticky Save / Cancel; route variant with Save route / Back / Discard) | s7, s20, s33, s34, s43, s44, s46, s47 | dialog rows `#dSave/#dCancel`, `.dock-foot`, `shRenderAdd`, `rtOpenForm` buttons | all forms | `uiFormFoot({ primary, secondary, extra })` | designed |
-| C12 | **Notes timeline** (cards with language tag, date, clamped text, Show more/less, edit/delete, language count chips, sort, fold all) | s3, s45, s46 | `places.js` `noteHTML`, `fitNotes`, `setNote`; `layers.js` `lyOwnerNotesHTML`, `lyOpenNoteDlg` (shapes and layers share it) | place, layer, border, route | `uiNotes({ notes, lang })` + existing clamp logic reused | designed |
-| C13 | **Source / evidence picker** (certainty, sources, radius, "New source") | none (not in any frame) | `placeform.js` `evidence*`, `shapes.js` | place form, border and route forms | keep as is, restyle only | exists, no frame |
-| C14 | **Confirm** (delete / discard) | none | native `confirm()` in `admin.js`, `layers.js`, `routes.js` ×3, `shapes.js` ×2, `overlays.js` | all deletes | `uiConfirm({ title, text, ok })` returning a Promise; falls back to `confirm` | designed, no frame |
-| C15 | **Switch / slider / checkbox rows** (label + hint + control + value) | s20, s21, s22, s34, s43, s44 | many `<input type="range">` (admin ×3, shapes ×2, routes, overlays ×3, More), checkboxes (layers ×4, routes ×6, shapes ×4) | More, type editor, overlay editor, routes | `uiSwitch`, `uiSlider({ min, max, step, unit })` | designed |
-| C16 | **Empty / loading / error / read-only states** | none | ad-hoc `.sn` text, `#count` error | every list and form | `uiState({ kind, text, action })` | designed, no frame |
-| C17 | **Map popups and point menu** | none | `map.js` `showTip`, `showMenu`, `shapes.js` popup, `map.css` | map | restyle with tokens only; no interface change | exists, no frame |
-| C18 | **Language table / simple list row** (code, name, native, edit pencil) | s19, s21 | `admin.js` `renderLangs`, `renderTypes`, `lyRenderCats` | More | `uiRow({ cols, edit })` | designed |
+## Usage
+```js
+// date
+$('#x').innerHTML = uiDateEditor.html('my-date', place.date_from, { names: { none: 'Unknown' } });
+uiDateEditor.wire($('#x'));
+const d = uiDateEditor.read($('#x .df'), 'Began');          // null or { fmt, ts, mode, ts_to }
+// names (place, border, route, river, layer, type, category)
+box.innerHTML = names.map(pfRowDated).join('');             // pfRow for rows without a period
+const list = pfReadNames(box);                              // [{ lang, name, date_from?, date_to? }]
+// type pills with a value holder
+el.innerHTML = uiTypePills(items, cur) + '<select class="pf-type sr"></select>';
+// style
+el.innerHTML = uiStyleEditor.html('line', type.color, type.style);
+const { color, style } = uiStyleEditor.read(el);
+// states and blocks
+list.innerHTML = uiState.html('empty', 'No places for this period.');
+```
+Period footer: nothing to call; it redraws on `state:time`, on changes of the Filters fields and after the data loads (`ui.js`). Do not add a second period or moment control.
 
-## Interfaces that must not change
+## Rules for workers
+- Read, do not edit: `components.js`, `base.css`, `sidebar.css`, `period.js`, `timebar.js`, `layout.js`, `ui.js`, the shell part of `index.html`. A needed change goes to the main agent.
+- Language and type values always come from the dictionaries; the place-type list stays in three places (`AGENTS.md`).
+- Period is paused, not lost, while Moment is on: the Filters fields are untouched; the existing filter code still applies a set Period while a Moment is on (behaviour as before F5; not changed here).
 
-`INTERFACES.md` I-1…I-9 and `window.AHM` events; stored data; `dfRead` behaviour; element ids used by the browser tests (`#dPlaceForm`, `.pf-from`, `.pf-to`, `.df-mode`, `.df-fmt`, `.df-y`, `.df-n`, `.df-g`, `#nDate`, `#rtForm`, `.pf-nfrom`, `.pf-nto`) because `tests/js/browser.test.js` drives them. C3 keeps them by leaving the mode and era `<select>`s in the markup (class `sr`) as the value holders.
-
-## Dependencies between components
-
-C1 → C2 → everything. C3 → C4 (Period From/To in Filters), C5 (name periods), C12 (note date), all forms. C5, C6, C7 → C11 (forms). C8 → C12. C9 → C10. C14, C15, C16 are leaf components used last. Build order: C1, C2, C3 (done) → C5, C6, C7, C9, C11, C15 → C4, C8, C10, C12 → C14, C16.
+## Known gaps (not blocking the screen tasks)
+1. Format menu popup (s47). 2. Name Period row Set / Edit / Done (s28). 3. daisyUI classes on buttons, inputs, sheets. 4. Read-only and offline states in the shell. 5. List row, note card, form frame, confirm, toast. 6. Rem units: new CSS uses rem; older tokens are px. 7. Footer on narrow screens and when the panel is collapsed: unchecked.

@@ -1,5 +1,12 @@
 # Change log of the sidebar domain
 
+## 2026-11-23 Shared foundation F2-F6 (branch feat/shared-foundation-tasks)
+- What: Period/Moment footer in `#foot` (replaces the map time bar), `uiHistogram`, language pills and name cards, type pills, style editor, state blocks, chips, add button, accordion.
+- Why: `docs/design-migration/`, `tasks/foundation.md`.
+- Files: `app/js/sidebar/` (components, period, timebar, placeform, ui), `app/css/sidebar.css`, `app/index.html`, `app/dist/`.
+- Verify: `node tests/js/run.js`; open the app: footer on every tab, drag the handles, time-travel button, name rows with pills.
+- Follow-ups: "Known gaps" in `docs/design-migration/02-shared-components.md`. Not seen in a browser.
+
 ## 2026-11-12 — Place types are a dictionary (T-025, I-8)
 
 - **What:** More tab → "Place types" (list with markers and counts; admins: add, edit, remove, live preview); the place form and the filter chips use the dictionary; the old `PLACE_TYPES` list is gone.
