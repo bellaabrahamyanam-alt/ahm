@@ -135,3 +135,26 @@ test('time bar: every change of the moment refreshes the lists and the map (upda
     eq([], need.filter((v) => !new RegExp(v + '\\s*:').test(THEME)), 'daisyUI variables missing from the theme block');
   });
 }
+
+// ---- foundation F3/F4: shared components (tasks/foundation.md) ----
+{
+  const comp = () => load(['config.js', 'dates.js', 'data.js', 'datefield.js', 'components.js'], UI_STANDINS);
+  test('foundation F3: the format menu lists every date format of dates.js exactly once, grouped by precision', () => {
+    const p = comp();
+    const groups = p.X('uiDateFormatGroups()');
+    eq(['Full date', 'Month', 'Year and coarser'], groups.map((g) => g.title), 'group titles (prototype s47)');
+    const ids = groups.flatMap((g) => g.formats.map((f) => f.id));
+    eq(p.X('DATE_FORMATS').map((f) => f.id).sort(), ids.slice().sort(), 'every id once');
+    ok(groups[0].formats[0].example === '1500-03-21', 'carries the example of dates.js');
+  });
+  test('foundation F3: uiDateEditor.preview shows the date as the stored model says, empty for Unknown', () => {
+    const p = comp();
+    eq('', p.X('uiDateEditor.preview(null)'), 'unknown');
+    eq('c. 16th century', p.X("uiDateEditor.preview({ fmt: 'c', mode: 'approx', ts: '1501-01-01T00:00:00Z', ts_to: null })"), 'approx century');
+    eq('March 1500 – June 1502', p.X("uiDateEditor.preview({ fmt: 'mony', mode: 'range', ts: '1500-03-01T00:00:00Z', ts_to: '1502-06-01T00:00:00Z' })"), 'range');
+  });
+  test('foundation F3: uiDateEditor.html is the old date field (same markup as dfHTML)', () => {
+    const p = comp();
+    eq(p.X("dfHTML('x', null)"), p.X("uiDateEditor.html('x', null)"), 'same html');
+  });
+}

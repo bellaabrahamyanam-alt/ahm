@@ -1,5 +1,5 @@
 {
-  "hash": "d848cfaeab0ecd699454e9199d5809ca2ad971efa167a51394f7ccfaf94c770c",
+  "hash": "047b98f311f1b965c43033c19615dddc3fb45e8a1f46483462a9951bdf91961d",
   "js": [
     "js/config.js",
     "js/ahm.js",
@@ -13,6 +13,7 @@
     "js/core/search.js",
     "js/core/providers.js",
     "js/sidebar/datefield.js",
+    "js/sidebar/components.js",
     "js/sidebar/searchfield.js",
     "js/sidebar/period.js",
     "js/sidebar/placeform.js",
@@ -38,7 +39,7 @@
     "css/shapes.css"
   ],
   "bytes": {
-    "app.min.js": 251053,
+    "app.min.js": 251662,
     "app.min.css": 26305
   }
 }

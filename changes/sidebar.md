@@ -152,3 +152,11 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 
 - **What:** `pfRowDated` / `pfReadNames` (`placeform.js`): each name row of the place, border and route forms has "Period of this name" (from, to); list rows of places and borders say "also called …" when an old name matched the search.
 - **Files:** `placeform.js`, `shapes.js`, `routes.js`, `places.js`, `tests/js/browser.test.js` (1 scenario: the place form). Seen in headless Chromium: the place form only; NOT seen: border and route forms, the map label with the slider.
+
+## 2026-11-23 — F3/F4 start: shared components file (tasks/foundation.md)
+
+- **What:** new `app/js/sidebar/components.js` (loaded after `datefield.js`): the interface of the shared components in one comment, `uiDateEditor` (html, read, check, safe, wire, preview over the existing `dfHTML`/`dfRead`/`dfSafe`/`dfWire`), and `uiDateFormatGroups()` (the format menu of prototype s47). The 8 formats of the prototype are exactly the 8 `DATE_FORMATS` ids of `dates.js`, so the stored model does not change.
+- **Why:** the screen tasks need one interface to build on; no screen uses it yet, so nothing changes on screen.
+- **Files:** `app/js/sidebar/components.js`, `app/index.html`, `app/dist/`, `graph/`, `tests/js/sidebar.test.js` (3 tests, "foundation F3").
+- **How to verify:** `node tests/js/run.js "foundation F3"`.
+- **Follow-ups:** the new date field layout (segmented mode, format chip, CE | BCE toggle, preview line), F5 (Period and Moment footer), F6 (name, type, style) and `periodField`, `nameList`, `typeSelect`, `styleEditor` are not built.
