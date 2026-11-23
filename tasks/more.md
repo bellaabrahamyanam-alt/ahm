@@ -1,5 +1,8 @@
 # Task: more
 
+**Depends on:** F0 and layers merged.
+**Read first:** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`; do not re-explore.
+
 Needs F0. Parallel with explore, routes, layers.
 
 Dependency (D3 default 1): runs AFTER `layers` merges, because it moves the category admin code out of `app/js/sidebar/layers.js`; Categories (list, rename, "Add category", s21, s41) become a fold of More.

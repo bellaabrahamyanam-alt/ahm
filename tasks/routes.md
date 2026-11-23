@@ -1,5 +1,8 @@
 # Task: routes
 
+**Depends on:** F0. Parallel with explore, borders, layers.
+**Read first:** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`; do not re-explore.
+
 Needs F0. Parallel with explore, layers, more.
 
 ## Routes and views

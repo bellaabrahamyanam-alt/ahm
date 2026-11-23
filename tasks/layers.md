@@ -1,5 +1,8 @@
 # Task: layers
 
+**Depends on:** F0. Parallel with explore, borders, routes. Blocks more (category admin moves out of layers.js).
+**Read first:** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`; do not re-explore.
+
 Needs F0. Parallel with explore, routes, more.
 
 Note (D3 default 1): the category admin list moves to More (task `more`); this task keeps the category select and filter and does not touch the admin code.

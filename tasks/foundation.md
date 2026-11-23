@@ -89,3 +89,6 @@ One file `app/js/sidebar/components.js`, registered in the `<!-- ahm:js -->` blo
 ## Finish (every F-part)
 
 `bun tools/build.js`, commit `app/dist/`; `node tools/ci-check-pr.js <branch> origin/master`; `node tests/js/run.js 2>&1 | tail -15`; entry in `changes/shared.md` and `changes/sidebar.md`; update `docs/02-implemented-features.md` and `docs/09-code-style.md` for the new components.
+
+## Status 2026-11-23 (main agent, from git)
+Built: F1, F2 shell (header, tabs), F3 date wrappers, F4 segmented/CE-BCE/preview. Still to do before any screen task: F2 rest (daisyUI classes, loading/error/read-only states), custom date format menu, F5 (Period/Moment footer, histogram, remove Time button), F6 (languageSelect, nameList, typeSelect, styleEditor), shared blocks (form frame, chips, add-dashed, accordion, list row, note card, empty/error, confirm). Order and owners: `docs/design-migration/03-work-plan.md`.

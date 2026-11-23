@@ -1,5 +1,8 @@
 # Task: rivers
 
+**Depends on:** F0 and borders merged (same files). Starts last with more.
+**Read first:** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`; do not re-explore.
+
 Needs F0 and `borders` merged (the Rivers tab is the Borders panel in its own mode: same `app/js/sidebar/shapes.js`, `app/js/map/shapes.js`, `app/css/shapes.css`).
 
 ## Routes and views
