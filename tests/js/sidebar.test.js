@@ -158,3 +158,20 @@ test('time bar: every change of the moment refreshes the lists and the map (upda
     eq(p.X("dfHTML('x', null)"), p.X("uiDateEditor.html('x', null)"), 'same html');
   });
 }
+
+// ---- foundation F2: app shell (tasks/foundation.md) ----
+{
+  const fs = require('fs');
+  const path = require('path');
+  const { ROOT } = require('./lib/ctx');
+  const HTML2 = fs.readFileSync(path.join(ROOT, 'app', 'index.html'), 'utf8');
+  const LAYOUT = fs.readFileSync(path.join(ROOT, 'app', 'js', 'sidebar', 'layout.js'), 'utf8');
+  test('foundation F2: the shell has the brand header and six tabs, each an icon over a label, in the prototype order', () => {
+    ok(/<header class="brand">[\s\S]*<h1>Armenian Highlands<\/h1>/.test(HTML2), 'brand header with the title');
+    const tabs = [...HTML2.matchAll(/<button data-tab="(\w+)"[^>]*><svg[^>]*aria-hidden="true">[\s\S]*?<\/svg><span>([^<]+)<\/span><\/button>/g)];
+    eq(['explore:Explore', 'shapes:Borders', 'routes:Routes', 'rivers:Rivers', 'layers:Layers', 'more:More'], tabs.map((m) => m[1] + ':' + m[2]), 'tabs');
+  });
+  test('foundation F2: a click on the icon or the label of a tab opens the tab (closest, not target)', () => {
+    ok(/e\.target\.closest\("\[data-tab\]"\)/.test(LAYOUT), 'the tab click handler uses closest("[data-tab]")');
+  });
+}

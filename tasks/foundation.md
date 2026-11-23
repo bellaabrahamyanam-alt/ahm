@@ -38,6 +38,7 @@ Smaller option: one PR for F1+F2, one for F3..F6. Do not split further.
 - ASSUMED missing states: loading (data not yet fetched), load error with Retry, read-only visitor (no edit buttons), offline.
 - Files owned: `app/js/sidebar/layout.js`, `app/js/sidebar/ui.js`, `app/index.html` (tab bar and shell markup only, not the `<section id="tab-...">` bodies).
 - Must NOT modify: the bodies of `#tab-*` sections, `app/js/map/`, `app/js/core/`, `service/`.
+- Built 2026-11-23: brand header and icon-over-label tabs (s1) in `app/index.html`, `app/js/sidebar/layout.js` (click on `closest('[data-tab]')`) and the tab rules of `app/css/sidebar.css`. Not built: loading, error and read-only states, daisyUI classes on buttons, sheets and inputs (the sandbox blocks the CDN, so they cannot be looked at here).
 - Acceptance: all six tabs open and close sheets as before; keyboard and narrow-screen behaviour unchanged; `node tests/js/run.js 2>&1 | tail -15` passes.
 - Tests: extend `tests/js/sidebar.test.js` only for what existed; new cases in `tests/js/sidebar.test.js`.
 

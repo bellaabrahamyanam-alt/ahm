@@ -286,25 +286,62 @@ button.wide {
   flex: 1 1 0;
 }
 
-/* ---- tabs (cp.css tabs: rounded top, active uses the panel colour) ---- */
+/* ---- header and tabs (prototype s1): the brand, then icon over label, the active tab has a bar under it ---- */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 4px 20px;
+}
+.brand .logo {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--r-ctl);
+  background: var(--a);
+  color: var(--bg2-bg-color);
+  display: grid;
+  place-items: center;
+}
+.brand h1 {
+  margin: 0;
+  font: 600 17px/1.15 var(--font-serif);
+  color: var(--content-color);
+}
+.brand p {
+  margin: 1px 0 0;
+  font-size: 11px;
+  color: var(--muted-color);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 .tabs {
   display: flex;
-  gap: 2px;
+  gap: 0;
   border-bottom: 1px solid var(--li-row-border-bottom-color);
-  margin: 4px 14px 6px;
+  margin: 4px 10px 6px;
 }
 .tabs button {
   flex: 1;
   min-width: 0;
-  padding: 8px 4px;
-  font-family: var(--font-head);
-  font-size: 13px;
-  font-weight: bold;
-  color: var(--content-color);
+  padding: 8px 0 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--html-body-color);
   background: transparent;
   border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 5px 5px 0 0;
+  border-radius: var(--radius-s) var(--radius-s) 0 0;
+  position: relative;
+}
+.tabs button svg {
+  display: block;
+  flex: none;
 }
 .tabs button:hover {
   background: var(--tab-bg-hover);
@@ -312,9 +349,17 @@ button.wide {
 }
 .tabs .on,
 .tabs .on:hover {
-  background: var(--panel-container-panel-bg-color);
   color: var(--header);
-  border-bottom-color: var(--a);
+}
+.tabs .on::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--a);
 }
 .tabs .on:hover {
   color: var(--a-hover);

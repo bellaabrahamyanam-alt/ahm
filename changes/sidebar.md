@@ -160,3 +160,11 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Files:** `app/js/sidebar/components.js`, `app/index.html`, `app/dist/`, `graph/`, `tests/js/sidebar.test.js` (3 tests, "foundation F3").
 - **How to verify:** `node tests/js/run.js "foundation F3"`.
 - **Follow-ups:** the new date field layout (segmented mode, format chip, CE | BCE toggle, preview line), F5 (Period and Moment footer), F6 (name, type, style) and `periodField`, `nameList`, `typeSelect`, `styleEditor` are not built.
+
+## 2026-11-23 — F2: app shell, brand header and icon tabs (tasks/foundation.md)
+
+- **What:** brand header (logo, title, subtitle) above the tabs; each tab is an icon over its label with an underline bar on the active one (prototype s1); the tab click uses `closest('[data-tab]')`, because the click can land on the icon or the label; tab rules in `sidebar.css` use the prototype tokens.
+- **Why:** the shell is the first thing every screen task builds under.
+- **Files:** `app/index.html`, `app/js/sidebar/layout.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`, `tests/js/sidebar.test.js` ("foundation F2", 2 tests).
+- **How to verify:** `node tests/js/run.js "foundation F2"`; open the page next to `docs/prototype/png/s1.png`.
+- **Not done:** loading, error and read-only states; daisyUI classes on buttons, sheets and inputs (CDN blocked in the sandbox, never looked at). Screenshot of the page at 400 px compared with s1 by eye only.
