@@ -67,6 +67,7 @@ One file `app/js/sidebar/components.js`, registered in the `<!-- ahm:js -->` blo
 - Files owned: `app/js/sidebar/datefield.js`, `app/js/sidebar/components.js`. Must NOT modify: `app/js/core/dates.js`, `service/dates.php`.
 - Acceptance: 1200 BCE round trips to `-001199-01-01T00:00:00Z`; a range with `ts_to` before `ts` shows a red error line and does not save; the preview updates on every input.
 - Tests: in `tests/js/sidebar.test.js`, through `dates.js` (never open `tests/fixtures/dates-vectors.json`).
+- Built 2026-11-23: segmented mode control, grouped format select, CE | BCE toggle, From / To labels and the preview line, all inside `dfHTML`/`dfWire` (the selects stay as the value holders, visually hidden, so every caller and browser test is unchanged). Not built: the format menu as a custom popup (a native grouped select is used).
 
 ## F5 Period and Moment components
 - Reference: s1, s2, s22, s49 (one footer slot), s45 (same footer on Notes).

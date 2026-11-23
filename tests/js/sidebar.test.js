@@ -175,3 +175,37 @@ test('time bar: every change of the moment refreshes the lists and the map (upda
     ok(/e\.target\.closest\("\[data-tab\]"\)/.test(LAYOUT), 'the tab click handler uses closest("[data-tab]")');
   });
 }
+
+// ---- foundation F4: the date field in the layout of the prototype (s47, s48) ----
+{
+  const dfp = () => load(['config.js', 'dates.js', 'data.js', 'datefield.js', 'components.js'], UI_STANDINS);
+  const RANGE = "{ fmt: 'mony', mode: 'range', ts: '1500-03-01T00:00:00Z', ts_to: '1502-06-01T00:00:00Z' }";
+  test('foundation F4: the mode is a segmented control of buttons, the select stays the value holder, the active one is marked', () => {
+    const h = dfp().X("dfHTML('x', " + RANGE + ')');
+    const btns = [...h.matchAll(/<button type="button" data-mode="(\w+)" class="(on)?">([^<]+)<\/button>/g)];
+    eq(['none:Unknown:', 'exact:Exact:', 'approx:Approx.:', 'range:Range:on'], btns.map((m) => `${m[1]}:${m[3]}:${m[2] || ''}`), 'segments');
+    ok(/<select class="df-mode sr"[^>]*>[\s\S]*<option value="range" selected>/.test(h), 'the select holds the value');
+  });
+  test('foundation F4: the period filter still offers only Any and Exact', () => {
+    const h = dfp().X("dfHTML('x', null, { modes: ['none', 'exact'], names: { none: 'Any' } })");
+    eq(['none', 'exact'], [...h.matchAll(/<button type="button" data-mode="(\w+)"/g)].map((m) => m[1]), 'segments');
+    ok(/>Any<\/button>/.test(h), 'Unknown is labelled Any');
+  });
+  test('foundation F4: the format select is grouped by precision and lists every format once', () => {
+    const p = dfp(), h = p.X("dfHTML('x', null)");
+    eq(['Full date', 'Month', 'Year and coarser'], [...h.matchAll(/<optgroup label="([^"]+)">/g)].map((m) => m[1]), 'groups');
+    const ids = [...h.matchAll(/<option value="(\w+)"(?: selected)?>[^<]+ — [^<]+<\/option>/g)].map((m) => m[1]);
+    eq(p.X('DATE_FORMATS').map((f) => f.id).sort(), ids.slice().sort(), 'every format once');
+  });
+  test('foundation F4: a range has From and To, each with its own CE | BCE toggle; the preview line shows the stored date', () => {
+    const h = dfp().X("dfHTML('x', " + RANGE + ')');
+    eq(['From', 'To'], [...h.matchAll(/<div class="df-lbl">([^<]+)<\/div>/g)].map((m) => m[1]), 'labels');
+    eq(2, (h.match(/<span class="df-eraT"/g) || []).length, 'two era toggles');
+    ok(/<div class="df-prev"[^>]*>March 1500 – June 1502<\/div>/.test(h), 'preview');
+    ok(!/df-lbl/.test(dfp().X("dfHTML('x', { fmt: 'y', mode: 'exact', ts: '1500-01-01T00:00:00Z', ts_to: null })")), 'no From / To for one date');
+  });
+  test('foundation F4: BCE is the active era of a BCE date', () => {
+    const h = dfp().X("dfHTML('x', { fmt: 'y', mode: 'exact', ts: '-000099-01-01T00:00:00Z', ts_to: null })");
+    ok(/data-era="BCE" class="on"/.test(h) && /data-era="CE" class=""/.test(h), 'BCE on, CE off');
+  });
+}

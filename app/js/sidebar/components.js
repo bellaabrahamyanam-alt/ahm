@@ -10,14 +10,9 @@
 // Every value is the date object of core/dates.js, so the stored data never changes with the look of the field.
 // Components return HTML text and read from the DOM they made; text from data goes through esc().
 
-const UI_DATE_FORMAT_GROUPS = [
-  ['Full date', ['ymd', 'dmy', 'mdy', 'dmony']],
-  ['Month', ['mony']],
-  ['Year and coarser', ['y', 'c', 'm']],
-];
-/** The format menu of the prototype (frame s47): formats grouped by precision, in the order of DATE_FORMATS ids. */
+/** The format menu of the prototype (frame s47), the groups of datefield.js. */
 function uiDateFormatGroups() {
-  return UI_DATE_FORMAT_GROUPS.map(([title, ids]) => ({
+  return DF_FORMAT_GROUPS.map(([title, ids]) => ({
     title,
     formats: ids.map((id) => {
       const f = dateFormat(id);

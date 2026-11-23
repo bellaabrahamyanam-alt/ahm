@@ -200,6 +200,93 @@ hr {
 .df.bad select {
   border-color: var(--error-color);
 }
+/* prototype s48: segmented mode control, format chip, CE | BCE toggle, From / To labels, preview line */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+.df {
+  position: relative;
+}
+.df-modes {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg1-bg-color);
+  border-radius: var(--r-ctl);
+}
+.df-modes button {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: calc(var(--r-ctl) - 2px);
+  background: transparent;
+  color: var(--html-body-color);
+  font: 500 12px var(--font-ui);
+}
+.df-modes button.on {
+  background: var(--bg2-bg-color);
+  color: var(--a);
+  box-shadow: var(--shadow-card);
+}
+.df .row {
+  margin: 6px 0 4px;
+}
+.df-fmt {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  background: var(--bg1-bg-color);
+  color: var(--a);
+}
+.df-lbl {
+  margin: 8px 0 2px;
+  font: 600 11px var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+.df-eraT {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg1-bg-color);
+  border-radius: var(--r-ctl);
+}
+.df-eraT button {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: calc(var(--r-ctl) - 2px);
+  background: transparent;
+  color: var(--muted-color);
+  font: 600 12px var(--font-ui);
+}
+.df-eraT button.on {
+  background: var(--a);
+  color: var(--inputbox-bg);
+}
+.df-prev {
+  margin-top: 4px;
+  min-height: 1.4em;
+  text-align: right;
+  font: 600 15px var(--font-serif);
+  color: var(--content-color);
+}
+.df-prev.err {
+  font: 12px var(--font-ui);
+  text-align: left;
+  color: var(--error-color);
+}
 .pf-sub {
   margin: 6px 0 0;
   font-size: 11px;

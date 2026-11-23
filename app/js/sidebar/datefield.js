@@ -4,7 +4,13 @@
 // The result is the date object of dates.js: the chosen format plus a UTC time stamp, so the date can always be
 // shown again exactly as it was entered. An unknown date is `null` and is always allowed (dates are optional).
 
-const DF_MODES = { none: 'Unknown', exact: 'Exact', approx: 'Approximate (c.)', range: 'Range' };
+const DF_MODES = { none: 'Unknown', exact: 'Exact', approx: 'Approx.', range: 'Range' };
+// the format menu (prototype s47): formats grouped by precision; every DATE_FORMATS id exactly once
+const DF_FORMAT_GROUPS = [
+  ['Full date', ['ymd', 'dmy', 'mdy', 'dmony']],
+  ['Month', ['mony']],
+  ['Year and coarser', ['y', 'c', 'm']],
+];
 const dfOptions = (pairs, cur) =>
   pairs.map(([v, t]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(t)}</option>`).join('');
 
@@ -27,13 +33,19 @@ function dfGroup(fmt, f) {
   };
   return (
     `<div class="df-g">${F.fields.map(part).join('')}` +
-    `<select class="df-era" aria-label="Era">${dfOptions([['CE', 'CE'], ['BCE', 'BCE']], f.era || 'CE')}</select></div>`
+    // CE | BCE toggle (prototype s48). The select stays the value holder (read by dfRead, driven by the tests); the buttons set it.
+    `<span class="df-eraT" role="group" aria-label="Era">${['CE', 'BCE']
+      .map((e) => `<button type="button" data-era="${e}" class="${(f.era || 'CE') === e ? 'on' : ''}">${e}</button>`)
+      .join('')}</span>` +
+    `<select class="df-era sr" aria-label="Era">${dfOptions([['CE', 'CE'], ['BCE', 'BCE']], f.era || 'CE')}</select></div>`
   );
 }
 const dfBody = (mode, fmt, ts, tsTo) => {
   if (mode === 'none') return '';
   const f = (t) => (t === null || t === undefined ? {} : dateFromTs(fmt, t));
-  return dfGroup(fmt, f(ts)) + (mode === 'range' ? '<div class="sn">to</div>' + dfGroup(fmt, f(tsTo)) : '');
+  return mode === 'range'
+    ? `<div class="df-lbl">From</div>${dfGroup(fmt, f(ts))}<div class="df-lbl">To</div>${dfGroup(fmt, f(tsTo))}`
+    : dfGroup(fmt, f(ts));
 };
 
 /**
@@ -47,16 +59,24 @@ function dfHTML(cls, date, opts) {
     mode = date ? date.mode : 'none',
     fmt = date ? date.fmt : opts.fmt || 'y';
   return (
-    `<div class="df ${cls}" data-mode="${mode}" data-fmt="${fmt}"><div class="row">` +
-    `<select class="df-mode" aria-label="How sure is the date">${dfOptions(
+    `<div class="df ${cls}" data-mode="${mode}" data-fmt="${fmt}">` +
+    // segmented control (prototype s48); the select is the value holder, the buttons set it
+    `<div class="df-modes" role="group" aria-label="How sure is the date">${modes
+      .map((m) => `<button type="button" data-mode="${m}" class="${m === mode ? 'on' : ''}">${esc(names[m])}</button>`)
+      .join('')}</div>` +
+    `<div class="row"><select class="df-mode sr" aria-label="How sure is the date">${dfOptions(
       modes.map((m) => [m, names[m]]),
       mode
     )}</select>` +
-    `<select class="df-fmt" aria-label="Date format">${dfOptions(
-      DATE_FORMATS.map((f) => [f.id, f.label + ' — ' + f.example]),
-      fmt
-    )}</select></div>` +
-    `<div class="df-body">${dfBody(mode, fmt, date && date.ts, date && date.ts_to)}</div></div>`
+    `<select class="df-fmt" aria-label="Date format">${DF_FORMAT_GROUPS.map(
+      ([title, ids]) =>
+        `<optgroup label="${esc(title)}">${dfOptions(
+          ids.map((id) => [id, dateFormat(id).label + ' — ' + dateFormat(id).example]),
+          fmt
+        )}</optgroup>`
+    ).join('')}</select></div>` +
+    `<div class="df-body">${dfBody(mode, fmt, date && date.ts, date && date.ts_to)}</div>` +
+    `<div class="df-prev" aria-live="polite">${esc(date ? dateText(date) : '')}</div></div>`
   );
 }
 
@@ -91,11 +111,45 @@ function dfSafe(el) {
   }
 }
 
-/** Makes the "how sure" and "format" selects of every date field inside root work. Call once per container. */
+/** The preview line under a date field: the date as it will be stored, or the reason it cannot be, in red. */
+function dfRefresh(el) {
+  el.querySelectorAll('.df-modes button').forEach((b) => b.classList.toggle('on', b.dataset.mode === el.dataset.mode));
+  el.querySelectorAll('.df-g').forEach((g) => {
+    const era = g.querySelector('.df-era');
+    g.querySelectorAll('.df-eraT button').forEach((b) => b.classList.toggle('on', era && b.dataset.era === era.value));
+  });
+  const out = el.querySelector('.df-prev');
+  if (!out) return;
+  let text = '',
+    bad = false;
+  try {
+    const d = dfRead(el, 'Date');
+    text = d ? dateText(d) : '';
+  } catch (e) {
+    text = el.querySelector('.df-g input:not(:placeholder-shown)') ? e.message : '';
+    bad = !!text;
+  }
+  out.textContent = text;
+  out.classList.toggle('err', bad);
+}
+
+/** Makes the "how sure" and "format" selects (and the buttons that drive them) of every date field inside root work. Call once per container. */
 function dfWire(root) {
+  root.addEventListener('click', (e) => {
+    const b = e.target.closest('.df-modes button, .df-eraT button');
+    if (!b || !root.contains(b)) return;
+    const holder = b.closest('.df-modes') ? b.closest('.df').querySelector('.df-mode') : b.closest('.df-g').querySelector('.df-era');
+    holder.value = b.dataset.mode || b.dataset.era;
+    holder.dispatchEvent(new Event('change', { bubbles: true })); // the same path as choosing in the select
+  });
+  root.addEventListener('input', (e) => {
+    const el = e.target.closest('.df');
+    if (el) dfRefresh(el);
+  });
   root.addEventListener('change', (e) => {
     const el = e.target.closest('.df');
-    if (!el || !e.target.matches('.df-mode, .df-fmt')) return;
+    if (!el) return;
+    if (!e.target.matches('.df-mode, .df-fmt')) return dfRefresh(el);
     let keep = null;
     try {
       keep = dfRead(el, 'Date', { mode: el.dataset.mode, fmt: el.dataset.fmt }); // what was typed, in the OLD format
@@ -111,5 +165,6 @@ function dfWire(root) {
       keep && keep.ts,
       keep && keep.mode === 'range' ? keep.ts_to : null
     );
+    dfRefresh(el);
   });
 }

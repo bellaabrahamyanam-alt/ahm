@@ -168,3 +168,11 @@ None for this task. Known violation 1 in INTERFACES.md closes when task 002 is a
 - **Files:** `app/index.html`, `app/js/sidebar/layout.js`, `app/css/sidebar.css`, `app/dist/`, `graph/`, `tests/js/sidebar.test.js` ("foundation F2", 2 tests).
 - **How to verify:** `node tests/js/run.js "foundation F2"`; open the page next to `docs/prototype/png/s1.png`.
 - **Not done:** loading, error and read-only states; daisyUI classes on buttons, sheets and inputs (CDN blocked in the sandbox, never looked at). Screenshot of the page at 400 px compared with s1 by eye only.
+
+## 2026-11-23 — F4: the date field in the layout of the prototype (tasks/foundation.md)
+
+- **What:** `dfHTML`/`dfWire` (`app/js/sidebar/datefield.js`) draw the field as in prototype s47 and s48: a segmented control Unknown | Exact | Approx. | Range; the format as a rounded select grouped Full date, Month, Year and coarser; From and To labels for a range; a CE | BCE toggle on every year; a serif preview line with the date as stored, or the reason it cannot be saved in red. The mode and era selects stay in the markup (visually hidden, class `sr`) as the value holders, and the buttons set them and fire `change`, so `dfRead`, every caller and the browser tests are unchanged. The period filter still offers Any and Exact only.
+- **Why:** one date field for places, notes, layers, names, routes and borders.
+- **Files:** `app/js/sidebar/datefield.js`, `app/js/sidebar/components.js` (format groups now come from datefield.js), `app/css/sidebar.css`, `app/dist/`, `graph/`, `tests/js/sidebar.test.js` (5 tests, "foundation F4").
+- **How to verify:** `node tests/js/run.js "foundation F4"`; open any place form beside `docs/prototype/png/s48.png`.
+- **Not done / known:** the format menu is a native grouped select, not the popup of s47; switching to Range shows the red "must be a whole number" line at once, before the second date is typed. Checked by Chrome screenshot and clicks on a demo of three fields, not on every screen that uses the field.
