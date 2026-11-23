@@ -10,6 +10,67 @@ const langOptions = (cur) => {
     list.map((l) => `<option value="${esc(l.code)}"${l.code === cur ? ' selected' : ''}>${esc(l.name)} (${esc(l.code)})</option>`).join('')
   );
 };
+/**
+ * Language pills (F6, prototype s7 s20 s33 s41): one pill per dictionary language, one active. The <select class="nl"> stays as the
+ * value holder (visually hidden), so every reader (`.nl`.value) and every test keeps working; a click on a pill sets it.
+ * A code that is not in the dictionary stays visible as an extra pill, never lost.
+ */
+function uiLanguagePills(cur) {
+  const list = languages.slice().sort((a, b) => a.name.localeCompare(b.name)),
+    codes = list.map((l) => l.code);
+  if (cur && !codes.includes(cur)) codes.push(cur);
+  return `<div class="lang-pills" role="group" aria-label="Language">${codes
+    .map((c) => `<button type="button" class="lang-pill${c === cur ? ' on' : ''}" data-lang="${esc(c)}" aria-pressed="${c === cur}" title="${esc((list.find((l) => l.code === c) || { name: c }).name)}">${esc(c)}</button>`)
+    .join('')}</div>`;
+}
+/** The language choice of one name or note: pills over the hidden select that holds the value. `select` = the <select> HTML. */
+const uiLanguageSelect = { html: (cur, select) => uiLanguagePills(cur) + select };
+if (typeof document !== 'undefined' && document.addEventListener)
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('.lang-pill');
+    if (!b) return;
+    const box = b.closest('.lang-pills'),
+      sel = box.parentElement.querySelector('select.nl, select[data-lang-select]');
+    if (!sel) return;
+    sel.value = b.dataset.lang;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    box.querySelectorAll('.lang-pill').forEach((x) => {
+      x.classList.toggle('on', x === b);
+      x.setAttribute('aria-pressed', String(x === b));
+    });
+  });
+/**
+ * Type pills (F6, prototype s7 s20 s33 s34): `items` = [{ code, label, icon }] (icon = HTML or ''), one active. The select next to them
+ * (class `pf-type`, or whatever the caller keeps) holds the value; a click sets it and sends `change`, as the select did.
+ */
+function uiTypePills(items, cur) {
+  return `<div class="type-pills" role="group" aria-label="Type">${items
+    .map((t) => `<button type="button" class="type-pill${t.code === cur ? ' on' : ''}" data-type="${esc(t.code)}" aria-pressed="${t.code === cur}">${t.icon || ''}<span>${esc(t.label)}</span></button>`)
+    .join('')}</div>`;
+}
+if (typeof document !== 'undefined' && document.addEventListener)
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('.type-pill');
+    if (!b) return;
+    const box = b.closest('.type-pills'),
+      sel = box.parentElement.querySelector('select.pf-type, select[data-type-select]');
+    if (!sel) return;
+    sel.value = b.dataset.type;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    box.querySelectorAll('.type-pill').forEach((x) => {
+      x.classList.toggle('on', x === b);
+      x.setAttribute('aria-pressed', String(x === b));
+    });
+  });
+/** The point types of the dictionary as pills (the place form). */
+function placeTypePills(cur, l) {
+  const list = types.filter((t) => t.geometry === 'point').map((t) => t.code);
+  if (cur && !list.includes(cur)) list.push(cur);
+  return uiTypePills(
+    list.sort((a, b) => typeLabel(a, l).localeCompare(typeLabel(b, l))).map((c) => ({ code: c, label: typeLabel(c, l), icon: typeof typeIcon === 'function' ? typeIcon(c) : '' })),
+    cur
+  );
+}
 /** <option>s of the point types of the dictionary (sorted by name in language l). A type that is not in the dictionary is kept visible. */
 const typeOptions = (cur, l) => {
   const list = types.filter((t) => t.geometry === 'point').map((t) => t.code);
@@ -64,10 +125,10 @@ function svgToPath(text) {
 const TYPE_HINT = 'Type missing? Ask an administrator to add it (More tab, Place types).';
 const LANG_HINT = 'Language missing? Ask an administrator to add it (Languages tab).';
 const pfRow = (n) =>
-  `<div class="row pf-name"><select class="nl" aria-label="Language" title="${LANG_HINT}">${langOptions(n.lang)}</select>` +
-  `<input class="nn" value="${esc(n.name)}" placeholder="name" aria-label="Name">` +
-  `<button type="button" class="pf-up" title="Move up: the first name of a language is the one shown on the map">↑</button>` +
-  `<button type="button" class="pf-del" title="Remove this name">✕</button></div>`;
+  `<div class="pf-name">${uiLanguagePills(n.lang)}<select class="nl sr" tabindex="-1" aria-label="Language" title="${LANG_HINT}">${langOptions(n.lang)}</select>` +
+  `<div class="pf-line"><input class="nn" value="${esc(n.name)}" placeholder="name" aria-label="Name">` +
+  `<button type="button" class="pf-up" title="Move up: the first name of a language is the one shown on the map" aria-label="Move up">↑</button>` +
+  `<button type="button" class="pf-del" title="Remove this name" aria-label="Remove this name">✕</button></div></div>`;
 
 // ---- certainty, radius and sources of a place or a border (T-046 phase 1) ----
 const CERT_LABELS = { exact: 'Exact', approximate: 'Approximate', disputed: 'Disputed' };
@@ -164,13 +225,14 @@ function pfReadNames(root) {
 
 /** p: { names, type, date_from, date_to, height_m, lat, lon } (dates are date objects or null) */
 function placeFormHTML(p) {
+  const TL = typeof document !== 'undefined' && document.getElementById ? (document.getElementById('lang') || {}).value : 'en';
   const names = p.names && p.names.length ? p.names : [{ lang: 'en', name: '' }],
     mountain = p.type === 'mountain';
   return (
     `<div class="pf"><div class="label">Names</div><div class="pf-names" data-dated="1">${names.map((n) => pfRowDated(n)).join('')}</div>` +
     `<button type="button" class="pf-add">+ Add another name</button>` +
     `<div class="sn">A place can have several names, even in one language (Ararat and Masis). The first name of each language is shown on the map. ${LANG_HINT}</div>` +
-    `<div class="label">Type</div><select class="pf-type" title="${TYPE_HINT}">${typeOptions(p.type, typeof document !== 'undefined' && document.getElementById ? (document.getElementById('lang') || {}).value : 'en')}</select>` +
+    `<div class="label">Type</div>${placeTypePills(p.type, TL)}<select class="pf-type sr" tabindex="-1" aria-label="Type" title="${TYPE_HINT}">${typeOptions(p.type, TL)}</select>` +
     `<div class="pf-when"${mountain ? ' hidden' : ''}><div class="label">Dates (optional)</div>` +
     `<div class="sn">Leave “Unknown” when you do not know a date. Choose “Approximate” or “Range” when you only know roughly.</div>` +
     `<div class="pf-sub">Began / founded</div>${dfHTML('pf-from', p.date_from)}` +

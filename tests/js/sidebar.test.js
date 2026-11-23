@@ -209,3 +209,53 @@ test('time bar: every change of the moment refreshes the lists and the map (upda
     ok(/data-era="BCE" class="on"/.test(h) && /data-era="CE" class=""/.test(h), 'BCE on, CE off');
   });
 }
+
+// ---- foundation F5: Period / Moment footer (tasks/foundation.md) ----
+{
+  const y = (n) => ({ fmt: 'y', ts: (n < 0 ? '-' + String(1 - n - 1).padStart(6, '0') : String(n).padStart(4, '0')) + '-01-01T00:00:00Z', mode: 'exact', ts_to: null });
+  const hp = () => load(['config.js', 'dates.js', 'data.js', 'datefield.js', 'components.js'], UI_STANDINS);
+  test('foundation F5: the histogram counts dated objects per step; an open end runs to the edge; undated objects are not counted', () => {
+    const p = hp();
+    const items = [{ date_from: y(100), date_to: y(200) }, { date_from: y(300), date_to: null }, { date_from: null, date_to: null }];
+    const bins = p.X('(() => { const h = __0, lo = isoToSec("0100-01-01T00:00:00Z"), hi = isoToSec("0400-01-01T00:00:00Z"); return uiHistogram(h, lo, hi, 3); })()', items);
+    eq([1, 1, 1], bins, 'A covers steps 1 and 2 (year 200 included), B starts in step 3, the undated one is nowhere');
+  });
+  test('foundation F5: an empty list or an empty range gives all zeros', () => {
+    const p = hp();
+    eq([0, 0], p.X('uiHistogram([], 0, 100, 2)'));
+    eq([0, 0], p.X('uiHistogram([{ date_from: null, date_to: null }], 100, 100, 2)'));
+  });
+}
+
+// ---- foundation F6: style editor, language and type pills ----
+{
+  const sp = () => load(['config.js', 'dates.js', 'data.js', 'datefield.js', 'components.js'], UI_STANDINS);
+  test('foundation F6: the style editor shows only the controls of its kind', () => {
+    const p = sp();
+    const h = (k, st) => p.X(`uiStyleEditor.html(${JSON.stringify(k)}, '#b3261e', __0, [{ name: 'circle', label: 'Circle' }])`, st);
+    ok(/data-st="size"/.test(h('point', { symbol: 'circle', size: 8 })) && /data-st-symbol="circle"/.test(h('point', {})), 'point: symbol and size');
+    ok(/data-st="arrow"/.test(h('line', { width: 2 })) && !/data-st="arrow"/.test(h('river', { width: 2 })), 'arrow only for a route line');
+    ok(/data-st="fill_opacity"/.test(h('area', { fill_opacity: 0.3, outline: { width: 2 } })) && !/data-st="opacity"/.test(h('area', {})), 'area: fill opacity, no line opacity');
+  });
+  test('foundation F6: the style editor html escapes a symbol name', () => {
+    const h = sp().X('uiStyleEditor.html("point", "#b3261e", {}, [{ name: \'a"><img\', label: \'x\' }])');
+    ok(!/<img/.test(h), 'no injected tag');
+  });
+}
+
+// ---- foundation F2/F3: states and small blocks ----
+{
+  const bp = () => load(['config.js', 'dates.js', 'data.js', 'datefield.js', 'components.js'], UI_STANDINS);
+  test('foundation F2: state blocks escape the message and add Retry only when asked', () => {
+    const p = bp();
+    const e = p.X('uiState.html("error", "<b>x</b>", true)');
+    ok(!/<b>x/.test(e) && /data-retry/.test(e) && /role="alert"/.test(e), 'escaped, Retry, alert role');
+    ok(!/data-retry/.test(p.X('uiState.html("empty", "No places")')), 'no Retry by default');
+  });
+  test('foundation F3: chip, add button and accordion escape their text', () => {
+    const p = bp();
+    ok(!/<i>/.test(p.X('uiChip("<i>x</i>", { count: "<i>1</i>" })')), 'chip');
+    ok(!/<i>/.test(p.X('uiAdd("<i>x</i>")')), 'add');
+    ok(!/<i>/.test(p.X('uiAccordion("a", "", "<i>t</i>", "<i>s</i>", "body", true)')), 'accordion title and subtitle');
+  });
+}
