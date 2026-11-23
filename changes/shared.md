@@ -8,6 +8,13 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 
 > Older entries (#1 to #22) are in `changes/archive/shared-001-022.md`; the history before the domain logs is `changes/archive/AGENT_CHANGES.md`. Open them only when you need them.
 
+## 2026-11-23 Shared foundation F2-F6 (branch feat/shared-foundation-tasks)
+- What: Period/Moment footer in `#foot` (replaces the map time bar), `uiHistogram`, language pills and name cards, type pills, style editor, state blocks, chips, add button, accordion.
+- Why: `docs/design-migration/`, `tasks/foundation.md`.
+- Files: `app/js/sidebar/` (components, period, timebar, placeform, ui), `app/css/sidebar.css`, `app/index.html`, `app/dist/`.
+- Verify: `node tests/js/run.js`; open the app: footer on every tab, drag the handles, time-travel button, name rows with pills.
+- Follow-ups: "Known gaps" in `docs/design-migration/02-shared-components.md`. Not seen in a browser.
+
 ## 2026-11-08 — #23 UI roadmap: proposal 010 and tasks 006-014
 **What:** the owner's 21 requests (screenshots, 2026-11-08) are grouped into 9 tasks in 5 waves: `tasks/006` to `tasks/014`. `proposals/010-ui-contract.md` (Status: pending) holds the interface changes: icons (I-7), one types dictionary for points, lines and areas (I-8), shapes with layer membership (I-9), map commands and events for shapes and a point menu (I-2), the UI rules. `tasks/README.md` lists them. Documents only; nothing is built.
 **Why:** points 15, 16, 19, 20, 21 need new interfaces, and only the owner can approve them. The other points are fixes inside one domain.
