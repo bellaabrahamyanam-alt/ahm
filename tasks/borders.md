@@ -33,7 +33,7 @@ No frame for: borders list, border card (colour, opacity, width), drawing mode, 
 
 ## Files this task owns
 
-`app/js/sidebar/shapes.js`, `app/js/map/shapes.js`, `app/js/core/shapes.js`, `app/css/shapes.css`, `tests/js/ui-borders.test.js` (new), `changes/sidebar.md`, `changes/map.md`, `changes/core.md`.
+`app/js/sidebar/shapes.js`, `app/js/map/shapes.js`, `app/js/core/shapes.js`, `app/css/shapes.css`, `tests/js/sidebar.test.js` (section `ui-borders`) (new), `changes/sidebar.md`, `changes/map.md`, `changes/core.md`.
 
 ## Shared components used
 
@@ -53,4 +53,4 @@ No frame for: borders list, border card (colour, opacity, width), drawing mode, 
 
 ## Tests
 
-`tests/js/ui-borders.test.js`: list states, card renders each field through the shared component, drawing cancel, delete confirmation, read-only. Then `node tests/js/run.js 2>&1 | tail -15`.
+`tests/js/sidebar.test.js` (section `ui-borders`): list states, card renders each field through the shared component, drawing cancel, delete confirmation, read-only. Then `node tests/js/run.js 2>&1 | tail -15`.

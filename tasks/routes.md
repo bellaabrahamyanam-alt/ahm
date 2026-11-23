@@ -31,7 +31,7 @@ No frame for: routes list, route card, drawing mode, stops list, notes, empty an
 
 ## Files this task owns
 
-`app/js/sidebar/routes.js`, `app/js/core/routes.js`, `app/css/routes.css` (new), `tests/js/ui-routes.test.js` (new), `changes/sidebar.md`, `changes/core.md`.
+`app/js/sidebar/routes.js`, `app/js/core/routes.js`, `app/css/routes.css` (new), `tests/js/sidebar.test.js` (section `ui-routes`) (new), `changes/sidebar.md`, `changes/core.md`.
 
 ## Shared components used
 
@@ -51,4 +51,4 @@ No frame for: routes list, route card, drawing mode, stops list, notes, empty an
 
 ## Tests
 
-`tests/js/ui-routes.test.js`: list states, card fields through shared components, stop order after reorder, no-path message, read-only. Existing `tests/js/routes.test.js` must still pass unchanged. Then `node tests/js/run.js 2>&1 | tail -15`.
+`tests/js/sidebar.test.js` (section `ui-routes`): list states, card fields through shared components, stop order after reorder, no-path message, read-only. Existing `tests/js/routes.test.js` must still pass unchanged. Then `node tests/js/run.js 2>&1 | tail -15`.

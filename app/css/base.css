@@ -67,8 +67,15 @@
   /* route markers (A = start, B = destination) */
   --route-a: #2a8f4f;
   --route-b: #1d6fd1;
-  /* warning colour (used by the daisyUI theme in theme.css) */
+  /* warning colour (used by the daisyUI theme below) */
   --warning-color: #b7791f;
+  /* prototype (docs/prototype): card and control radius, fonts, shadow, transition */
+  --r-card: 12px;
+  --r-ctl: 8px;
+  --font-ui: system-ui, 'Segoe UI', 'DM Sans', Roboto, Arial, sans-serif;
+  --font-serif: Georgia, Gelasio, 'Times New Roman', serif;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.18);
+  --transition: 150ms ease-out;
   /* handles used to fit an image overlay to the map */
   --handle-corner: var(--error-color);
   --handle-center: var(--a);
@@ -105,8 +112,8 @@
   --color-error: var(--error-color);
   --color-error-content: var(--inputbox-bg);
   --radius-selector: var(--radius-pill);
-  --radius-field: var(--radius-s);
-  --radius-box: var(--radius-m);
+  --radius-field: var(--r-ctl);
+  --radius-box: var(--r-card);
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;

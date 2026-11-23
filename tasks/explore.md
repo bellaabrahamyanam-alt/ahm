@@ -2,6 +2,8 @@
 
 Needs F0. Parallel with routes, layers, more.
 
+Note (D4 default 1): the Period and Moment footer (F5, s1, s22) is the Explore footer; the old "Time" button over the map goes only if D4 = 1.
+
 ## Routes and views
 
 - Tab `explore` (`#tab-explore`), calling `tab('explore')`.
@@ -35,7 +37,7 @@ No frame for: place list rows with no filters, hover popup, point card, Nominati
 
 ## Files this task owns
 
-`app/js/sidebar/places.js`, `placeform.js`, `searchfield.js`, `actions.js` (point card actions only), `timebar.js`, `app/js/map/map.js` (popup, point card, point menu only), `app/css/explore.css` (new), `tests/js/ui-explore.test.js` (new), `changes/sidebar.md`, `changes/map.md`.
+`app/js/sidebar/places.js`, `placeform.js`, `searchfield.js`, `actions.js` (point card actions only), `timebar.js`, `app/js/map/map.js` (popup, point card, point menu only), `app/css/explore.css` (new), `tests/js/sidebar.test.js` (section `ui-explore`) (new), `changes/sidebar.md`, `changes/map.md`.
 
 ## Shared components used
 
@@ -55,4 +57,4 @@ No frame for: place list rows with no filters, hover popup, point card, Nominati
 
 ## Tests
 
-`tests/js/ui-explore.test.js`: each state above renders its message; filter chips add and remove; `#place-unknown` shows the not-found state; read-only hides edit buttons; place form blocks an invalid date. Then `node tests/js/run.js 2>&1 | tail -15`. A manual run of the app is left to the critic.
+`tests/js/sidebar.test.js` (section `ui-explore`): each state above renders its message; filter chips add and remove; `#place-unknown` shows the not-found state; read-only hides edit buttons; place form blocks an invalid date. Then `node tests/js/run.js 2>&1 | tail -15`. A manual run of the app is left to the critic.

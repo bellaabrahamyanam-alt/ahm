@@ -31,7 +31,7 @@ No frame for: rivers list, river card, Select by rectangle / by area, river size
 
 ## Files this task owns
 
-Rivers-mode parts of `app/js/sidebar/shapes.js` and `app/css/shapes.css` (after `borders` merged), `app/css/rivers.css` (new), `tests/js/ui-rivers.test.js` (new), `changes/sidebar.md`.
+Rivers-mode parts of `app/js/sidebar/shapes.js` and `app/css/shapes.css` (after `borders` merged), `app/css/rivers.css` (new), `tests/js/sidebar.test.js` (section `ui-rivers`) (new), `changes/sidebar.md`.
 
 ## Shared components used
 
@@ -51,4 +51,4 @@ Borders-mode code paths, `app/js/map/map.js` (river width stays there), `app/js/
 
 ## Tests
 
-`tests/js/ui-rivers.test.js`: list states, selection states, card fields, read-only. Then `node tests/js/run.js 2>&1 | tail -15`.
+`tests/js/sidebar.test.js` (section `ui-rivers`): list states, selection states, card fields, read-only. Then `node tests/js/run.js 2>&1 | tail -15`.

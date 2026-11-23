@@ -2,6 +2,8 @@
 
 Needs F0. Parallel with explore, routes, more.
 
+Note (D3 default 1): the category admin list moves to More (task `more`); this task keeps the category select and filter and does not touch the admin code.
+
 ## Routes and views
 
 - Tab `layers` (`#tab-layers`), calling `tab('layers')`.
@@ -32,7 +34,7 @@ No frame for any Layers screen: list, layer sheet, Choose places, Only / Hide, c
 
 ## Files this task owns
 
-`app/js/sidebar/layers.js`, `app/js/core/layer-rules.js`, `app/css/layers.css` (new), `tests/js/ui-layers.test.js` (new), `changes/sidebar.md`, `changes/core.md`.
+`app/js/sidebar/layers.js`, `app/js/core/layer-rules.js`, `app/css/layers.css` (new), `tests/js/sidebar.test.js` (section `ui-layers`) (new), `changes/sidebar.md`, `changes/core.md`.
 
 ## Shared components used
 
@@ -52,4 +54,4 @@ No frame for any Layers screen: list, layer sheet, Choose places, Only / Hide, c
 
 ## Tests
 
-`tests/js/ui-layers.test.js`: list and sheet states, Choose places Save disabled until a change, role differences, categories cannot be deleted. Then `node tests/js/run.js 2>&1 | tail -15`.
+`tests/js/sidebar.test.js` (section `ui-layers`): list and sheet states, Choose places Save disabled until a change, role differences, categories cannot be deleted. Then `node tests/js/run.js 2>&1 | tail -15`.

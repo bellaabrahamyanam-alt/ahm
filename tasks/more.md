@@ -2,6 +2,8 @@
 
 Needs F0. Parallel with explore, routes, layers.
 
+Dependency (D3 default 1): runs AFTER `layers` merges, because it moves the category admin code out of `app/js/sidebar/layers.js`; Categories (list, rename, "Add category", s21, s41) become a fold of More.
+
 ## Routes and views
 
 - Tab `more` (`#tab-more`), calling `tab('more')`; `tab('route')` and similar open the right fold.
@@ -35,7 +37,7 @@ No frame for: overlay corner editor, 3D and terrain controls, Directions, upload
 
 ## Files this task owns
 
-`app/js/sidebar/admin.js`, `app/js/sidebar/actions.js` (Directions only), `app/js/map/overlays.js`, `app/css/more.css` (new), `tests/js/ui-more.test.js` (new), `changes/sidebar.md`, `changes/map.md`.
+`app/js/sidebar/admin.js`, `app/js/sidebar/actions.js` (Directions only), `app/js/map/overlays.js`, `app/css/more.css` (new), `tests/js/sidebar.test.js` (section `ui-more`) (new), `changes/sidebar.md`, `changes/map.md`.
 
 ## Shared components used
 
@@ -55,4 +57,4 @@ No frame for: overlay corner editor, 3D and terrain controls, Directions, upload
 
 ## Tests
 
-`tests/js/ui-more.test.js`: upload rejections, role differences, duplicate language code, terrain-not-configured state, directions error. Then `node tests/js/run.js 2>&1 | tail -15`.
+`tests/js/sidebar.test.js` (section `ui-more`): upload rejections, role differences, duplicate language code, terrain-not-configured state, directions error. Then `node tests/js/run.js 2>&1 | tail -15`.

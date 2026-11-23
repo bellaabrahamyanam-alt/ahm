@@ -164,3 +164,11 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **How to verify:** `node tests/js/run.js "foundation F1"` (tests in `tests/js/sidebar.test.js`).
 - **Not verified:** that no screen changes visually (no browser run here); daisyUI's `.tabs` and `.tab` class names collide with `nav.tabs` in `app/index.html`, and its `:root`/`html` rules set background, font and scrollbar (layered, so ours win). Check these in a browser first.
 - **Follow-ups:** F2 (shell) next; D2 (`tools/domains.json`) still open.
+
+## 2026-11-23 — prototype wired into the task files; D3, D4; prototype tokens in F1
+
+- **What:** `docs/prototype/` (owner's HTML prototype, 19 frames, index in its `README.md`); F4, F5, F6 in `tasks/foundation.md` rewritten from the frames (date editor layout and formats, Period and Moment footer with histogram, name blocks); new owner questions D3 (categories move to More) and D4 (Period and Moment footer replaces the map time bar), each with a default used until answered; prototype tokens (card and control radius, fonts, shadow, transition) added to `base.css`, daisyUI radii point at them.
+- **Why:** the prototype differs from the code in two places that change task scope (D3, D4), and has no frame for the Layers tab, Rivers list and card, Borders and Routes lists.
+- **Files:** `docs/prototype/`, `tasks/*.md`, `app/css/base.css`, `app/dist/`.
+- **How to verify:** `node tests/js/run.js "foundation F1"`.
+- **Not verified:** no browser run; the prototype formats are not yet mapped to the `fmt` codes of `dates.js`.
