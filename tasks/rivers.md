@@ -1,57 +1,53 @@
 # Task: rivers
 
-**Depends on:** F0 and borders merged (same files). Starts last with more.
-**Read first:** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`; do not re-explore.
+**Depends on:** Foundation v2 merged AND borders merged (it reuses the drawing-a-line panel and `shapes.js`).
+**Read first (nothing else for exploration):** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`, `04-design-v2-frame-map.md`, `05-browser-testing.md`; then only the source files listed under "Files this task owns".
 
-Needs F0 and `borders` merged (the Rivers tab is the Borders panel in its own mode: same `app/js/sidebar/shapes.js`, `app/js/map/shapes.js`, `app/css/shapes.css`).
+## Rules (owner decision 2026-11-24; override anything older)
+- Markup = static HTML in your own `app/index.html` regions + daisyUI v5 component classes (mapping table: `docs/design-migration/01-design-system.md`). Repeated items = `<template>` in your `tpl-rivers` region. JS only clones/fills templates (`textContent`, `value`, `dataset`, attributes), toggles `hidden`/classes, handles events. **No HTML built from strings in JS** (`innerHTML = '<...' + x`), no `esc()`, no `insertAdjacentHTML` of strings.
+- Custom CSS only where daisyUI has no class; in your own CSS file; no class name daisyUI owns (list in 01). No framework, no new dependency.
+- Keep behaviour and stored data exactly as before; rewrite the rendering, keep the logic functions and their tests; tests that assert on HTML strings become browser tests (`docs/design-migration/05-browser-testing.md`).
+- Visual bar: "matches the frame by eye" in a 400x860 screenshot; never claim a pixel match; say what you could not verify.
 
 ## Routes and views
-
-- Tab `rivers` (`data-tab="rivers"`; no own `<section>`, it reuses `#tab-shapes`), calling `tab('rivers')`.
-- Views: rivers list with its own filters and types; river card; "Select by rectangle" and "Select by area" (T-057); river size control.
+- Tab `rivers` (`tab('rivers')`): own sub-section; views: select rivers (s078), find and add (s079), drawing a line following a river (s077).
 
 ## Functionality
+- Intro with More; search rivers; count + fit; accordion "Select rivers": Select by rectangle (button, active hint), "only fully inside" checkbox, Select by area (type a name; result chips with kind), note "5 new of 7 rivers found for Lori...", "N selected" header with show, fit, clear; selection list (icon tile, name, MAP tag, x).
+- Find rivers: OSM search by name (Find), FOUND list with + (River/Canal, region, km), searching / none notes, "OR DRAW IT" (pencil, upload), "Follow a river between the points I click" toggle, Close.
+- Drawing a line: reuse the borders panel (s077).
 
-Rebuild on the F0 components, no behaviour change:
-- River shapes are `river: true` lines without stops; not used by route path finding.
-- Card: Names with periods, Type (`kind: line`), Style (colour, opacity, width slider, label), HistDate, certainty, sources, notes.
-- Select by rectangle (drag a box, Esc cancels) and by area (type an area name, any language, old names too).
-- River size slider 0.5x to 4x, saved in the browser (its control sits in More > Maps & base map; here only the markup and states).
+## Existing vs new (judged by keyword search only; confirm in code)
+Browser tests: select by rectangle (stubbed map events), by area, only-fully-inside, selection list actions, find with stubbed OSM, follow-a-river.
 
-## Prototype screenshot references
+## Prototype frames (`docs/prototype/png-v2/`)
+Exists (verify): select by rectangle, by area, find, follow a river. Likely new: "only fully inside", result chips with kinds, MAP tag, upload option.
 
-Prototype frames: `docs/prototype/png/s43.png` route / river type editor (Add another name). The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
-
-## Missing screens and states
-
-No frame for: rivers list, river card, Select by rectangle / by area, river size, empty and error states, read-only visitor. The list below is ASSUMED from the code.
-
-- Empty list, no match.
-- Selection: running, nothing found, N rivers selected with Clear, Esc hint.
-- Area name not found.
-- Validation errors, save running, save error, delete confirmation.
-- Read-only visitor.
+## Missing screens and states (no frame; extend in the same style)
+`s077` `s078` `s079`.
 
 ## Files this task owns
-
-Rivers-mode parts of `app/js/sidebar/shapes.js` and `app/css/shapes.css` (after `borders` merged), `app/css/rivers.css` (new), `tests/js/sidebar.test.js` (section `ui-rivers`) (new), `changes/sidebar.md`.
+Empty selection; OSM down; no river lines found (text is in s079); loading.
 
 ## Shared components used
-
-`nameList`, `typeSelect` (`kind: line`), `styleEditor`, `dateEditor`, `languageSelect`.
+The rivers mode code of `app/js/sidebar/shapes.js` (move it to a new `app/js/sidebar/rivers.js` if it separates cleanly), `tests/js/ui-rivers.test.js`, regions `tab-rivers`, `tpl-rivers`.
 
 ## Must NOT modify
-
-Borders-mode code paths, `app/js/map/map.js` (river width stays there), `app/js/sidebar/places.js`, `routes.js`, `layers.js`, `admin.js`, `app/css/sidebar.css`, `service/`, `dev/`, `INTERFACES.md`. Not in scope (own items): T-058 river filters, T-064 river size scope, T-065 add to layer, T-059, T-061, T-062.
+nameEditor, typePills, styleEditor (line part), validation, states, list row, accordion, the drawing panel from borders.
 
 ## Acceptance criteria
-
-1. Every view and state above renders with F0 components and tokens.
-2. A river saved before and after has the same stored data.
-3. Selection by rectangle and by area return the same rivers as before.
-4. The Borders tab is unchanged by this task (its tests still pass).
-5. `bun tools/build.js` done; `node tools/ci-check-pr.js <branch> origin/master` passes.
+All files of other tasks; `kit.js`, `fields.js`, `footer.js`, `shell.js`, `dialogs.js`, `app/css/base.css`, `app/css/sidebar.css`, `app/js/core/` (except `layer-rules.js` for layers), `service/`, `controller/`, `dev/`, `INTERFACES.md`, other regions of `app/index.html`. the borders code and region.
 
 ## Tests
+1. Every view, state and interaction listed renders as in its frame (by eye, 400x860), using daisyUI classes and templates; no HTML string is built in JS; no inline colours.
+2. A record saved before and after has identical stored data; every behaviour in `docs/02-implemented-features.md` for this tab still works.
+3. No new `window.AHM` call beyond `INTERFACES.md`; no cross-domain call added.
+4. The whole suite passes (`NODE_PATH=... node tests/js/run.js`); `node tools/ci-check-pr.js <branch> origin/master` passes (build artifacts are the main agent's).
 
-`tests/js/sidebar.test.js` (section `ui-rivers`): list states, selection states, card fields, read-only. Then `node tests/js/run.js 2>&1 | tail -15`.
+## Hand-off rules (set by the main agent)
+- Work on your own branch from `feat/shared-foundation-tasks` (`feat/ui-rivers`); never push `feat/shared-foundation-tasks` or `master`.
+- Do NOT commit `app/dist/`, `graph/`, `context/`; the main agent builds them once.
+- Do NOT edit: `docs/`, `tools/`, `changes/`, `kit.js`, `fields.js`, `footer.js`, `shell.js`, `dialogs.js`, `base.css`, `sidebar.css`, the `head shell footer dialogs templates` regions and other workers' regions of `app/index.html`, other workers' files, `tests/js/lib/`. Need one changed: put the exact request in your report.
+- `index.html`: edit only between `<!-- ahm:region tab-rivers -->` and `<!-- ahm:region tpl-rivers -->` markers (and their closing markers).
+- Tests: `tests/js/ui-rivers.test.js` (logic in node; UI in a real browser per `05-browser-testing.md`). Run the whole suite; all pass.
+- Report: files changed; what was built per frame; tests (counts); what you could not verify; requests for shared changes. Nothing else.

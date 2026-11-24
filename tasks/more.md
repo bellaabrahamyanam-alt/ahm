@@ -1,63 +1,53 @@
 # Task: more
 
-**Depends on:** F0 and layers merged.
-**Read first:** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`; do not re-explore.
+**Depends on:** Foundation v2 merged AND layers merged (category admin leaves `layers.js`).
+**Read first (nothing else for exploration):** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`, `04-design-v2-frame-map.md`, `05-browser-testing.md`; then only the source files listed under "Files this task owns".
 
-Needs F0. Parallel with explore, routes, layers.
-
-Dependency (D3 default 1): runs AFTER `layers` merges, because it moves the category admin code out of `app/js/sidebar/layers.js`; Categories (list, rename, "Add category", s21, s41) become a fold of More.
+## Rules (owner decision 2026-11-24; override anything older)
+- Markup = static HTML in your own `app/index.html` regions + daisyUI v5 component classes (mapping table: `docs/design-migration/01-design-system.md`). Repeated items = `<template>` in your `tpl-more` region. JS only clones/fills templates (`textContent`, `value`, `dataset`, attributes), toggles `hidden`/classes, handles events. **No HTML built from strings in JS** (`innerHTML = '<...' + x`), no `esc()`, no `insertAdjacentHTML` of strings.
+- Custom CSS only where daisyUI has no class; in your own CSS file; no class name daisyUI owns (list in 01). No framework, no new dependency.
+- Keep behaviour and stored data exactly as before; rewrite the rendering, keep the logic functions and their tests; tests that assert on HTML strings become browser tests (`docs/design-migration/05-browser-testing.md`).
+- Visual bar: "matches the frame by eye" in a 400x860 screenshot; never claim a pixel match; say what you could not verify.
 
 ## Routes and views
-
-- Tab `more` (`#tab-more`), calling `tab('more')`; `tab('route')` and similar open the right fold.
-- Folds: Maps & base map (base map list, layer toggles Water, Roads, Places, Boundaries, historical map images, 3D view, terrain, rivers size); Directions; Languages; Types (administrators).
-- Overlay editor: four-corner pinning, rotation and scale sliders, opacity, zoom range.
+- Tab `more` (`#tab-more`): accordion cards Maps & base map (s037, s038, s090), Directions (s039, s092), Languages (s019, s041, s093), Types (s019, s094, editors s020 s042 s043 s044), Categories (s021, s041, s093), Historical maps (s021, s091, s040).
 
 ## Functionality
+- Maps & base map: base map thumbs (Terrain, Plain, Relief) with attribution; 3D view (Tilt, Rotation sliders, Flat / Tilt 60 / North up, 3D terrain toggle, Height x); River size; Show on the map toggles (Borders of today, Roads, Place labels, Water labels); Relief (toggles: Colour by height, Shading, Adapt colours to the view, Smooth colours, Smooth colour transitions; Colour ramp select + gradient bar + Edit colours rows (hex, metres, x), Add colour, Reset; Colour strength, Shading strength; Contour lines toggle + step select; Height profile: Draw, Clear, chart, length/up/down, height at pointer); "Relief options appear when the base map is Relief".
+- Directions: every state of s092 (empty, start set, coordinates, routing, result with distance/car time, no route).
+- Languages: list (code, name, in the language, edit), Add language form (code, name, native name; Save disabled until valid); Types: lists by group with usage counts, "+ N more", four Add buttons, editors: place type (names, symbol grid + uploaded SVG, upload/paste SVG with validation, colour, size, preview), line/river type (colour, width, opacity, pattern, arrow), area type (colour, fill opacity, outline width, pattern, preview), delete type (usage rule, confirm); Categories: list, rename with names; Historical maps: empty, Add image overlay, uploading progress, error (20 MB), overlay row (checkbox, fit, edit, opacity), edit overlay (title, opacity, rotate, scale, zoom range from/to with locate); read-only variants for people without admin rights (s093).
 
-Rebuild on the F0 components, no behaviour change:
-- Base map list (Liberty, Sentinel-2, optional Map + relief only when `basemap.terrain.tiles` is set) and its credit text.
-- Overlays: add image (PNG, JPEG, WebP, up to 12 MB, shrunk to 4096 px in the browser), edit, delete (copy archived); visitors hide and set opacity for themselves.
-- 3D: tilt 0-85, rotation 0-359, Flat, Tilt 60, North up, 3D terrain checkbox. River size slider 0.5x to 4x.
-- Directions: two points or places, distance and time, swap, clear.
-- Languages: dictionary table, only administrators add (code, English name, optional native name).
-- Types: administrators add and edit place types (names, symbol, colour, size) with Type and Style components.
+## Existing vs new (judged by keyword search only; confirm in code)
+Browser tests per card: base map switch and toggles write the same config as before, ramp editor add/remove/reset, language add (Save disabled until valid), type editors for the four kinds read/write the stored model, SVG upload errors, overlay upload progress with a stubbed request, read-only variants.
 
-## Prototype screenshot references
+## Prototype frames (`docs/prototype/png-v2/`)
+Exists (verify): base map, 3D, terrain, relief colours, contour, height profile, Directions, languages, types, categories, overlays. Likely new: upload progress/error UI, SVG paste with transform validation, ramp editor rows, step select, per-section read-only blocks, usage counts in Types.
 
-Prototype frames: `docs/prototype/png/s19.png` More as accordion cards; `s20.png` place type editor; `s21.png` historical maps and categories; `s41.png` add a language, rename a category; `s43.png` route / river type editor; `s44.png` area type editor. The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
-
-## Missing screens and states
-
-No frame for: overlay corner editor, 3D and terrain controls, Directions, upload errors, read-only visitor. The list below is ASSUMED from the code.
-
-- Overlay upload: too large, wrong type, shrinking, saving, error.
-- Terrain not configured (control hidden or explained).
-- Directions: no route found, service error, one point only.
-- Languages and Types for non-administrators: read-only with the hint "ask an administrator".
-- Add language: duplicate code, invalid code.
-- Types: duplicate code, code with `_` allowed only if T-026 is answered (do not decide here).
+## Missing screens and states (no frame; extend in the same style)
+`s019` `s020` `s021` `s037` `s038` `s039` `s040` `s041` `s042` `s043` `s044` `s090` `s091` `s092` `s093` `s094`; confirms `s068` `s069` (remove type).
 
 ## Files this task owns
-
-`app/js/sidebar/admin.js`, `app/js/sidebar/actions.js` (Directions only), `app/js/map/overlays.js`, `app/css/more.css` (new), `tests/js/sidebar.test.js` (section `ui-more`) (new), `changes/sidebar.md`, `changes/map.md`.
+Loading of each section; server errors on save; empty overlay list is s091; a very long ramp; read-only for Directions (none needed).
 
 ## Shared components used
-
-`languageSelect`, `nameList`, `typeSelect`, `styleEditor`.
+`app/js/sidebar/admin.js`, `app/js/map/overlays.js`, Directions code in `app/js/sidebar/actions.js` (Directions only), the map-option controls code that drives the base map and relief (find it in `app/js/map/map.js`/`relief` files: touch only the controls, not the rendering), `tests/js/ui-more.test.js`, regions `tab-more`, `tpl-more`.
 
 ## Must NOT modify
-
-`app/js/map/map.js` (use the existing `AHM.map` commands only), `app/js/sidebar/places.js`, `shapes.js`, `routes.js`, `layers.js`, `app/css/sidebar.css`, `service/`, `dev/`, `INTERFACES.md`. The place-type list stays in its three places (`AGENTS.md` section 4). Not in scope: T-026, T-061, T-062.
+styleEditor (all four kinds), nameEditor, languagePills, form frame, validation, states, confirm, accordion, toasts, progress.
 
 ## Acceptance criteria
-
-1. Every fold, view and state above renders with F0 components and tokens.
-2. Languages, types and overlays saved before and after have the same stored data.
-3. Role rules unchanged: only administrators add languages and types.
-4. No new `window.AHM` call beyond `INTERFACES.md`.
-5. `bun tools/build.js` done; `node tools/ci-check-pr.js <branch> origin/master` passes.
+All files of other tasks; `kit.js`, `fields.js`, `footer.js`, `shell.js`, `dialogs.js`, `app/css/base.css`, `app/css/sidebar.css`, `app/js/core/` (except `layer-rules.js` for layers), `service/`, `controller/`, `dev/`, `INTERFACES.md`, other regions of `app/index.html`. `app/js/sidebar/layers.js` (merged already).
 
 ## Tests
+1. Every view, state and interaction listed renders as in its frame (by eye, 400x860), using daisyUI classes and templates; no HTML string is built in JS; no inline colours.
+2. A record saved before and after has identical stored data; every behaviour in `docs/02-implemented-features.md` for this tab still works.
+3. No new `window.AHM` call beyond `INTERFACES.md`; no cross-domain call added.
+4. The whole suite passes (`NODE_PATH=... node tests/js/run.js`); `node tools/ci-check-pr.js <branch> origin/master` passes (build artifacts are the main agent's).
 
-`tests/js/sidebar.test.js` (section `ui-more`): upload rejections, role differences, duplicate language code, terrain-not-configured state, directions error. Then `node tests/js/run.js 2>&1 | tail -15`.
+## Hand-off rules (set by the main agent)
+- Work on your own branch from `feat/shared-foundation-tasks` (`feat/ui-more`); never push `feat/shared-foundation-tasks` or `master`.
+- Do NOT commit `app/dist/`, `graph/`, `context/`; the main agent builds them once.
+- Do NOT edit: `docs/`, `tools/`, `changes/`, `kit.js`, `fields.js`, `footer.js`, `shell.js`, `dialogs.js`, `base.css`, `sidebar.css`, the `head shell footer dialogs templates` regions and other workers' regions of `app/index.html`, other workers' files, `tests/js/lib/`. Need one changed: put the exact request in your report.
+- `index.html`: edit only between `<!-- ahm:region tab-more -->` and `<!-- ahm:region tpl-more -->` markers (and their closing markers).
+- Tests: `tests/js/ui-more.test.js` (logic in node; UI in a real browser per `05-browser-testing.md`). Run the whole suite; all pass.
+- Report: files changed; what was built per frame; tests (counts); what you could not verify; requests for shared changes. Nothing else.

@@ -1,73 +1,60 @@
 # Task: explore
 
-**Depends on:** F0 (F1-F6 done). Parallel with borders, routes, layers.
-**Read first:** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`; do not re-explore.
+**Depends on:** Foundation v2 merged. Parallel with borders, routes, layers.
+**Read first (nothing else for exploration):** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`, `04-design-v2-frame-map.md`, `05-browser-testing.md`; then only the source files listed under "Files this task owns".
 
-Needs F0. Parallel with routes, layers, more.
-
-Note (D4 default 1): the Period and Moment footer (F5, s1, s22) is the Explore footer; the old "Time" button over the map goes only if D4 = 1.
+## Rules (owner decision 2026-11-24; override anything older)
+- Markup = static HTML in your own `app/index.html` regions + daisyUI v5 component classes (mapping table: `docs/design-migration/01-design-system.md`). Repeated items = `<template>` in your `tpl-explore` region. JS only clones/fills templates (`textContent`, `value`, `dataset`, attributes), toggles `hidden`/classes, handles events. **No HTML built from strings in JS** (`innerHTML = '<...' + x`), no `esc()`, no `insertAdjacentHTML` of strings.
+- Custom CSS only where daisyUI has no class; in your own CSS file; no class name daisyUI owns (list in 01). No framework, no new dependency.
+- Keep behaviour and stored data exactly as before; rewrite the rendering, keep the logic functions and their tests; tests that assert on HTML strings become browser tests (`docs/design-migration/05-browser-testing.md`).
+- Visual bar: "matches the frame by eye" in a 400x860 screenshot; never claim a pixel match; say what you could not verify.
 
 ## Routes and views
-
-- Tab `explore` (`#tab-explore`), calling `tab('explore')`.
-- Views: list with search and sort; Filters (closed by default, active ones as removable chips); place sheet (names, type, dates, notes, layers of the place); place form (new and edit); note dialog; search for other places (Nominatim); Time bar over the map (button "Time"); point card and hover popup on the map.
-- Permanent link `#place-<id>`.
+- Tab `explore` (`#tab-explore`, `tab('explore')`); permanent link `#place-<id>`.
+- Views: list (s001), Filters (s002, s055), place card in the list (s003) and as the whole panel (s098), card as editor (s071) and visitor (s070), notes list (s045), note form (s046, s067), place form in three screens (s064, s065, s066), Moment list (s022), states (s060), other places search (s061, s062), map point menu (s063).
 
 ## Functionality
+- List: search (names, note text, highlight, x/Esc), count "N of M places" / "N places at c. 85 BCE", sort, fit map; rows = symbol tile, name, dates, note count; sorted by date in Moment (s022).
+- Filters (accordion, closed): Type chips with counts, Certainty chips with counts, Language chips (top 5 by count + "+N" picker with checkboxes, counts, Clear/Done), Period From/To (date field, icons, CE|BCE, "Empty field = no limit"); filter button with red count; removable chips + Clear all.
+- Place card: icons (edit, directions/route, add to layer, locate, expand), names with language tags, certainty/radius, sources (links), layers chips with x + "Add to a layer", routes chips + "Find a path from here..." / "Start a route here" (editor), notes: scoped "Notes of the layer X (2 of 8) Show all notes", Expand all, Add note; visitor: lock line + Log in.
+- Notes: timeline items (title, language badge, date or period, text clamped with Show more/less), edit/delete, language filter chips, sort, collapse, pagination ("1-3 of 8").
+- Note form: language pills, layers it belongs to (checkboxes), date field, title (required), text.
+- Place form (new/edit): names (language pills +N, name, up, remove, Period row Set/Edit/Done), type pills, Began/Ended (or Height for a mountain), certainty, radius, sources (+ new source), position lat/lon (drag the pin), add the new place to layers; inline validation messages exactly as in s066; "Save failed: HTTP 500"; sticky Save/Cancel.
+- Search other places (Nominatim, only on Enter or button, 3+ letters, cached, throttled): section "Other places (OpenStreetMap)", rows with chevron, skeleton while searching, "No other places found", "service is not available" alert, attribution.
+- Map point menu: Open border..., Add place here, Route from here, Route to here; visitor: locked "Add place here" + message.
+- Moment list: "N places at c. 85 BCE" and sorted by date (s022). The first moment `tbOpen()` picks (middle of the span instead of its first year) lives in `timebar.js`, which is foundation-owned: it is done there.
 
-Restyle and rebuild these on the F0 components, with no behaviour change:
-- Search over all names and note full text, highlighted match, ✕ and Esc to clear.
-- Filters: type chips with counts, language, period (Period component). Sort A-Z or by date. Fit map.
-- Place sheet and form: Names, Type, HistDate (began, ended), mountain `height_m` instead of dates, drag the red pin or type coordinates.
-- Notes: several per place and language, title, optional Moment, text, layer tick boxes.
-- Nominatim search only on Enter or button; cached, throttled.
-- Time bar: slider, date field, play.
+## Existing vs new (judged by keyword search only; confirm in code)
+Browser tests: list+search, each filter and chip removal, language picker, place card expand/collapse, note add/edit/delete via the confirm modal, form validation messages (height, radius, lat/lon, name, unknown language), visitor (no edit buttons), Nominatim states with a stubbed fetch, `#place-<id>`, point menu. Logic tests in node for sort/filter/pagination.
 
-## Prototype screenshot references
+## Prototype frames (`docs/prototype/png-v2/`)
+Exists (verify): search, filters, notes, place form, Nominatim, Time travel, point menu. Likely new: language chips with "+N" picker, Certainty counts, scoped layer notes + "Show all notes", pagination of notes, "Find a path from here" chips, inline validation texts, read-only lock block, skeleton/empty/error states, other-places states.
 
-Prototype frames (`docs/prototype/png/`, titles from `docs/prototype/sidebar.js`): `s1.png` Explore with Period footer and Time-travel button; `s2.png` filters (type, certainty, language, Period From/To); `s3.png` place details as one card; `s7.png` edit a place; `s28.png` period of a name; `s45.png` notes; `s46.png` note edit (new date field); `s22.png` Moment (time travel); `s49.png` Period vs Moment. The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
-
-## Missing screens and states
-
-No frame for: place list rows with no filters, hover popup, point card, Nominatim results, empty and error states, read-only visitor, add-place from the map. The list below is ASSUMED from the code.
-
-- Empty data (no places yet), no search results, no results for the current period.
-- Nominatim: running, no result, error, throttled.
-- `#place-<id>` for an unknown id.
-- Read-only visitor: no add, edit, delete buttons.
-- Place form: invalid date, no name, save running, save error.
-- Time bar: objects without dates shown by the rule in TODO T-049 (answer pending; do not decide here).
+## Missing screens and states (no frame; extend in the same style)
+`s002` `s003` `s007` `s028` `s045` `s046` `s055` `s060` `s061` `s062` `s063` `s064` `s065` `s066` `s067` `s070` `s071` `s098` and the list content of `s001`, `s022`.
 
 ## Files this task owns
-
-`app/js/sidebar/places.js`, `placeform.js`, `searchfield.js`, `actions.js` (point card actions only), `app/js/map/map.js` (popup, point card, point menu only), `app/css/explore.css` (already linked; exists, empty, already linked), `tests/js/ui-explore.test.js` (new), `changes/sidebar.md`, `changes/map.md`.
+Hover popup and point card of a place on the map (no frame); unknown `#place-<id>`; throttled Nominatim; delete-note confirm (use the shared modal); place form save running state; empty data (no places).
 
 ## Shared components used
-
-`dateEditor`, `periodField`, `momentField`, `languageSelect`, `nameList`, `typeSelect`.
+`app/js/sidebar/places.js`, `placeform.js`, `searchfield.js`, `actions.js` (place-card actions only), `app/js/map/map.js` (popup, point card, point menu only), `app/css/explore.css`, `tests/js/ui-explore.test.js`, regions `tab-explore` and `tpl-explore` of `app/index.html`.
 
 ## Must NOT modify
-
-`app/css/sidebar.css`, `app/css/shapes.css`, `app/js/sidebar/shapes.js`, `routes.js`, `layers.js`, `admin.js`, `app/js/map/shapes.js`, `overlays.js`, `app/js/core/`, `service/`, `dev/`, `INTERFACES.md`, the `<section id="tab-...">` of other tabs in `app/index.html`. The terrain, 3D and river-size code in `map.js` stays as is (task `more` uses it through existing `AHM.map` commands).
+dateEditor, languagePills (+N picker), languageFilter, nameEditor, typePills, form frame, validation, notes list/note, states, confirm, toast, list row, footer (read only).
 
 ## Acceptance criteria
-
-1. Every view and state above renders with F0 components and tokens, no inline colours.
-2. A place saved before and after the change has the same stored data.
-3. Search, filters, sort, fit map, `#place-<id>`, notes and Nominatim behave as listed in `docs/02-implemented-features.md`.
-4. No new `window.AHM` call beyond `INTERFACES.md`; no new cross-domain call.
-5. `bun tools/build.js` done and `app/dist/` committed; `node tools/ci-check-pr.js <branch> origin/master` passes.
+All files of other tasks; `kit.js`, `fields.js`, `footer.js`, `shell.js`, `dialogs.js`, `app/css/base.css`, `app/css/sidebar.css`, `app/js/core/` (except `layer-rules.js` for layers), `service/`, `controller/`, `dev/`, `INTERFACES.md`, other regions of `app/index.html`. `timebar.js`, `period.js` (foundation).
 
 ## Tests
+1. Every view, state and interaction listed renders as in its frame (by eye, 400x860), using daisyUI classes and templates; no HTML string is built in JS; no inline colours.
+2. A record saved before and after has identical stored data; every behaviour in `docs/02-implemented-features.md` for this tab still works.
+3. No new `window.AHM` call beyond `INTERFACES.md`; no cross-domain call added.
+4. The whole suite passes (`NODE_PATH=... node tests/js/run.js`); `node tools/ci-check-pr.js <branch> origin/master` passes (build artifacts are the main agent's).
 
-`tests/js/ui-explore.test.js`: each state above renders its message; filter chips add and remove; `#place-unknown` shows the not-found state; read-only hides edit buttons; place form blocks an invalid date. Then `node tests/js/run.js 2>&1 | tail -15`. A manual run of the app is left to the critic.
-
-**Exception:** in `timebar.js` you may change only the first moment `tbOpen()` picks (middle of the data span instead of its start, as in frame s22); nothing else in that file.
-
-## Hand-off rules (set by the main agent, override anything above)
-- Branch: work on a branch of your own from `feat/shared-foundation-tasks` (`feat/ui-explore`); never push to `feat/shared-foundation-tasks` or `master`.
-- Do NOT commit generated files: `app/dist/`, `graph/`, `context/`. The main agent builds and regenerates them once after all workers merge.
-- Do NOT edit `changes/*.md`, `docs/`, `tools/`, `app/index.html`, `app/css/sidebar.css`, `app/css/base.css`, `app/js/sidebar/components.js`, `period.js`, `layout.js`, `ui.js`, `tests/js/sidebar.test.js`, `tests/js/lib/`. Need one of them changed: say so in your report (what and why), do not edit.
-- Tests go in `tests/js/ui-explore.test.js` (already exists, empty). Run `node tests/js/run.js --no-browser` (all must pass; one real-browser test is welcome if a browser is available, see the report rule below).
-- New class names: no collision with daisyUI (it owns stack, label, tabs, badge, sm, list, toast, card, menu, tab, badge ...); use your own prefix.
-- Report: files changed, what was built, frames matched, tests (counts), what you could not verify, and requests for shared changes.
+## Hand-off rules (set by the main agent)
+- Work on your own branch from `feat/shared-foundation-tasks` (`feat/ui-explore`); never push `feat/shared-foundation-tasks` or `master`.
+- Do NOT commit `app/dist/`, `graph/`, `context/`; the main agent builds them once.
+- Do NOT edit: `docs/`, `tools/`, `changes/`, `kit.js`, `fields.js`, `footer.js`, `shell.js`, `dialogs.js`, `base.css`, `sidebar.css`, the `head shell footer dialogs templates` regions and other workers' regions of `app/index.html`, other workers' files, `tests/js/lib/`. Need one changed: put the exact request in your report.
+- `index.html`: edit only between `<!-- ahm:region tab-explore -->` and `<!-- ahm:region tpl-explore -->` markers (and their closing markers).
+- Tests: `tests/js/ui-explore.test.js` (logic in node; UI in a real browser per `05-browser-testing.md`). Run the whole suite; all pass.
+- Report: files changed; what was built per frame; tests (counts); what you could not verify; requests for shared changes. Nothing else.

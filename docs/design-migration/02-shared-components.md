@@ -1,56 +1,59 @@
-# 02 Shared components
+# 02 Shared components (v2: static HTML + daisyUI)
 
-Status 2026-11-23, branch `feat/shared-foundation-tasks`. All JS tests pass (313), including 9 real-browser tests (headless Chromium, daisyUI and MapLibre served from npm copies; the map is the stand-in of `browser.test.js`, so map drawing is not exercised). Layout was checked by screenshots at 420 px and 1100 px against the prototype; no human has reviewed the look yet.
+Replaces the v1 document. v1 (JS-string components, built 2026-11-23, 313 tests) stays working until v2 replaces it; it is listed at the end as "v1, to retire". Rules: `01-design-system.md` (The rule).
 
-**daisyUI.** The CDN stylesheet is used for tokens and the theme only; no daisyUI component classes are applied to app controls. Reason (found in the browser, fixed): daisyUI owns the class names `stack`, `label`, `tabs`, `badge`, `sm`. `.stack` broke the whole panel layout (the list collapsed to 20 px), so the app's `.stack` is now `.pane`; `.label`, `.tabs`, `.badge` are reset at the end of `sidebar.css`. **New class names must not collide with daisyUI** (check: classes in `daisyui.css` vs yours); new shared blocks use prefixes `ui-`, `ft-`, `st-`, `df-`.
-Stored data never changes. Deviation from `tasks/foundation.md` F3: it names the name value `{ lang, text, from, to }`; the real model, kept, is `{ lang, name, date_from, date_to }`. Components are plain functions that return HTML text and read from the DOM they made (the existing pattern), not `{el, get, set}` objects.
+## How a component is made
+- **Markup** = a `<template id="t-...">` (or a static element) in `app/index.html`, in the shared region `templates`, written with daisyUI classes. Binding points are `data-bind="name"` (text), `data-value="name"` (input value), `data-attr-...` is NOT used (set attributes in JS by name).
+- **Binder** = `app/js/sidebar/kit.js` (new, foundation-owned), classic script, a few functions only:
+  `kit.tpl(id)` clone; `kit.fill(el, { name: text, ... })` sets `[data-bind]` by `textContent` and `[data-value]` by `.value`; `kit.show(el, bool)` toggles `hidden`; `kit.on(root, event, selector, fn)` delegation; `kit.list(container, items, tplId, fn)` replaces children with clones (keyed by `data-id`, no re-creation of unchanged rows).
+- **Behaviour** = one small script per component (`fields.js`, `footer.js`, `shell.js`, `dialogs.js`), each owned by the foundation.
+- **Data** never enters markup except through `textContent`/`value`.
 
-## Ready / not ready
-| Component | File | Interface | Status |
-|---|---|---|---|
-| Tokens, daisyUI theme | `app/css/base.css`, `index.html:11` | CSS custom properties `--r-card --r-ctl --font-ui --font-serif --shadow-card --transition`; theme `paper-and-pencil` | READY (CDN look unverified) |
-| App shell | `index.html`, `layout.js`, `sidebar.css` | brand header, icon tabs, `#foot` slot under every tab | READY; daisyUI classes on buttons, inputs, sheets NOT done |
-| States | `components.js` | `uiState.html(kind, msg, retry)`; kind = loading, empty, error, readonly; `[data-retry]` reloads | READY; used for load and load error in `ui.js`; read-only state is a block only, no tab uses it yet |
-| Date editor | `datefield.js`, `components.js` | `uiDateEditor.html(cls, date, opts)`, `.read(el, what)`, `.check(el, what)`, `.safe(el)`, `.wire(root)`, `.preview(date)`; `uiDateFormatGroups()` | READY: segmented mode, format chip with the grouped popup (s47; the hidden `select.df-fmt` still holds the value), era toggle, preview on the right; browser-tested |
-| Period footer | `period.js`, `#foot` | `ftRender(force)`; Period reads/writes `#fFrom` `#fTo`; `periodBounds()`, `periodActive()` unchanged | READY, browser-tested (handle sets the filter, cross resets); hidden while a form with its own Save bar is open in the dock; last item of the panel (under the dock) |
-| Moment footer | `period.js`, `timebar.js` | state `time` (`AHM.state`), `tbOpen()`, `tbOff()`, `tbPlay(on)`, `tbTick(ms)`, `tbPatch(p)`; old bar and "Time" button removed | READY, browser-tested. Known: `tbOpen()` starts at the first year of the data, so the list is empty at first (prototype starts mid-span, s22); explore decides |
-| Histogram | `components.js` | `uiHistogram(items, lo, hi, n)` -> counts; undated not counted | READY, tested |
-| Language pills | `placeform.js` | `uiLanguagePills(cur)`; value holder `select.nl` (visually hidden) | READY in every name row (places, borders, routes, rivers, layers, types, categories via `pfRow`); notes and filter language selects unchanged |
-| Name list | `placeform.js` | `pfRow(n)`, `pfRowDated(n)`, `pfReadNames(root)`, `placeFormWire(root)` (add, up, remove), `pfPeriodText(a, b)`; `.pf-name .nl .nn .pf-add .pf-del .pf-up` classes kept | READY: pill card, Period row with clock, "Period: unknown / text" and Set / Edit / Done (s28; a `<details>` underneath) |
-| Type pills | `placeform.js` | `uiTypePills(items, cur)` items `[{code,label,icon}]`; value holder `select.pf-type` or `select[data-type-select]`; `placeTypePills(cur, lang)` | READY for the place form; borders, routes, rivers, type admin still use their own chips/selects: the screen worker switches them to `uiTypePills` |
-| Style editor | `components.js` | `uiStyleEditor.html(kind, color, style, symbols)`, `.read(root)` -> `{ color, style }`; kind = point, line, area, river | READY, unit tested; NOT wired into `admin.js` or the shape cards (workers `more`, `borders`, `routes`, `rivers`) |
-| Chips, add button, accordion | `components.js` | `uiChip(text, {on,count,removable,icon,data})`, `uiAdd(label, cls)`, `uiAccordion(id, icon, title, sub, body, open)` | READY, tested for escaping; not used by any tab yet |
-| List row, note, form frame | `components.js` | `uiRow({icon,title,sub,count,on,attrs})`, `uiNote(n, {id, actions})` (clamp + Show more), `uiForm(title, body, {save,cancel})` with sticky bar (`data-act="save"` / `"cancel"`) | READY; not used by any tab yet (workers replace their own copies) |
-| Confirm, toast | `components.js` | `await uiConfirm(msg, {ok, danger})` -> boolean (Escape = false); `uiToast(msg, kind, ms)`; offline / online toasts in `ui.js` | READY, browser-tested |
+## Regions of `app/index.html` (each has one owner; edit only your own)
+Markers: `<!-- ahm:region NAME -->` ... `<!-- /ahm:region NAME -->` (comments; the build and the PHP controller ignore them).
+| Region | Owner | Holds |
+|---|---|---|
+| `head`, `shell`, `footer`, `dialogs`, `templates` | foundation | head links, header + tab bar + rail + sheet handle, Period/Moment footer, confirm modal, toast, shared templates |
+| `tab-explore` + `tpl-explore` | explore | `<section id="tab-explore">` and its own templates (place card, note, filters, forms, point menu) |
+| `tab-borders` + `tpl-borders` | borders | `#tab-shapes` (borders mode) |
+| `tab-routes` + `tpl-routes` | routes | `#tab-routes` |
+| `tab-rivers` + `tpl-rivers` | rivers | the rivers mode of `#tab-shapes` (own sub-section, no shared DOM with borders) |
+| `tab-layers` + `tpl-layers` | layers | `#tab-layers` |
+| `tab-more` + `tpl-more` | more | `#tab-more` |
+Git merges workers' edits because the regions are far apart in the file. The foundation creates all markers first.
 
-## Usage
-```js
-// date
-$('#x').innerHTML = uiDateEditor.html('my-date', place.date_from, { names: { none: 'Unknown' } });
-uiDateEditor.wire($('#x'));
-const d = uiDateEditor.read($('#x .df'), 'Began');          // null or { fmt, ts, mode, ts_to }
-// names (place, border, route, river, layer, type, category)
-box.innerHTML = names.map(pfRowDated).join('');             // pfRow for rows without a period
-const list = pfReadNames(box);                              // [{ lang, name, date_from?, date_to? }]
-// type pills with a value holder
-el.innerHTML = uiTypePills(items, cur) + '<select class="pf-type sr"></select>';
-// style
-el.innerHTML = uiStyleEditor.html('line', type.color, type.style);
-const { color, style } = uiStyleEditor.read(el);
-// states and blocks
-list.innerHTML = uiState.html('empty', 'No places for this period.');
-```
-Period footer: nothing to call; it redraws on `state:time`, on changes of the Filters fields and after the data loads (`ui.js`). Do not add a second period or moment control.
+## Component catalog (v2) and status
+Status key: **TODO** = to build in Foundation v2 (see `tasks/foundation.md`); **KEEP** = exists and is reused; **v1** = exists as JS strings and is replaced.
+| Component | Frames | Markup (daisyUI) | Binder / behaviour | Status |
+|---|---|---|---|---|
+| Theme `paper-and-pencil` | all | `base.css` variables per 01 | none | TODO (F1 had colours only) |
+| Panel shell: header, tab bar | s001, s050 | static in `shell` region | `shell.js`: `tab(n)` (existing), open/close, rail | TODO (v1 partial) |
+| Rail 60px + tooltips + Period dot | s050-s052 | `tooltip`, `indicator`, `status` | `shell.js` | TODO |
+| Resize edge, dock grip, larger panel | s097, s098 | own CSS | existing `layout.js` logic, KEEP | KEEP (restyle) |
+| Phone sheet + handle + Time button | s099, s100 | own CSS | `shell.js` | TODO |
+| Period / Moment footer | s001, s022, s049 | static in `footer` region: `join` toggle, `btn`, `toggle`, 48 bar `<i>`s created once, two `range` inputs | `footer.js` (logic of `period.js`, `timebar.js` kept: `periodBounds`, `tb*`) | TODO (v1 string footer) |
+| Histogram | s001, s022 | own CSS | `uiHistogram` pure function, KEEP | KEEP |
+| Date field (mode, format, era, preview) | s007, s046-s048 | `<template id="t-date">`: `join` modes, format `dropdown`+`menu`, `input`, era `join` | `fields.js` using `dfRead` `dfSafe` `dateText` (KEEP) | TODO (v1 string + popup) |
+| Language pills + "+N" picker | s056-s058 | pills + `dropdown` radios | `fields.js`: fits as many pills as the row allows (ResizeObserver), selected language replaces the last pill when narrow, no "+N" when all fit | TODO (v1 pills no picker) |
+| Language filter (chips + checkbox picker with counts, Clear, Done) | s055 | chips + `dropdown` checkboxes | `fields.js` | TODO |
+| Name editor (names list, name card, Period row Set/Edit/Done, add another) | s007, s028, s033, s041, s088 | `<template id="t-name">` | `fields.js` `nameList(root)`: read/write `[{lang,name,date_from,date_to}]` | TODO (v1 `pfRow`) |
+| Type pills | s007, s033, s034 | chips with symbol `<img>`/svg | `fields.js` | TODO |
+| Style editor (point / line / area / river) | s020, s042-s044 | `range`, `toggle`, swatches, symbol grid, pattern tiles, preview | `fields.js` `styleEditor` (reads/writes `{color, style}`) | TODO (v1 `uiStyleEditor`) |
+| Form frame + sticky action bar | all forms | `<template id="t-form">` | `fields.js` | TODO |
+| Validation (inline errors, disabled Save) | s042, s065-s067, s082 | `validator`, `input-error`, `text-error` | `kit.invalid(el, msg)`, `kit.clear(form)` | TODO |
+| States (empty, loading skeleton, error, service down, read-only) | s060-s062, s093, s070 | `alert`, `skeleton`, empty block | `kit.state(container, kind, text, retry?)` | TODO (v1 `uiState`) |
+| Confirm modal (6 texts) | s068, s069 | one `<dialog class="modal">` | `dialogs.js` `confirm(kind, vars) -> Promise<bool>` | TODO (v1 `uiConfirm`) |
+| Toast | - | `toast` + `alert` | `dialogs.js` `toast(msg, kind)` | TODO (v1 `uiToast`) |
+| List row | s001, s073, s080, s085, s061 | `list-row` template | `kit.list` | TODO (v1 `uiRow`) |
+| Note (timeline item, Show more/less) + notes list (language chips, sort, collapse, pagination) | s003, s045, s046, s071, s086 | `<template id="t-note">` | `fields.js` | TODO (v1 `uiNote`) |
+| Accordion card | s019, s021, s080, s078 | `collapse` | none (native) | TODO (v1 `uiAccordion`) |
+| Search field, filter button + badge, chips row | s002, s073, s080 | `label.input`, `indicator` | none | TODO |
+| Three-state button (show / only / hide) | s085 | `join` of 3 radio `btn`s | none | layers |
+| Map point menu | s063 | `dropdown`/`menu` in a MapLibre popup (static template) | explore | explore |
+| Colour swatches / symbol grid / pattern tiles | s020, s043, s044 | `btn` toggles | `fields.js` | with style editor |
+
+## v1, to retire (JS strings; keep until no screen uses them)
+`components.js` (`uiDateEditor`, `uiHistogram` KEEP, `uiStyleEditor`, `uiState`, `uiAdd`, `uiChip`, `uiAccordion`, `uiRow`, `uiNote`, `uiForm`, `uiConfirm`, `uiToast`), `placeform.js` (`pfRow`, `pfRowDated`, `uiLanguagePills`, `uiTypePills`), the string footer in `period.js`, `.ft-*`, `.ui-*`, `.st-*`, `.df-*`, `.lang-pill`, `.type-pill` CSS in `sidebar.css`. Every screen worker replaces its own use of them; the main agent deletes what is unused at integration.
 
 ## Rules for workers
-- Read, do not edit: `components.js`, `base.css`, `sidebar.css`, `period.js`, `timebar.js`, `layout.js`, `ui.js`, the shell part of `index.html`. A needed change goes to the main agent.
-- Language and type values always come from the dictionaries; the place-type list stays in three places (`AGENTS.md`).
-- Period is paused, not lost, while Moment is on: the Filters fields are untouched; the existing filter code still applies a set Period while a Moment is on (behaviour as before F5; not changed here).
-
-## Known gaps (not blocking the screen tasks)
-1. The shell has no read-only banner of its own: each tab already hints from `AHM_CONFIG.canEdit` / `loggedIn` (places.js, shapes.js); `uiState.html('readonly', ...)` is there for a screen that wants a block.
-2. Several places still use their own type chips or selects (borders, routes, rivers, type admin) and the style controls of `admin.js` / the shape cards: workers switch them to `uiTypePills` and `uiStyleEditor`.
-3. Notes and filter language choices are still selects (only name rows have pills).
-4. Rem units: new CSS uses rem; the older tokens are px.
-5. Narrow screens and a collapsed panel with the footer were checked once at 420 px only.
-6. Visual review by the owner of s1, s2, s7, s22, s28, s47 is still to do.
+Read, do not edit: `kit.js`, `fields.js`, `footer.js`, `shell.js`, `dialogs.js`, `base.css`, regions `head shell footer dialogs templates`. Need a change: say so in the report. Add your own templates to your own `tpl-X` region, not to `templates`. Test UI behaviour in a real browser (`05-browser-testing.md`).

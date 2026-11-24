@@ -138,3 +138,6 @@ Full text: `docs/05-data-model.md`. Summary for the UI:
 3. Symbol list with **uploaded SVG tiles** (s20): data model already has `custom` symbol + path; the "uploaded SVG ones" list is a UI over existing types, no new field.
 4. Note "timeline" and language-count chips (s45): derived.
 5. Counts per type / certainty chips (s2): derived (already partly present).
+
+## Update 2026-11-24: complete design and a new rule
+The owner supplied the complete design (68 frames, Layers tab included): `docs/prototype/png-v2/`, mapped in `04-design-v2-frame-map.md`; the 19-frame prototype is superseded. New rule: static HTML + daisyUI, no markup built in JS, no framework (`01-design-system.md`). The v1 foundation (JS-string components) is to be replaced by Foundation v2 (`03-work-plan.md`, `tasks/foundation.md`). Facts above about the old prototype ("19 frames", "no Layers frame", serif titles) are outdated; facts about the app code are unchanged.

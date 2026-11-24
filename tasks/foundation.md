@@ -1,94 +1,43 @@
-# Task F0: shared foundation (must merge before every other task)
+# Task: foundation v2 (one agent, FIRST, sequential; nobody else starts before it is merged)
 
-Source: the prototype in `docs/prototype/` (received 2026-11-23: `sidebar.html`, `sidebar.css`, `sidebar.js`, 19 screenshots in `png/`). `02-shared-components.md` was NOT received. The prototype is custom CSS (no daisyUI) with the same palette as `base.css`; its helpers in `sidebar.js` (`dateF`, `pfoot`, `mfoot`, `nameRow`, `typePills`, `shapePills`, `fld`, `ffoot`, `sel`, `pills`, `colr`, `symT`, `patT`) are the model of the shared components. Frames: `s47.png`, `s48.png` date formats, `s49.png` Period vs Moment, `s28.png` period of a name.
+**Depends on:** nothing. **Blocks:** every screen task.
+**Read first:** `docs/design-migration/00-project-map.md`, `01-design-system.md`, `02-shared-components.md`, `04-design-v2-frame-map.md`, `05-browser-testing.md`, the design-to-production SKILL.md, then the files listed under "Files this task owns".
 
-## Dependencies
+## Why
+The v1 foundation (2026-11-23) built shared pieces as JS strings with its own CSS and used daisyUI almost only for colours. The owner wants static HTML + daisyUI, no markup generated in JS, no framework. This task rebuilds the shared layer that way and prepares `index.html` so four workers can edit it in parallel.
 
-```
-F1 tokens + theme -> F2 app shell -> F3 component interfaces -> F4 HistDate editor
-                                                              -> F5 Period / Moment
-                                                              -> F6 Language / Name / Type / Style
-F0 (F1..F6) -> explore, routes, layers, more   (parallel with each other)
-F0 -> borders -> rivers                         (rivers reuses the Borders panel and its files)
-```
+## Rules
+`01-design-system.md` "The rule" (static HTML, daisyUI classes, `<template>` + clone/fill, no HTML strings in JS, no daisyUI-owned class names, no framework). Keep logic and stored data unchanged.
 
-Smaller option: one PR for F1+F2, one for F3..F6. Do not split further.
+## Deliverables
+1. **Theme** `paper-and-pencil` in `base.css`: full daisyUI variable set per 01 (base-100/200/300, primary, neutral, error, radii, font); remove CSS that only re-implements what daisyUI classes now do.
+2. **`index.html` restructure** with the regions of 02 (`head shell footer dialogs templates` and, empty, `tab-<name>` + `tpl-<name>` for explore, borders, routes, rivers, layers, more). Move each existing tab's current markup UNCHANGED into its region (no redesign of tabs; workers do that). Same page for forum and dev; `tools/build.js` and `controller/` must keep working (comments only).
+3. **Static shell**: header + brand + tab bar (`tabs`), collapse chevron, rail 60px with tooltips and the Period dot (s050-s052), resize edge + double-click reset (existing `layout.js` logic kept), dock grip, larger panel (s098), phone bottom sheet with grab handle and the Time button when hidden (s099, s100), 320px rule for pills (s057). Files: `shell.js` (new), restyle `layout.js` only as far as needed.
+4. **Static footer** (`footer` region): Period | Moment `join` toggle, "Any" / range text, x, histogram (48 bars created once at start, then only heights/classes change), two range handles; Moment: play, speed `join`, one handle, "Show undated places" toggle. Logic stays in `period.js` (`periodBounds`, `periodActive`, `initPeriod`) and `timebar.js` (`tb*`); `footer.js` (new) binds. `tbOpen()` starts at the middle of the data span (s022). Hidden while a form with its own Save bar is open (as v1). Remove the string footer and the old `#tbOpen`.
+5. **`kit.js`** (new): `tpl`, `fill`, `show`, `on`, `list`, `state(container, kind, text, retry)`, `invalid(el, msg)`, `clear(form)` (API in 02).
+6. **`fields.js`** (new) with templates in the `templates` region: date field (s047/s048: mode join, format dropdown with groups, CE|BCE join, preview; reads/writes the same value as `dfRead`/`dfSafe`), language pills with "+N" picker and the fit/narrow rules (s056-s058), language filter (s055), name editor with Period row Set/Edit/Done (s028) reading/writing `[{lang,name,date_from,date_to}]`, type pills, style editor for point/line/area/river (s020, s042-s044, reading/writing `{color, style}`), form frame with sticky bar, notes list/note (s045, s046), list row.
+7. **`dialogs.js`** (new): `confirm(kind, vars)` -> Promise<bool> with the six texts of s068/s069 in one `<dialog class="modal">`; `toast(msg, kind)`; offline/online toasts.
+8. **States** (s060, s061, s062, s070, s093): empty, skeleton, error + Retry, service down, read-only lock block.
+9. **Tests**: browser tests for each deliverable (footer Period/Moment, rail, tooltips, phone sheet at 390px, date menu, pills +N at 320/400px, name editor, style editor four kinds, confirm variants, toast, states); node tests for pure logic (`uiHistogram`, pill-fit calculation, date read/write). Existing 313 tests stay green or are rewritten into browser tests when they assert on removed v1 HTML.
+10. **Docs**: update `02-shared-components.md` statuses (component, file, interface, usage example, ready/not ready); `docs/09-code-style.md` and `AGENTS.md` rule text (needs owner `Approved:`; if not given, write the proposed text in the report and leave the files).
+11. **Retire v1 only where nothing uses it**: the old tabs still call `pfRow`, `uiLanguagePills`, `uiTypePills`, `uiDateEditor`; keep them until the screen workers convert; list in the report which are now unused.
 
-## Needs you (blocks F1)
+## Frames
+`s001` `s022` `s047` `s048` `s049` `s050` `s051` `s052` `s055` `s056` `s057` `s058` `s060` `s068` `s069` `s097` `s098` `s099` `s100`, and the field parts of `s007` `s020` `s028` `s033` `s042` `s043` `s044` `s045` `s046` `s065` `s066` `s088`.
 
-- D1 daisyUI delivery: ANSWERED 2026-11-23 by the owner: CDN `<link>`. Built in F1 as `https://cdn.jsdelivr.net/npm/daisyui@5.8.2/daisyui.css` (exact version, no Tailwind script). The file is layered (`@layer`), so our unlayered css wins. Not verified in a browser: that component classes look right without Tailwind (two `--tw-` variables exist in the tab rules).
-- D3 Categories. The prototype (s21, s41) puts the Categories list and rename in More. Today the category admin code is in `app/js/sidebar/layers.js` (Layers tab). Options: 1. follow the prototype: task `more` builds the Categories fold and moves the admin code out of `layers.js` (so `more` runs after `layers`; `layers` leaves that code alone); 2. keep it in Layers. Recommendation: 1. Default in the task files until you answer: 1.
-- D4 Period and Moment. The prototype (s1, s22, s49) replaces the "Time" button and bar over the map with a sidebar footer: Period (two handles over a histogram, time-travel button, ✕ resets to Any) and Moment (play, 1x to 500x, one handle, "Show undated places" switch; replaces Period while on). Today: a map time bar plus From/To in Filters. Options: 1. follow the prototype (needs a histogram computed from dates; footer on every tab, s45); 2. keep the time bar and restyle it. Recommendation: 1. Default in the task files until you answer: 1.
-- D2 `tools/domains.json` is protected. New test files `tests/js/ui-*.test.js` need an entry in the `sidebar` domain. Needs an `Approved:` line. Not verified: how `tools/check-domain.js` treats an unlisted test file.
+## Files this task owns
+`app/index.html` (all regions, but only moves tab markup, never edits it), `app/css/base.css`, `app/css/sidebar.css`, new `app/css/shell.css` (needs a `tools/domains.json` line: owner approved), `app/js/sidebar/{kit,fields,footer,shell,dialogs,components,period,timebar,layout,ui,datefield,placeform(only the parts moved)}.js`, `tests/js/sidebar.test.js`, `tests/js/browser.test.js`, `tests/js/lib/` (only to add what browser tests need), `docs/design-migration/*`, `tools/domains.json` + generated CODEOWNERS (owner-approved line).
 
-## F1 Design tokens and daisyUI theme
+## Must NOT modify
+Tab logic files of the screen tasks (`places.js`, `searchfield.js`, `actions.js`, `sidebar/shapes.js`, `routes.js`, `layers.js`, `admin.js`, `map/*`, `core/*`) except to keep them running on the moved markup; `controller/`, `service/`, `dev/`, stored formats.
 
-- Routes/views: none (CSS only).
-- Do: add the prototype's tokens to `base.css` (card radius 12px, control radius 8px, `--font-ui` system-ui, `--font-serif` Georgia for titles, line and input border colours, shadow `0 2px 8px rgba(0,0,0,.18)`, transition 150ms) and point the theme radii at them; move colours, spacing, radius, type scale, z-index and shadow to custom properties in the first `:root` block of `app/css/base.css`; add the daisyUI theme `paper-and-pencil` as a block in `app/css/base.css`, mapped to those tokens (a new css file needs an owner line in the protected `tools/domains.json`, so none is created); load daisyUI from the CDN before the `<!-- ahm:css -->` block of `app/index.html`.
-- Never create or link `app/css/colours.css` (`AGENTS.md`, "Facts").
-- Files owned: `app/css/base.css`, `app/index.html` (css block only).
-- Must NOT modify: `app/css/sidebar.css`, `app/css/map.css`, `app/css/shapes.css`, any `app/js/`.
-- Acceptance: no visual change on any screen except where a token replaces an equal value; one source for every colour.
-- Tests: in `tests/js/sidebar.test.js` (a new test file needs an owner line in the protected `tools/domains.json`): the CDN link has an exact version, and every token used in the theme block is defined in `base.css`.
+## Acceptance criteria
+1. Every frame listed matches by eye in a 400x860 screenshot (and 320, 390, 1100 where the frame says so); screenshots attached to the report with paths; no pixel-match claim.
+2. `index.html` has the 7 x 2 region markers; each existing tab works unchanged inside its region; a diff of one region does not touch another.
+3. Shared pieces contain no string-built markup (grep of `kit.js fields.js footer.js shell.js dialogs.js` for `innerHTML`/`insertAdjacentHTML` with `<` finds nothing).
+4. No class name that daisyUI owns is defined by app CSS (check script in the report: classes in `daisyui.css` vs yours).
+5. Whole suite incl. browser tests passes; `tools/ci-check-pr.js` passes with the owner's `Owner-approved` line; `bun tools/build.js` works.
+6. `02-shared-components.md` updated per component; report lists what is ready, what is not, and which v1 pieces are still used.
 
-## F2 App shell integration
-
-- Routes/views: sidebar tabs `explore`, `shapes` (Borders), `routes`, `rivers`, `layers`, `more` (`data-tab`, function `tab(n)` in `app/js/sidebar/layout.js`); sheets over lists; collapsed / resized / bottom-sheet states; hash `#place-<id>`.
-- Do: apply daisyUI classes to the tab bar, buttons (`primary`, default, `.danger`, `back`), sheet header and sticky action bar, inputs, chips and tables without changing the contract in `INTERFACES.md`.
-- ASSUMED missing states: loading (data not yet fetched), load error with Retry, read-only visitor (no edit buttons), offline.
-- Files owned: `app/js/sidebar/layout.js`, `app/js/sidebar/ui.js`, `app/index.html` (tab bar and shell markup only, not the `<section id="tab-...">` bodies).
-- Must NOT modify: the bodies of `#tab-*` sections, `app/js/map/`, `app/js/core/`, `service/`.
-- Built 2026-11-23: brand header and icon-over-label tabs (s1) in `app/index.html`, `app/js/sidebar/layout.js` (click on `closest('[data-tab]')`) and the tab rules of `app/css/sidebar.css`. Not built: loading, error and read-only states, daisyUI classes on buttons, sheets and inputs (the sandbox blocks the CDN, so they cannot be looked at here).
-- Acceptance: all six tabs open and close sheets as before; keyboard and narrow-screen behaviour unchanged; `node tests/js/run.js 2>&1 | tail -15` passes.
-- Tests: extend `tests/js/sidebar.test.js` only for what existed; new cases in `tests/js/sidebar.test.js`.
-
-## F3 Shared component interfaces
-
-One file `app/js/sidebar/components.js`, registered in the `<!-- ahm:js -->` block before `js/sidebar/layers.js`. Same export pattern as `app/js/sidebar/ui.js` (builder confirms). No new `window.AHM` member. Each component returns `{ el, get(), set(v), validate() }` and takes `onChange`. All output goes through `esc()`.
-
-| Component | Call | Value |
-|---|---|---|
-| HistDate editor | `dateEditor({ value, label })` | `null` or `{ fmt, ts, mode: exact\|approx\|range, ts_to }` (`app/js/core/dates.js`) |
-| Period | `periodField({ from, to })` | two date values, `from <= to` |
-| Moment | `momentField({ value })` | one date value or `null` |
-| Language | `languageSelect({ value, exclude })` | code from `data/languages.json`, no free text |
-| Names | `nameList({ names })` | `[{ lang, text, from, to }]`, several per language, reorder, remove |
-| Type | `typeSelect({ kind, value })` | `kind`: `point`, `line` or `area`; code from `data/types.json` |
-| Style | `styleEditor({ kind, style })` | colour, opacity, width, pattern, symbol, size |
-
-- Acceptance: every component has an empty, filled and invalid state; interface comments written once at the top of `components.js`.
-- Tests: `tests/js/sidebar.test.js`, one block per component (shape of the value, invalid input, `set`/`get` round trip).
-
-## F4 Historical date editor
-- Reference: s47, s48 (formats, CE | BCE), s46 (in a note), s28 (period of a name), s33 and s34 (Began / Ended).
-- Layout: segmented control Unknown | Exact | Approx. | Range; a format chip with a menu grouped Full date (YYYY-MM-DD, DD.MM.YYYY, MM/DD/YYYY, D Month YYYY), Month (Month YYYY), Year and coarser (Year, Century, Millennium), current one ticked; the fields of that format, each year with a CE | BCE toggle; a serif preview line ("c. 16th century CE", "March 1500 – June 1502 CE"); Range has From and To, each with its own era (s48).
-- Base: `app/js/sidebar/datefield.js` (`dfHTML`, `dfSafe`). Extend, do not duplicate. Stored value stays `null` or `{ fmt, ts, mode, ts_to }` (`app/js/core/dates.js`); the builder maps the prototype formats to the existing `fmt` codes. A format with no code is a question for the owner, not a change of the model.
-- Must handle: unknown (`null`), exact, approx, range; BCE and years beyond 9999 as `±YYYYYY`; ISO 8601 `Z` only; never compare dates as text (use `isoToSec`).
-- Files owned: `app/js/sidebar/datefield.js`, `app/js/sidebar/components.js`. Must NOT modify: `app/js/core/dates.js`, `service/dates.php`.
-- Acceptance: 1200 BCE round trips to `-001199-01-01T00:00:00Z`; a range with `ts_to` before `ts` shows a red error line and does not save; the preview updates on every input.
-- Tests: in `tests/js/sidebar.test.js`, through `dates.js` (never open `tests/fixtures/dates-vectors.json`).
-- Built 2026-11-23: segmented mode control, grouped format select, CE | BCE toggle, From / To labels and the preview line, all inside `dfHTML`/`dfWire` (the selects stay as the value holders, visually hidden, so every caller and browser test is unchanged). Not built: the format menu as a custom popup (a native grouped select is used).
-
-## F5 Period and Moment components
-- Reference: s1, s2, s22, s49 (one footer slot), s45 (same footer on Notes).
-- Period footer: "Period Any" or "Period 800 – 500 BCE", time-travel button, ✕ resets to Any, a histogram of objects per date step with a two-handle range, axis labels. In Filters (s2) Period has From and To using the F4 date field.
-- Moment footer: play button, "MOMENT" label with the date in serif ("c. 85 BCE"), speed 1x, 10x, 50x, 100x, 500x (years per second), one handle, ✕ returns to Period, switch "Show undated places" (T-049 option 3 is the assumed default). Period is paused, not lost, while Moment is on.
-- Base: `app/js/sidebar/period.js`, `timebar.js`, date bounds in `app/js/core/dates.js` (`dateBounds`). The histogram is new: counts of places, borders and routes per step, a pure function in `components.js`; undated objects are not counted.
-- Files owned: `app/js/sidebar/period.js`, `timebar.js`, `components.js`. Must NOT modify: `app/js/map/map.js` (time filtering stays; the footer uses the existing state `time`).
-- Acceptance: Period and Moment are one slot, never both visible; the footer shows on every tab; "the period filter ignores layers" is untouched; the old "Time" button over the map is removed only if D4 = 1.
-- Tests: Period rejects `from > to`; ✕ gives "Any"; Moment ✕ restores the previous Period; histogram counts for a small fixed list; undated objects are not counted.
-
-## F6 Language, name, type and style components
-- Reference: names with pills hy en la ru tr xur and "Add another name" (s7, s33, s34, s41, s43, s44); type pills with the type symbol (s20, s33, s34); line and area style (s43, s44); symbol list with uploaded SVG (s20).
-- Name block (s33): a card with language pills (one active) over a text input, an ✕ to remove, a dashed "Add another name" under the list; a name can have a Period (s28: Edit, the F4 date field, Done folds it back).
-- Base: name list in `app/js/sidebar/placeform.js`, `PLACE_TYPES` there, `TYPE_STYLE` in `app/js/map/typeicons.js`, card styling in `app/js/sidebar/shapes.js`. The place-type list stays in the three places of `AGENTS.md` section 4; the components only read it.
-- Files owned: `app/js/sidebar/components.js`, `app/js/sidebar/placeform.js` (move the name list out, same behaviour). Must NOT modify: `store.php`, `dev/save-handler.js`, `app/js/map/typeicons.js`.
-- Acceptance: the place form renders as s7 through the shared `nameList` and `typeSelect`; several names in one language still work; the first name of a language stays the map name.
-- Tests: `nameList` keeps order after remove and reorder; `languageSelect` offers only dictionary codes; a name with a Period keeps it after Done.
-
-## Finish (every F-part)
-
-`bun tools/build.js`, commit `app/dist/`; `node tools/ci-check-pr.js <branch> origin/master`; `node tests/js/run.js 2>&1 | tail -15`; entry in `changes/shared.md` and `changes/sidebar.md`; update `docs/02-implemented-features.md` and `docs/09-code-style.md` for the new components.
-
-## Status 2026-11-23 (main agent, from git)
-Built: F1, F2 shell (header, tabs), F3 date wrappers, F4 segmented/CE-BCE/preview. Still to do before any screen task: F2 rest (daisyUI classes, loading/error/read-only states), custom date format menu, F5 (Period/Moment footer, histogram, remove Time button), F6 (languageSelect, nameList, typeSelect, styleEditor), shared blocks (form frame, chips, add-dashed, accordion, list row, note card, empty/error, confirm). Order and owners: `docs/design-migration/03-work-plan.md`.
+## Hand-off
+Branch `feat/foundation-v2` from `feat/shared-foundation-tasks`; do not push elsewhere; do not commit `app/dist/`, `graph/`, `context/` (main agent builds). Report: files, per-frame result with screenshot paths, tests, what you could not verify, owner decisions needed.
