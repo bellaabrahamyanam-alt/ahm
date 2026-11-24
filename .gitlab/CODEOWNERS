@@ -4,9 +4,11 @@
 # sidebar
 /app/js/sidebar/ @bellaabrahamyan.am
 /app/css/sidebar.css @bellaabrahamyan.am
+/app/css/shell.css @bellaabrahamyan.am
 /app/css/shapes.css @bellaabrahamyan.am
 /app/css/explore.css @bellaabrahamyan.am
 /app/css/layers.css @bellaabrahamyan.am
+/tests/js/ui-rules.test.js @bellaabrahamyan.am
 /tests/js/ui-explore.test.js @bellaabrahamyan.am
 /tests/js/ui-layers.test.js @bellaabrahamyan.am
 /tests/js/layers.test.js @bellaabrahamyan.am

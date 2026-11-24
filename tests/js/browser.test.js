@@ -427,3 +427,58 @@ scenario('browser: foundation: confirm dialog, toast, note Show more', null, asy
   await pg.click('.ui-more');
   ok(!(await pg.locator('.ui-text').evaluate((e) => e.classList.contains('clamp'))) && /less/.test(await pg.locator('.ui-more').innerText()), 'Show more opens the text and turns into Show less');
 });
+
+// ---- foundation v2: kit, confirm dialog, toast, states (static templates, no markup built in JS) ----
+scenario('browser: foundation v2: kit fills templates, states, field errors, list keeps rows', null, async (pg, S) => {
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(800);
+  const r = await pg.evaluate(() => {
+    const box = document.createElement('div'); document.body.append(box);
+    const out = {};
+    kit.state(box, 'error', 'Could not load <b>x</b>', () => (window.__retried = true));
+    out.errText = box.textContent.trim().startsWith('Could not load <b>x</b>') && !box.querySelector('b'); // text, never markup
+    box.querySelector('[data-retry]').click(); out.retried = window.__retried === true;
+    kit.state(box, 'empty', 'Nothing here'); out.empty = !!box.querySelector('p') && box.textContent.includes('Nothing here');
+    kit.state(box, 'loading', 'Loading'); out.skeleton = box.querySelectorAll('.skeleton').length === 3;
+    kit.state(box, 'down', 'Service down'); out.downNoRetry = box.querySelector('[data-retry]').hidden === true;
+    const inp = document.createElement('input'); inp.className = 'input'; box.replaceChildren(inp);
+    kit.invalid(inp, 'Required'); out.inv = inp.classList.contains('input-error') && inp.getAttribute('aria-invalid') === 'true' && /Required/.test(box.textContent);
+    kit.clear(box); out.cleared = !inp.classList.contains('input-error') && box.querySelectorAll('[data-field-error]').length === 0;
+    const ul = document.createElement('ul'); document.body.append(ul);
+    kit.list(ul, [{ id: 1 }, { id: 2 }], 't-toast', (n, it) => kit.fill(n, { text: 'n' + it.id }));
+    const first = ul.children[0];
+    kit.list(ul, [{ id: 2 }, { id: 1 }, { id: 3 }], 't-toast', (n, it) => kit.fill(n, { text: 'n' + it.id }));
+    out.keyed = ul.children[1] === first && [...ul.children].map((c) => c.dataset.id).join() === '2,1,3';
+    kit.list(ul, [{ id: 3 }], 't-toast', () => {}); out.removed = ul.children.length === 1;
+    return out;
+  });
+  for (const k of Object.keys(r)) ok(r[k] === true, 'kit: ' + k);
+});
+
+scenario('browser: foundation v2: confirm (five texts of s068/s069), toast, Escape and Cancel', null, async (pg, S) => {
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(800);
+  const ask = (kind, vars) => pg.evaluate(([k, v]) => { window.__r = null; dialogs.confirm(k, v).then((x) => (window.__r = x)); }, [kind, vars]);
+  const texts = {
+    delete: ['Delete “Kingdom of Urartu”?', 'Delete', { name: 'Kingdom of Urartu' }],
+    'remove-type': ['Remove the type “Fortress”?', 'Remove', { name: 'Fortress' }],
+    'delete-layer': ['Delete the layer “Artaxiad capitals”?', 'Delete', { name: 'Artaxiad capitals' }],
+    import: ['Import 8 shapes as borders?', 'Import', { count: 8, type: 'Territory or area' }],
+    'discard-route': ['Discard this route?', 'Discard', {}],
+  };
+  for (const [kind, [title, okText, vars]] of Object.entries(texts)) {
+    await ask(kind, vars);
+    ok(await pg.locator('#ahm-confirm').isVisible(), kind + ': open');
+    eq(title, (await pg.locator('#ahm-confirm h3').innerText()).trim(), kind + ': title');
+    eq(okText, (await pg.locator('#ahm-confirm [data-ok]').innerText()).trim(), kind + ': ok button');
+    eq(kind !== 'import', await pg.locator('#ahm-confirm [data-ok]').evaluate((e) => e.classList.contains('btn-error')), kind + ': danger colour');
+    await pg.click('#ahm-confirm [data-ok]'); await pg.waitForTimeout(50);
+    eq(true, await pg.evaluate(() => window.__r), kind + ': OK answers true');
+  }
+  await ask('delete', { name: 'X' }); await pg.click('#ahm-confirm form .btn-soft'); await pg.waitForTimeout(50);
+  eq(false, await pg.evaluate(() => window.__r), 'Cancel answers false');
+  await ask('delete', { name: 'X' }); await pg.keyboard.press('Escape'); await pg.waitForTimeout(50);
+  eq(false, await pg.evaluate(() => window.__r), 'Escape answers false');
+  await pg.evaluate(() => dialogs.toast('Saved', 'ok', 300));
+  ok(await pg.locator('#ahm-toasts .alert').isVisible(), 'the toast shows');
+  await pg.waitForTimeout(500);
+  eq(0, await pg.locator('#ahm-toasts .alert').count(), 'and goes away by itself');
+});

@@ -14,6 +14,7 @@
     <!-- ahm:css -->
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/sidebar.css" />
+    <link rel="stylesheet" href="css/shell.css" />
     <link rel="stylesheet" href="css/map.css" />
     <link rel="stylesheet" href="css/shapes.css" />
     <link rel="stylesheet" href="css/explore.css" />
@@ -357,8 +358,27 @@
       </div>
       <div id="lyErr2" class="sn"></div>
     </dialog>
+    <dialog id="ahm-confirm" class="modal">
+      <div class="modal-box bg-base-200">
+        <h3 class="ahm-title" data-bind="title"></h3>
+        <p class="ahm-muted" data-bind="body"></p>
+        <form method="dialog" class="modal-action ahm-actions">
+          <button value="ok" class="btn btn-error" data-ok data-bind="ok"></button>
+          <button value="cancel" class="btn btn-neutral btn-soft">Cancel</button>
+        </form>
+      </div>
+      <form method="dialog" class="modal-backdrop"><button aria-label="Close" value="cancel"></button></form>
+    </dialog>
+    <div id="ahm-toasts" class="toast toast-center" role="status"></div>
     <!-- /ahm:region dialogs -->
     <!-- ahm:region templates -->
+    <template id="t-toast"><div class="alert"><span data-bind="text"></span></div></template>
+    <template id="t-field-error"><p class="text-error ahm-hint" role="alert" data-field-error data-bind="msg"></p></template>
+    <template id="t-state-empty"><div class="ahm-empty" role="status"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><p data-bind="text"></p></div></template>
+    <template id="t-state-loading"><div class="ahm-col" role="status" aria-busy="true"><div class="skeleton ahm-skel"></div><div class="skeleton ahm-skel"></div><div class="skeleton ahm-skel"></div><span class="ahm-sr" data-bind="text"></span></div></template>
+    <template id="t-state-error"><div class="alert alert-error alert-soft" role="alert"><span data-bind="text"></span><button type="button" class="btn btn-sm btn-error" data-retry>Retry</button></div></template>
+    <template id="t-state-down"><div class="alert alert-warning alert-soft" role="alert"><span data-bind="text"></span><button type="button" class="btn btn-sm btn-warning" data-retry>Retry</button></div></template>
+    <template id="t-state-readonly"><div class="alert alert-info alert-soft" role="status"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span data-bind="text"></span><button type="button" class="btn btn-sm btn-primary" data-retry hidden>Log in</button></div></template>
     <!-- /ahm:region templates -->
     <!-- ahm:region tpl-explore -->
     <!-- /ahm:region tpl-explore -->
@@ -387,6 +407,7 @@
     <script src="js/core/search.js"></script>
     <script src="js/core/providers.js"></script>
     <script src="js/sidebar/datefield.js"></script>
+    <script src="js/sidebar/kit.js"></script>
     <script src="js/sidebar/components.js"></script>
     <script src="js/sidebar/searchfield.js"></script>
     <script src="js/sidebar/period.js"></script>
@@ -403,6 +424,7 @@
     <script src="js/sidebar/timebar.js"></script>
     <script src="js/sidebar/actions.js"></script>
     <script src="js/sidebar/admin.js"></script>
+    <script src="js/sidebar/dialogs.js"></script>
     <script src="js/sidebar/ui.js"></script>
     <script src="js/features.js"></script>
     <!-- /ahm:js -->

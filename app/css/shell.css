@@ -1,0 +1,12 @@
+/* Foundation v2 (sidebar domain): the CSS daisyUI has no class for. Own prefix ahm-; no class name that daisyUI owns. */
+.ahm-title { font-size: 1.125rem; font-weight: 700; margin: 0; }
+.ahm-muted { color: var(--ahm-muted, #7b858b); margin: 0.25rem 0 0; }
+.ahm-hint { font-size: 0.75rem; margin: 0.25rem 0 0; }
+.ahm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.ahm-col { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.5rem 0; }
+.ahm-row { display: flex; align-items: center; gap: 0.5rem; }
+.ahm-grow { flex: 1 1 auto; min-width: 0; }
+.ahm-skel { height: 3.5rem; width: 100%; }
+.ahm-empty { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 2rem 0; text-align: center; color: var(--ahm-muted, #7b858b); }
+.ahm-empty p { margin: 0; }
+.ahm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
