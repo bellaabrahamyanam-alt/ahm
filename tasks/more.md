@@ -25,6 +25,8 @@ Rebuild on the F0 components, no behaviour change:
 
 ## Prototype screenshot references
 
+**Full design (owner, 2026-11-24): `docs/prototype/full/` frames s19 s20 s21 s37 to s44 s90 to s94** (index: its README.md). On a difference with the 19 first frames below, the full design wins. Implementation direction: `docs/design-migration/03-work-plan.md`, "Direction" (daisyUI components, static HTML and templates first).
+
 Prototype frames: `docs/prototype/png/s19.png` More as accordion cards; `s20.png` place type editor; `s21.png` historical maps and categories; `s41.png` add a language, rename a category; `s43.png` route / river type editor; `s44.png` area type editor. The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
 
 ## Missing screens and states

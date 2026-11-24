@@ -25,6 +25,8 @@ Restyle and rebuild these on the F0 components, with no behaviour change:
 
 ## Prototype screenshot references
 
+**Full design (owner, 2026-11-24): `docs/prototype/full/` frames s1 s2 s3 s7 s22 s28 s45 s46 s49 s55 to s58 s60 to s67 s70 s71** (index: its README.md). On a difference with the 19 first frames below, the full design wins. Implementation direction: `docs/design-migration/03-work-plan.md`, "Direction" (daisyUI components, static HTML and templates first).
+
 Prototype frames (`docs/prototype/png/`, titles from `docs/prototype/sidebar.js`): `s1.png` Explore with Period footer and Time-travel button; `s2.png` filters (type, certainty, language, Period From/To); `s3.png` place details as one card; `s7.png` edit a place; `s28.png` period of a name; `s45.png` notes; `s46.png` note edit (new date field); `s22.png` Moment (time travel); `s49.png` Period vs Moment. The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
 
 ## Missing screens and states

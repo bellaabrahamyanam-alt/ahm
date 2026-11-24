@@ -2,6 +2,8 @@
 
 Status 2026-11-23, branch `feat/shared-foundation-tasks`. All JS tests pass (313), including 9 real-browser tests (headless Chromium, daisyUI and MapLibre served from npm copies; the map is the stand-in of `browser.test.js`, so map drawing is not exercised). Layout was checked by screenshots at 420 px and 1100 px against the prototype; no human has reviewed the look yet.
 
+**Update 2026-11-24 (owner):** the direction changed to daisyUI components and static HTML first (`03-work-plan.md`, "Direction"). Everything below describes the foundation as built: components that return HTML strings. They stay while old screens use them and are replaced by `<template>` cloning and daisyUI classes as each screen is rebuilt. The paragraph "no daisyUI component classes are applied" below is the old state.
+
 **daisyUI.** The CDN stylesheet is used for tokens and the theme only; no daisyUI component classes are applied to app controls. Reason (found in the browser, fixed): daisyUI owns the class names `stack`, `label`, `tabs`, `badge`, `sm`. `.stack` broke the whole panel layout (the list collapsed to 20 px), so the app's `.stack` is now `.pane`; `.label`, `.tabs`, `.badge` are reset at the end of `sidebar.css`. **New class names must not collide with daisyUI** (check: classes in `daisyui.css` vs yours); new shared blocks use prefixes `ui-`, `ft-`, `st-`, `df-`.
 Stored data never changes. Deviation from `tasks/foundation.md` F3: it names the name value `{ lang, text, from, to }`; the real model, kept, is `{ lang, name, date_from, date_to }`. Components are plain functions that return HTML text and read from the DOM they made (the existing pattern), not `{el, get, set}` objects.
 

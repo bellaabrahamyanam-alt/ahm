@@ -24,4 +24,4 @@ Static mock: open `sidebar.html` (it draws every frame from `sidebar.js` and `si
 | s48 | Date formats: every layout, CE / BCE toggle |
 | s49 | Period vs Moment: two entities, one footer slot |
 
-No frame exists for: Layers tab (list, layer sheet, Choose places), Rivers tab (list, card, selection), Borders list and card, Routes list and card, map point card and popup, overlay editor, 3D and terrain, Directions and Languages opened, every empty, loading, error and read-only state.
+**Update 2026-11-24:** the owner delivered the full design, 68 frames in `full/` (index and task mapping: `full/README.md`). It covers Layers, Borders, Rivers, Routes, Directions, More, confirms, states and the panel sizes. The list above is the first set. Which items are still not drawn was not checked.

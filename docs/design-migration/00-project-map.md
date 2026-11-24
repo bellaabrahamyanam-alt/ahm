@@ -2,6 +2,8 @@
 
 Discovery of 2026-11-23, from the code on branch `feat/shared-foundation-tasks` (base `master` 53e2c44) and the owner's prototype (`docs/prototype/`, 19 PNG frames `s1…s49`). Read by file, not from tab names. Line numbers drift; function names are the stable reference.
 
+**Update 2026-11-24.** The owner delivered the full design (68 frames, `docs/prototype/full/`, index in its README). Cells below that say "G" (gap) were true for the first 19 frames; the Layers rows are corrected here (L1 to L6), the other rows were not re-checked, use the frame index to find their frames. The "no framework, JS builds the HTML" description in section 1 is the current state; the owner changed the direction, see `03-work-plan.md` ("Direction").
+
 How verified: `app/index.html` read section by section; every function list of `app/js/sidebar/*.js` and `app/js/map/*.js` extracted; routing, data-model and access docs read; all 19 PNGs opened. Not verified: no browser walk-through of every screen (the sandbox cannot load the map or the daisyUI CDN); role differences were not run per role.
 
 ## 1. Architecture in one page
@@ -97,12 +99,12 @@ Legend: P = prototype frame exists; G = no frame (gap).
 
 | # | View | Code | Frame |
 |---|---|---|---|
-| L1 | List, search, category select, count, `+ Add layer`, Only / Hide per row, scope note | `lyRenderList`, `lyRowHTML`, `lyScopeHTML` | **G** (no Layers frame at all) |
-| L2 | Layer detail (names, description, category, colour, dates, members, notes, quick actions) | `lyRenderDetail`, `lyEditPanel` | G |
-| L3 | Layer form dialog `lyDlg` (create / edit) | `lyOpenForm`, `lyReadForm` | G |
-| L4 | Choose places mode (map click or list ticks, ring on members, Save places) | `lyStartEdit`, `lyToggleMember`, `lySavePlaces`, `lyPickRows` | G |
-| L5 | Layer notes, note dialog | `lyOpenNoteDlg`, `lyDlgSave` | P s45 pattern |
-| L6 | Place's layer list in the place detail and in the note dialog | `lyPlaceDetail`, `lyDlgLayers` | P s3 ("Layers" chips, "Add to a layer") |
+| L1 | List, search, category select, count, `+ Add layer`, Only / Hide per row, scope note | `lyRenderList`, `lyRowHTML`, `lyScopeHTML` | P s85 |
+| L2 | Layer detail (names, description, category, colour, dates, members, notes, quick actions) | `lyRenderDetail`, `lyEditPanel` | P s86 |
+| L3 | Layer form dialog `lyDlg` (create / edit) | `lyOpenForm`, `lyReadForm` | P s88 |
+| L4 | Choose places mode (map click or list ticks, ring on members, Save places) | `lyStartEdit`, `lyToggleMember`, `lySavePlaces`, `lyPickRows` | P s87 |
+| L5 | Layer notes, note dialog | `lyOpenNoteDlg`, `lyDlgSave` | P s86, s88 (note), s45 |
+| L6 | Place's layer list in the place detail and in the note dialog | `lyPlaceDetail`, `lyDlgLayers` | P s3, s65, s71 |
 
 ### 3.6 More (`#tab-more`, five folds)
 

@@ -183,3 +183,10 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 - **Files:** `docs/prototype/`, `tasks/*.md`, `app/css/base.css`, `app/dist/`.
 - **How to verify:** `node tests/js/run.js "foundation F1"`.
 - **Not verified:** no browser run; the prototype formats are not yet mapped to the `fmt` codes of `dates.js`.
+
+## 2026-11-24 Full design imported, plan and docs updated
+- What: the owner's full design (68 frames) is in `docs/prototype/full/` with an index; plan, project map, design system and task files now point to it; new direction (daisyUI widely, static HTML and templates first) recorded as "Direction" in `docs/design-migration/03-work-plan.md` with decisions D5 to D8.
+- Why: the owner asked to use the real design and to stop generating HTML from JS where possible. The first Layers build (branch `feat/ui-layers`) was made before the frames existed and does not match them.
+- Files: `docs/prototype/`, `docs/design-migration/*.md`, `tasks/*.md`, this file.
+- Verify: open `docs/prototype/full/README.md`; `node tests/js/run.js --no-browser`.
+- Follow-ups: D7 (`AGENTS.md` rules, protected, needs an item with `Approved:`); D8 (`index.html` ownership); rebuild Layers to s85 to s88; frames other than s85 to s88 are mapped from titles only.

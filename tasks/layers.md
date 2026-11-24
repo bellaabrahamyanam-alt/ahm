@@ -21,19 +21,17 @@ Rebuild on the F0 components, no behaviour change:
 - Choose places: click places on the map or tick them in a list; nothing is saved until "Save places" (one request); members get a ring; no box-select.
 - Categories: administrators add and rename, never delete.
 
-## Prototype screenshot references
+## Prototype screenshot references (full design, `docs/prototype/full/`)
+- **s85** list; **s86** layer card open in place, with the delete confirm bar; **s87** Choose places; **s88** layer form (add / edit, error state drawn).
+- Related: s65 (layers in the place form), s67 (note with layer ticks), s69 (confirms: delete layer, discard), s71 (layer chips and scoped notes in the place card, task explore), s93 (empty lists, no admin rights).
+- What they show, read from the PNGs: `01-design-system.md`, section "Full design: what the Layers frames add". Short version: three-state control per layer (shown / Only / Hide), colour edge on the card, card opens in place, icon row (edit, choose places, fit, delete), places with ✕, pinned bottom bars, form as a panel (not a dialog), banner at the top of the tab.
+- **State of the branch `feat/ui-layers`** (commits 6cfeba4, 929458a): built from the code before these frames existed. It keeps the old structure (Only / Hide chips, details in the dock, form in a dialog) and does NOT match s85 to s88. Behaviour, rules and tests carry over; the markup and layout are to be redone to the frames.
 
-Prototype frames: none for the Layers tab (`s21.png`, categories, is in More and belongs to task `more`; check whether categories move). The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
+## Approach (owner, 2026-11-24)
+daisyUI components and static HTML first, `<template>` cloning instead of HTML strings; rules in `03-work-plan.md`, "Direction". For this task: the `#tab-layers` block and `<template id="tpl-ly-...">` blocks in `index.html` are written by the layers worker (needs decision D8; until then the main agent applies the markup the worker specifies). Three-state control = daisyUI `join` of three buttons, one value per layer (shown, only, hide); it keeps `lyState.only` / `lyState.hide` exactly (shown clears both).
 
 ## Missing screens and states
-
-No frame for any Layers screen: list, layer sheet, Choose places, Only / Hide, categories in the tab. The list below is ASSUMED from the code.
-
-- No layers yet, no match, empty category.
-- Layer with no places; layer whose place was deleted.
-- Choose places: nothing changed (Save disabled), unsaved changes warning on leave, save error.
-- Validation errors, delete confirmation (administrators only).
-- Role differences: visitor, editor, administrator.
+Not drawn, extend in the same style (check s69 and s93 first): no layers yet, no match, empty category; layer with no places or with a deleted place; Choose places with nothing changed (Save disabled), save error, discard-changes confirm; visitor and editor versions of the list and the card (s86 shows the visitor line and the administrator delete).
 
 ## Files this task owns
 
@@ -53,7 +51,8 @@ No frame for any Layers screen: list, layer sheet, Choose places, Only / Hide, c
 2. Removing a place from a layer never touches the general layer; the period filter still ignores layers.
 3. Only and Hide semantics and chips are unchanged; existing `tests/js/layers.test.js` passes unchanged.
 4. No new `window.AHM` call beyond `INTERFACES.md`.
-5. `bun tools/build.js` done; `node tools/ci-check-pr.js <branch> origin/master` passes.
+5. Matches s85 to s88 (owner review) and follows the "Direction" rules (static markup, templates, daisyUI classes).
+6. `bun tools/build.js` done; `node tools/ci-check-pr.js <branch> origin/master` passes.
 
 ## Tests
 

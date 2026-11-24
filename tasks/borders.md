@@ -21,6 +21,8 @@ Rebuild on the F0 components, no behaviour change:
 
 ## Prototype screenshot references
 
+**Full design (owner, 2026-11-24): `docs/prototype/full/` frames s33 s73 to s77** (index: its README.md). On a difference with the 19 first frames below, the full design wins. Implementation direction: `docs/design-migration/03-work-plan.md`, "Direction" (daisyUI components, static HTML and templates first).
+
 Prototype frames: `docs/prototype/png/s33.png` border, new version in time (Add another name, date field). The prototype has only these 19 frames (ids s1 to s49 are not consecutive); every screen not named here has no design.
 
 ## Missing screens and states
