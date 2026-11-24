@@ -259,3 +259,17 @@ test('time bar: every change of the moment refreshes the lists and the map (upda
     ok(!/<i>/.test(p.X('uiAccordion("a", "", "<i>t</i>", "<i>s</i>", "body", true)')), 'accordion title and subtitle');
   });
 }
+
+// ---- foundation F3: list row, note, form frame (the confirm dialog and the toast are checked in the browser test) ----
+{
+  const rp = () => load(['config.js', 'dates.js', 'data.js', 'datefield.js', 'components.js'], UI_STANDINS);
+  test('foundation F3: row, note and form escape their text; a short note has no Show more', () => {
+    const p = rp();
+    ok(!/<i>/.test(p.X('uiRow({ title: "<i>x</i>", sub: "<i>y</i>", count: "<i>2</i>" })')), 'row');
+    const n = p.X('uiNote({ title: "<i>t</i>", lang: "en", when: "<i>w</i>", text: "short" }, { id: "a" })');
+    ok(!/<i>/.test(n) && !/data-more/.test(n), 'note escapes, short text has no Show more');
+    ok(/data-more/.test(p.X('uiNote({ title: "t", lang: "en", text: "x".repeat(200) })')), 'a long note has Show more');
+    const f = p.X('uiForm("<i>T</i>", "<p>body</p>", { save: "Save version" })');
+    ok(!/<i>T/.test(f) && /Save version/.test(f) && /data-act="cancel"/.test(f), 'form: title escaped, own save label, cancel');
+  });
+}

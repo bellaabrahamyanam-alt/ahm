@@ -8,6 +8,10 @@ One entry per change, newest last: date, what, why, files, how to verify, open f
 
 > Older entries (#1 to #22) are in `changes/archive/shared-001-022.md`; the history before the domain logs is `changes/archive/AGENT_CHANGES.md`. Open them only when you need them.
 
+## 2026-11-23 Shared foundation fixes after a browser check
+- Fixed: daisyUI owns the class `.stack` (panel layout collapsed to 20 px): renamed `.pane`; `.label`, `.tabs`, `.badge` reset. Footer is the last item of the panel and hidden while a form is open. Date format popup (s47), name Period row Set / Edit / Done (s28), list row, note, form frame, confirm, toast, offline toast. Browser tests added.
+- Files: `app/js/sidebar/` (components, datefield, placeform, period, layout, ui), `app/css/sidebar.css`, `app/index.html`, `tests/js/`.
+
 ## 2026-11-23 Shared foundation F2-F6 (branch feat/shared-foundation-tasks)
 - What: Period/Moment footer in `#foot` (replaces the map time bar), `uiHistogram`, language pills and name cards, type pills, style editor, state blocks, chips, add button, accordion.
 - Why: `docs/design-migration/`, `tasks/foundation.md`.

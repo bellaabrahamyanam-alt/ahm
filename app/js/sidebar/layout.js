@@ -51,7 +51,7 @@ const toggleSide = (h) => {
 $("#collapse").onclick = () => toggleSide(!document.body.classList.contains("collapsed"));
 sideHandle(false);
 // ---- the details dock: a pane under the lists; the place details (#detail) and the layer details (#lyDetail) live in it ----
-$(".stack").append($("#dock"));
+$("#foot").before($("#dock")); // the Period / Moment footer stays the last thing of the panel, under the list and the dock
 function dockSync() {
   $("#dock").hidden = $("#detail").hidden && $("#lyDetail").hidden && $("#shDetail").hidden && $("#rtDetail").hidden;
 }
@@ -125,7 +125,7 @@ $("#resizer").addEventListener("keydown", (e) => {
 // ---- resizable details dock: drag its top edge, double-click resets, Up/Down arrows nudge; the height is remembered ----
 const dockEl = $("#dock"),
   dockGrip = document.createElement("div"),
-  dockMax = () => Math.max(160, $(".stack").clientHeight - 120); // always leave 120px of the list
+  dockMax = () => Math.max(160, $(".pane").clientHeight - 120); // always leave 120px of the list
 dockGrip.id = "dockResizer";
 dockGrip.tabIndex = 0;
 dockGrip.setAttribute("role", "separator");

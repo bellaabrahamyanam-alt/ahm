@@ -44,6 +44,7 @@ function fakeEl(sel) {
     insertAdjacentHTML() {},
     scrollIntoView() {},
     prepend() {},
+    before() {},
     getContext: () => ctx2d,
     toDataURL: () => 'data:image/png;base64,',
     closest: () => null,

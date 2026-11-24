@@ -31,7 +31,7 @@ h3 {
 b {
   color: var(--content-color);
 }
-.stack {
+.pane {/* not .stack: daisyUI owns that class name */
   position: relative;
   flex: 1;
   min-height: 0;
@@ -342,8 +342,44 @@ hr {
   color: #fff;
 }
 .pf-period summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
   cursor: pointer;
+  list-style: none;
+  color: var(--html-body-color);
+}
+.pf-period summary::-webkit-details-marker {
+  display: none;
+}
+.pf-period .pp-t {
+  color: var(--html-body-color);
+  font-weight: 400;
+}
+.pf-period.has .pp-t {
   color: var(--base-href-color);
+  font-weight: 700;
+}
+.pf-period .pp-act {
+  margin-left: auto;
+  color: var(--base-href-color);
+  font-weight: 700;
+}
+.pf-period .pp-act::after {
+  content: 'Set';
+}
+.pf-period.has .pp-act::after {
+  content: 'Edit';
+}
+.pf-period[open] .pp-act::after {
+  content: 'Done';
+}
+.pf-period[open] {
+  margin-top: 0.4rem;
+  padding: 0.5rem;
+  border: 2px solid var(--base-href-color);
+  border-radius: var(--r-card);
 }
 [hidden] {
   display: none !important;
@@ -1448,8 +1484,10 @@ select {
   height: 3px;
   background: var(--li-row-border-bottom-color);
   border-radius: 2px;
+  z-index: 0;
 }
 .ft-hist input[type='range'] {
+  z-index: 1;
   position: absolute;
   left: -0.5rem;
   right: -0.5rem;
@@ -1796,4 +1834,315 @@ select {
 .acc-body {
   padding: 0 0.8rem 0.8rem;
   border-top: 1px solid var(--li-row-border-bottom-color);
+}
+
+@media (max-width: 700px) {
+  /* the footer takes less of the bottom sheet on a phone */
+  .ft {
+    padding: 0.4rem 0.9rem 0.25rem;
+  }
+  .ft-hist {
+    height: 2rem;
+    margin-top: 0.25rem;
+  }
+  .ft-date {
+    font-size: 1.15rem;
+  }
+  .ft-play {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}
+
+/* while a form is open in the dock (it has its own Save / Cancel bar) the footer is hidden, as in the prototype frames s7, s20, s33, s46 */
+.pane:has(#dock:not([hidden]) .dock-foot) #foot {
+  display: none;
+}
+
+/* the date field in the layout of the prototype: modes, then the format chip with the preview on its right, then the inputs (s47, s48) */
+.df {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+.df-modes {
+  order: 1;
+  flex: 1 0 100%;
+}
+.df > .row {
+  order: 2;
+  margin: 0;
+  flex: 0 0 auto;
+}
+.df-prev {
+  order: 3;
+  flex: 1;
+  margin: 0;
+  text-align: right;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  color: var(--content-color);
+}
+.df-prev.err {
+  color: var(--error-color);
+  font-family: var(--font-ui);
+  font-weight: 400;
+}
+.df-body {
+  order: 4;
+  flex: 1 0 100%;
+}
+.df-fmtw {
+  position: relative;
+}
+.df-fmtbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 0;
+  padding: 0.35rem 0.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--select-bg);
+  color: var(--content-color);
+  cursor: pointer;
+}
+.df-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 16rem;
+  max-height: 70vh;
+  overflow: auto;
+  padding: 0.4rem;
+  background: var(--select-bg);
+  border: 1px solid var(--li-row-border-bottom-color);
+  border-radius: var(--r-card);
+  box-shadow: var(--dropdown-shadow);
+}
+.df-menu[hidden] {
+  display: none;
+}
+.df-mg {
+  padding: 0.5rem 0.6rem 0.2rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+.df-menu [data-fmt] {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  min-height: 0;
+  padding: 0.45rem 0.6rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--content-color);
+  text-align: left;
+  cursor: pointer;
+}
+.df-menu [data-fmt] small {
+  color: var(--muted-color);
+}
+.df-menu [data-fmt].on {
+  background: var(--bg1-bg-color);
+  color: var(--base-href-color);
+}
+.df-menu [data-fmt].on::after {
+  content: '✓';
+}
+
+/* daisyUI (CDN) owns the class names .label, .tabs, .badge and .sm; the app used them first. daisyUI rules live in a cascade layer, so
+   these unlayered lines win; each resets what daisyUI sets and the app rule above does not. */
+.label {
+  display: block;
+  white-space: normal;
+  align-items: normal;
+  gap: 0;
+}
+.tabs {
+  flex-wrap: nowrap;
+  height: auto;
+}
+.badge {
+  width: auto;
+  height: auto;
+  justify-content: normal;
+  background-image: none;
+  vertical-align: baseline;
+}
+.df-menu [data-fmt] b {
+  font-weight: 400;
+}
+.df-menu [data-fmt].on b {
+  font-weight: 700;
+}
+
+/* list row, note, form frame, confirm, toast (F3; prefix ui- because daisyUI owns .list, .toast, .card) */
+.ui-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--r-card);
+  cursor: pointer;
+}
+.ui-row.on {
+  background: var(--bg2-bg-color);
+  border-left: 3px solid var(--base-href-color);
+}
+.ui-ico {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.6rem;
+  height: 2.6rem;
+  border: 1px solid var(--li-row-border-bottom-color);
+  border-radius: var(--r-card);
+  background: var(--bg2-bg-color);
+}
+.ui-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ui-main b {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: var(--content-color);
+}
+.ui-main small,
+.ui-count {
+  color: var(--muted-color);
+}
+.ui-note {
+  position: relative;
+  padding: 0 0 1rem 1.6rem;
+  border-left: 2px solid var(--li-row-border-bottom-color);
+  margin-left: 0.5rem;
+}
+.ui-dot {
+  position: absolute;
+  left: -0.6rem;
+  top: 0.15rem;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 3px solid var(--base-href-color);
+  border-radius: 50%;
+  background: var(--base-bg);
+}
+.ui-nh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.ui-nh h4 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+}
+.ui-meta {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.2rem 0;
+  color: var(--muted-color);
+  font-size: 0.85rem;
+}
+.ui-lang {
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--bg1-bg-color);
+}
+.ui-text {
+  margin: 0.2rem 0;
+}
+.ui-text.clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ui-more {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--base-href-color);
+  font-weight: 700;
+  cursor: pointer;
+}
+.ui-ft {
+  margin: 0.5rem 0;
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+}
+.ui-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  background: var(--base-bg);
+  border-top: 1px solid var(--li-row-border-bottom-color);
+}
+.ui-bar button {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: var(--r-ctl);
+  background: var(--select-bg);
+  color: var(--base-href-color);
+  font-weight: 700;
+  cursor: pointer;
+}
+.ui-bar button.primary {
+  background: var(--base-href-color);
+  color: #fff;
+}
+.ui-bar button.danger {
+  background: var(--error-color);
+  color: #fff;
+}
+.ui-confirm {
+  padding: 1.2rem;
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--base-bg);
+  color: var(--content-color);
+  box-shadow: var(--shadow-card);
+}
+.ui-confirm::backdrop {
+  background: #0006;
+}
+.ui-confirm .ui-bar {
+  position: static;
+  border: 0;
+  padding-bottom: 0;
+}
+.ui-toasts {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transform: translateX(-50%);
+}
+.ui-toast {
+  padding: 0.6rem 1rem;
+  border-radius: var(--r-ctl);
+  background: var(--content-color);
+  color: #fff;
+  box-shadow: var(--shadow-card);
+}
+.ui-toast.error {
+  background: var(--error-color);
 }

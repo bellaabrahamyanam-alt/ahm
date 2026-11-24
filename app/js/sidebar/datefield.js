@@ -11,6 +11,7 @@ const DF_FORMAT_GROUPS = [
   ['Month', ['mony']],
   ['Year and coarser', ['y', 'c', 'm']],
 ];
+const DF_CAL = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>';
 const dfOptions = (pairs, cur) =>
   pairs.map(([v, t]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(t)}</option>`).join('');
 
@@ -68,7 +69,14 @@ function dfHTML(cls, date, opts) {
       modes.map((m) => [m, names[m]]),
       mode
     )}</select>` +
-    `<select class="df-fmt" aria-label="Date format">${DF_FORMAT_GROUPS.map(
+    `<span class="df-fmtw"><button type="button" class="df-fmtbtn" aria-haspopup="listbox" aria-expanded="false">${DF_CAL}<span>${esc(dateFormat(fmt).label)}</span><span aria-hidden="true">⌄</span></button>` +
+    `<div class="df-menu" role="listbox" hidden>${DF_FORMAT_GROUPS.map(
+      ([title, ids]) =>
+        `<div class="df-mg">${esc(title)}</div>${ids
+          .map((id) => `<button type="button" role="option" data-fmt="${id}" aria-selected="${id === fmt}" class="${id === fmt ? 'on' : ''}"><b>${esc(dateFormat(id).label)}</b><small>${esc(dateFormat(id).example)}</small></button>`)
+          .join('')}`
+    ).join('')}</div></span>` +
+    `<select class="df-fmt sr" aria-label="Date format">${DF_FORMAT_GROUPS.map(
       ([title, ids]) =>
         `<optgroup label="${esc(title)}">${dfOptions(
           ids.map((id) => [id, dateFormat(id).label + ' — ' + dateFormat(id).example]),
@@ -118,6 +126,12 @@ function dfRefresh(el) {
     const era = g.querySelector('.df-era');
     g.querySelectorAll('.df-eraT button').forEach((b) => b.classList.toggle('on', era && b.dataset.era === era.value));
   });
+  const fb = el.querySelector('.df-fmtbtn > span');
+  if (fb) fb.textContent = dateFormat(el.dataset.fmt).label;
+  el.querySelectorAll('.df-menu [data-fmt]').forEach((b) => {
+    b.classList.toggle('on', b.dataset.fmt === el.dataset.fmt);
+    b.setAttribute('aria-selected', String(b.dataset.fmt === el.dataset.fmt));
+  });
   const out = el.querySelector('.df-prev');
   if (!out) return;
   let text = '',
@@ -136,6 +150,22 @@ function dfRefresh(el) {
 /** Makes the "how sure" and "format" selects (and the buttons that drive them) of every date field inside root work. Call once per container. */
 function dfWire(root) {
   root.addEventListener('click', (e) => {
+    const fb = e.target.closest('.df-fmtbtn'),
+      fi = e.target.closest('.df-menu [data-fmt]');
+    if (fb && root.contains(fb)) {
+      const m = fb.parentElement.querySelector('.df-menu');
+      dfCloseMenus(m);
+      m.hidden = !m.hidden;
+      fb.setAttribute('aria-expanded', String(!m.hidden));
+      return;
+    }
+    if (fi && root.contains(fi)) {
+      const holder = fi.closest('.df').querySelector('.df-fmt');
+      dfCloseMenus();
+      holder.value = fi.dataset.fmt;
+      holder.dispatchEvent(new Event('change', { bubbles: true })); // the same path as choosing in the select
+      return;
+    }
     const b = e.target.closest('.df-modes button, .df-eraT button');
     if (!b || !root.contains(b)) return;
     const holder = b.closest('.df-modes') ? b.closest('.df').querySelector('.df-mode') : b.closest('.df-g').querySelector('.df-era');
@@ -167,4 +197,19 @@ function dfWire(root) {
     );
     dfRefresh(el);
   });
+}
+
+/** Closes every open format menu (except `keep`): on a click elsewhere, on Escape, when another one opens. */
+function dfCloseMenus(keep) {
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll('.df-menu:not([hidden])').forEach((m) => {
+    if (m === keep) return;
+    m.hidden = true;
+    const b = m.parentElement.querySelector('.df-fmtbtn');
+    if (b) b.setAttribute('aria-expanded', 'false');
+  });
+}
+if (typeof document !== 'undefined' && document.addEventListener) {
+  document.addEventListener('click', (e) => e.target.closest && !e.target.closest('.df-fmtw') && dfCloseMenus());
+  document.addEventListener('keydown', (e) => e.key === 'Escape' && dfCloseMenus());
 }

@@ -11,6 +11,11 @@ AHM.on("map:click", (p) => {
   if (p.shapes && p.shapes.length) lyToggleMember(p.shapes[0].id); // choosing members: a click inside a border picks it
 });
 // ---- start ----
+// offline / back online: said once, as a toast (a save that fails shows its own error in its form)
+if (typeof window !== "undefined" && window.addEventListener && typeof uiToast === "function") {
+  window.addEventListener("offline", () => uiToast("You are offline: changes cannot be saved.", "error"));
+  window.addEventListener("online", () => uiToast("Back online.", "ok"));
+}
 const stateHtml = (kind, msg, retry) => (typeof uiState === "undefined" ? esc(msg) : uiState.html(kind, msg, retry)); // components.js is not loaded in every test page
 renderRoute();
 $("#list").innerHTML = stateHtml("loading", "Loading places…");

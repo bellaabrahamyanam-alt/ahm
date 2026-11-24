@@ -13,6 +13,10 @@
 //   uiTypePills(items, cur)             type pills; defined in placeform.js (value holder: the select.pf-type next to them)
 //   uiState.html(kind, msg, retry)      loading | empty | error | readonly state block; retry = true adds a Retry button (data-retry)
 //   uiAdd(label, cls)                   the dashed "+ Add ..." button; uiChip(text, opts) filter / removable chip; uiAccordion(id, icon, title, sub, body, open)
+//   uiRow({ icon, title, sub, count, on, attrs })   one list row (symbol tile, serif title, grey subtitle, note count)
+//   uiNote(n, { id, actions })          one note on the timeline: title, language badge, date, text clamped to 3 lines + Show more
+//   uiForm(title, body, { save, cancel, danger })   form frame with the sticky action bar (buttons data-act="save" / "cancel")
+//   uiConfirm(message, { ok, danger })  Promise<boolean>; uiToast(message, kind, ms)
 //   uiHistogram(items, lo, hi, n)       counts of dated objects per step, for the Period / Moment footer (undated are not counted)
 // Every value is the date object of core/dates.js, so the stored data never changes with the look of the field.
 // Components return HTML text and read from the DOM they made; text from data goes through esc().
@@ -145,4 +149,56 @@ const uiAccordion = (id, icon, title, sub, body, open) =>
 if (typeof document !== 'undefined' && document.addEventListener)
   document.addEventListener('click', (e) => {
     if (e.target.closest && e.target.closest('[data-retry]')) location.reload();
+  });
+
+/** One list row (prototype s1, s22): symbol tile, serif title, grey subtitle, note count on the right. `icon` is HTML; `attrs` is attribute text. */
+const uiRow = (o) =>
+  `<li class="ui-row${o.on ? ' on' : ''}" ${o.attrs || ''}><span class="ui-ico">${o.icon || ''}</span><span class="ui-main"><b>${esc(o.title)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}</span>${o.count ? `<span class="ui-count" title="Notes">${esc(o.count)}</span>` : ''}</li>`;
+/** One note of a timeline (prototype s3, s45, s46): n = { title, lang, when (text), text }; `actions` = HTML (edit, delete). */
+const uiNote = (n, o = {}) =>
+  `<article class="ui-note" ${o.id ? `data-note="${esc(o.id)}"` : ''}><span class="ui-dot" aria-hidden="true"></span><div class="ui-nh"><h4>${esc(n.title)}</h4>${o.actions || ''}</div>` +
+  `<div class="ui-meta"><span class="ui-lang">${esc(n.lang)}</span><span>${esc(n.when || 'No date')}</span></div>` +
+  `<p class="ui-text clamp">${esc(n.text)}</p>${(n.text || '').length > 140 ? '<button type="button" class="ui-more" data-more>Show more</button>' : ''}</article>`;
+/** A form: serif title, the body, and a sticky bar of Save and Cancel (the bar stays on screen while the body scrolls). */
+const uiForm = (title, body, o = {}) =>
+  `<form class="ui-form" novalidate><h3 class="ui-ft">${esc(title)}</h3><div class="ui-fb">${body}</div><div class="ui-bar"><button type="button" class="primary" data-act="save">${esc(o.save || 'Save')}</button><button type="button" data-act="cancel">${esc(o.cancel || 'Cancel')}</button></div></form>`;
+/** Asks before a destructive action; resolves true or false. Escape and a click outside answer false. */
+function uiConfirm(message, o = {}) {
+  return new Promise((resolve) => {
+    const d = document.createElement('dialog');
+    d.className = 'ui-confirm';
+    d.innerHTML = `<p>${esc(message)}</p><div class="ui-bar"><button type="button" class="${o.danger === false ? 'primary' : 'danger'}" data-v="1">${esc(o.ok || 'Delete')}</button><button type="button" data-v="0">Cancel</button></div>`;
+    const done = (v) => {
+      d.close();
+      d.remove();
+      resolve(v);
+    };
+    d.addEventListener('click', (e) => (e.target === d ? done(false) : e.target.dataset && e.target.dataset.v !== undefined && done(e.target.dataset.v === '1')));
+    d.addEventListener('cancel', (e) => (e.preventDefault(), done(false)));
+    document.body.append(d);
+    d.showModal();
+  });
+}
+/** A short message that goes away by itself; kind = info | ok | error (an error stays 3 times longer). */
+function uiToast(message, kind = 'info', ms = 4000) {
+  let box = document.querySelector('.ui-toasts');
+  if (!box) {
+    box = document.createElement('div');
+    box.className = 'ui-toasts';
+    box.setAttribute('role', 'status');
+    document.body.append(box);
+  }
+  const t = document.createElement('div');
+  t.className = 'ui-toast ' + kind;
+  t.textContent = message;
+  box.append(t);
+  setTimeout(() => t.remove(), kind === 'error' ? ms * 3 : ms);
+}
+if (typeof document !== 'undefined' && document.addEventListener)
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('.ui-more');
+    if (!b) return;
+    const p = b.parentElement.querySelector('.ui-text'),
+      open = p.classList.toggle('clamp') === false;
+    b.textContent = open ? 'Show less' : 'Show more';
   });

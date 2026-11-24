@@ -379,3 +379,51 @@ scenario('browser: names over time (T-043): a name with a period saves in the pl
   eq('Newname', r.at1600, 'outside every period the first name is the name');
   eq('Newname', r.off, 'with no moment (time bar off) the first name, as before');
 });
+
+scenario('browser: foundation: the Period / Moment footer, language and type pills, the date format menu', null, async (pg, S) => {
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
+  ok((await pg.locator('#foot .ft-period').count()) === 1 && (await pg.locator('#tbOpen, #timebar').count()) === 0, 'the footer is there and the old time bar is gone');
+  ok(/Any/.test(await pg.locator('#foot .ft-txt').innerText()), 'Period reads Any at the start');
+  ok((await pg.locator('#foot .ft-bars i').count()) === 48, 'the histogram has 48 steps');
+  await pg.evaluate(() => { const f = document.querySelector('#ftFrom'); f.value = '400'; f.dispatchEvent(new Event('input', { bubbles: true })); f.dispatchEvent(new Event('change', { bubbles: true })); });
+  await pg.waitForTimeout(300);
+  ok(await pg.evaluate(() => periodActive()), 'moving the handle sets the Period filter');
+  ok(!/Any/.test(await pg.locator('#foot .ft-txt').innerText()), 'the footer shows the new range');
+  await pg.click('#ftClear'); await pg.waitForTimeout(200);
+  ok(!(await pg.evaluate(() => periodActive())) && /Any/.test(await pg.locator('#foot .ft-txt').innerText()), 'the cross resets the Period to Any');
+  await pg.click('#ftTravel'); await pg.waitForTimeout(200);
+  ok((await pg.locator('#foot .ft-moment').count()) === 1 && (await pg.evaluate(() => AHM.state.get('time').at)) !== null, 'time travel shows the Moment footer and sets the moment');
+  await pg.click('#ftSpeed [data-speed="50"]');
+  eq(50, await pg.evaluate(() => AHM.state.get('time').speed), 'the speed buttons set the speed');
+  await pg.click('#ftOff'); await pg.waitForTimeout(200);
+  ok((await pg.locator('#foot .ft-period').count()) === 1 && (await pg.evaluate(() => AHM.state.get('time').at)) === null, 'the cross of the Moment returns to the Period');
+  await pg.evaluate(() => openDlg('place', { lon: 44.5, lat: 40.1, name: 'Pillville' }));
+  await pg.click('#dPlaceForm .lang-pill[data-lang="hy"]');
+  eq('hy', await pg.locator('#dPlaceForm .pf-name .nl').inputValue(), 'a language pill sets the select that holds the value');
+  await pg.click('#dPlaceForm .type-pill[data-type="village"]');
+  eq('village', await pg.locator('#dPlaceForm .pf-type').inputValue(), 'a type pill sets the type');
+  const df = pg.locator('#dPlaceForm .pf-when .df').first();
+  await df.locator('.df-fmtbtn').click();
+  ok(await df.locator('.df-menu').isVisible(), 'the format chip opens the menu');
+  await df.locator('.df-menu [data-fmt="dmy"]').click();
+  eq('dmy', await df.locator('.df-fmt').inputValue(), 'choosing a format in the menu sets the format');
+  ok(!(await df.locator('.df-menu').isVisible()), 'the menu closes after the choice');
+});
+
+scenario('browser: foundation: confirm dialog, toast, note Show more', null, async (pg, S) => {
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1000);
+  await pg.evaluate(() => { window.__r = null; uiConfirm('Delete it?').then((v) => (window.__r = v)); });
+  ok(await pg.locator('dialog.ui-confirm').isVisible(), 'the confirm dialog is open');
+  await pg.click('dialog.ui-confirm [data-v="1"]'); await pg.waitForTimeout(100);
+  eq(true, await pg.evaluate(() => window.__r), 'Delete answers true');
+  await pg.evaluate(() => { window.__r = null; uiConfirm('Delete it?').then((v) => (window.__r = v)); });
+  await pg.keyboard.press('Escape'); await pg.waitForTimeout(100);
+  eq(false, await pg.evaluate(() => window.__r), 'Escape answers false');
+  await pg.evaluate(() => uiToast('Saved', 'ok', 300));
+  ok(await pg.locator('.ui-toast').isVisible(), 'the toast shows');
+  await pg.waitForTimeout(500);
+  eq(0, await pg.locator('.ui-toast').count(), 'and goes away by itself');
+  await pg.evaluate(() => { document.querySelector('#list').insertAdjacentHTML('beforeend', uiNote({ title: 'T', lang: 'en', text: 'word '.repeat(80) })); });
+  await pg.click('.ui-more');
+  ok(!(await pg.locator('.ui-text').evaluate((e) => e.classList.contains('clamp'))) && /less/.test(await pg.locator('.ui-more').innerText()), 'Show more opens the text and turns into Show less');
+});

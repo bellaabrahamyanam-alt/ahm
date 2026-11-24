@@ -51,9 +51,9 @@ function ftAxis(span) {
   const zero = span[0] < 0 && span[1] > 0 ? `<span style="left:${(100 * (0 - span[0])) / (span[1] - span[0])}%">0</span>` : '';
   return `<div class="ft-axis"><span class="l">${esc(ftLabel(span[0]))}</span>${zero}<span class="r">${esc(ftLabel(span[1] - 1))}</span></div>`;
 }
-function ftRender() {
+function ftRender(force) {
   const root = $('#foot');
-  if (!root || ftSelf) return;
+  if (!root || (ftSelf && !force)) return; // force = the hand let go: draw now
   const span = ftSpan(),
     t = AHM.state.get('time');
   if (t.at !== null) {
@@ -110,7 +110,7 @@ if ($('#foot')) {
   });
   foot.addEventListener('change', (e) => {
     if (e.target.id === 'ftUndated') tbPatch({ undated: e.target.checked });
-    else if (e.target.id === 'ftFrom' || e.target.id === 'ftTo') ftRender();
+    else if (e.target.id === 'ftFrom' || e.target.id === 'ftTo') ftRender(true);
   });
   foot.addEventListener('click', (e) => {
     const b = e.target.closest('button');

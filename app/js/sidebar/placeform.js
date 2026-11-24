@@ -199,10 +199,25 @@ async function evidenceAddSource(root) {
 
 // Names over time (T-043, places and shapes): every name row has an optional period, with the date field of the period filter.
 const NAME_PERIOD = { modes: ['none', 'exact'], names: { none: 'Any' } };
+const PF_CLOCK = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+/** The one-line period of a name for the row (prototype s7, s28): "unknown" or the span text. */
+const pfPeriodText = (a, b) => (a || b ? spanText(a || null, b || null) : 'unknown');
+// the row keeps its text up to date while the dates are edited ("Set" / "Edit" / "Done" are drawn by CSS from the open state)
+if (typeof document !== 'undefined' && document.addEventListener)
+  ['input', 'change'].forEach((ev) =>
+    document.addEventListener(ev, (e) => {
+      const d = e.target.closest && e.target.closest('details.pf-period');
+      if (!d) return;
+      const a = typeof dfSafe === 'function' ? dfSafe(d.querySelector('.pf-nfrom')) : null,
+        b = typeof dfSafe === 'function' ? dfSafe(d.querySelector('.pf-nto')) : null;
+      d.querySelector('.pp-t').textContent = pfPeriodText(a, b);
+      d.classList.toggle('has', !!(a || b));
+    })
+  );
 const pfRowDated = (n) =>
   pfRow(n).replace(
     /<\/div>$/,
-    `<details class="pf-period"${n.date_from || n.date_to ? ' open' : ''}><summary>Period of this name</summary><div class="pf-sub">From</div>${dfHTML('pf-nfrom', n.date_from || null, NAME_PERIOD)}<div class="pf-sub">To</div>${dfHTML('pf-nto', n.date_to || null, NAME_PERIOD)}</details></div>`
+    `<details class="pf-period"${n.date_from || n.date_to ? ' open' : ''}><summary>${PF_CLOCK}<span class="pp-lbl">Period: <b class="pp-t">${esc(pfPeriodText(n.date_from, n.date_to))}</b></span><span class="pp-act" aria-hidden="true"></span></summary><div class="pf-sub">From</div>${dfHTML('pf-nfrom', n.date_from || null, NAME_PERIOD)}<div class="pf-sub">To</div>${dfHTML('pf-nto', n.date_to || null, NAME_PERIOD)}</details></div>`
   );
 /** The names of a form with their periods; throws the readable error of a bad date. */
 function pfReadNames(root) {
