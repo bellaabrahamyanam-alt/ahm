@@ -276,21 +276,129 @@
           <div id="rtAdd"></div>
         </section>
         <section id="tab-layers" hidden>
-          <div id="lyListView">
-            <p class="sn">
-              A layer is a subset of the main map, for example one campaign.
-              Every place stays on the main map. <b>Only</b> shows just the
-              places and borders of the layer, <b>Hide</b> removes them.
-            </p>
-            <div class="label">Search layers</div>
-            <div data-searchfield="lyQ" data-placeholder="Search layers…"></div>
-            <select id="lyCat" aria-label="Category"></select>
-            <div class="bar"><span id="lyCount"></span></div>
-            <ul id="lyList"></ul>
-            <div id="ly-add">
-              <button id="lyNew" class="wide">+ Add layer</button>
+          <!-- layers: static markup (tasks/layers.md, Direction in 03-work-plan.md). layers.js only fills text, attributes and data and clones the tpl-ly-* templates below. -->
+          <div id="lyListView" class="lyx-view">
+            <div class="alert alert-soft lyx-info" role="note">
+              <svg class="lyx-i" aria-hidden="true"><use href="#ly-i-info" /></svg>
+              <span>A layer is a subset of the main map, for example one campaign. Places stay on the main map; use <b>Only</b> to isolate a layer or <b>Hide</b> to remove it.</span>
+            </div>
+            <search class="lyx-search">
+              <div data-searchfield="lyQ" data-placeholder="Search layers…"></div>
+              <select id="lyCat" class="select select-sm" aria-label="Category"></select>
+            </search>
+            <p id="lyCount" class="lyx-count" aria-live="polite"></p>
+            <ul id="lyList" class="lyx-list"></ul>
+            <p id="lyEmpty-none" class="lyx-empty" hidden>No layers yet. <span data-edit>Add the first one below.</span></p>
+            <p id="lyEmpty-cat" class="lyx-empty" hidden>No layers in this category.</p>
+            <p id="lyEmpty-nomatch" class="lyx-empty" hidden>No layers match.</p>
+            <div id="ly-add" class="lyx-pin">
+              <button id="lyNew" type="button" class="btn btn-primary btn-block"><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-plus" /></svg>Add layer</button>
             </div>
           </div>
+
+          <div id="lyPickView" class="lyx-view" hidden>
+            <div class="alert alert-soft lyx-info lyx-edge" role="note">
+              <div>
+                <h3 class="lyx-h3">Choose the places and borders of this layer</h3>
+                <p>Click places or borders on the map, or tick them below. Everything stays on the main map.</p>
+              </div>
+            </div>
+            <p class="lyx-delta" aria-live="polite">
+              <span id="lyAdd" class="lyx-pill">+0</span><span id="lyRem" class="lyx-pill">−0</span><span id="lyNoChange" class="lyx-muted">no changes yet</span>
+            </p>
+            <div data-searchfield="lyPickQ" data-placeholder="Find a place or border…"></div>
+            <ul id="lyPick" class="lyx-picks"></ul>
+            <h4 id="lyPickShapesHead" class="lyx-h" hidden>Borders</h4>
+            <ul id="lyPickShapes" class="lyx-picks"></ul>
+            <p id="lyPickNone" class="lyx-empty" hidden>Nothing matches.</p>
+            <p id="lyPickErr" class="lyx-err" role="alert"></p>
+            <div class="lyx-pin lyx-pin-2">
+              <button id="lySavePlaces" type="button" class="btn btn-primary" data-lyact="saveplaces" disabled>Save places</button>
+              <button type="button" class="btn" data-lyact="cancelplaces">Cancel</button>
+            </div>
+          </div>
+
+          <!-- confirm bar (s69, s86): shown by lyAsk(); Esc or Cancel answer "no" -->
+          <div id="lyConfirm" class="lyx-confirm" role="alertdialog" aria-labelledby="lyConfirmMsg" hidden>
+            <p id="lyConfirmMsg"></p>
+            <button id="lyConfirmOk" type="button" class="btn btn-error btn-sm"></button>
+            <button id="lyConfirmNo" type="button" class="btn btn-ghost btn-sm">Cancel</button>
+          </div>
+
+          <template id="tpl-ly-card">
+            <li class="lyx-card">
+              <div class="lyx-head">
+                <button type="button" class="lyx-title" data-lyact="toggle" aria-expanded="false">
+                  <b data-f="title"></b>
+                  <small class="lyx-cat" data-f="cat"></small>
+                  <small class="lyx-meta" data-f="meta"></small>
+                </button>
+                <fieldset class="join lyx-tri">
+                  <legend class="lyx-sr">Show on the map</legend>
+                  <label class="btn btn-xs join-item" title="Show"><input type="radio" value="show" data-lymode class="lyx-sr" /><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-eye" /></svg><span class="lyx-sr">Show</span></label>
+                  <label class="btn btn-xs join-item" title="Only this layer"><input type="radio" value="only" data-lymode class="lyx-sr" /><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-only" /></svg><span class="lyx-sr">Only this layer</span></label>
+                  <label class="btn btn-xs join-item" title="Hide this layer"><input type="radio" value="hide" data-lymode class="lyx-sr" /><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-eye-off" /></svg><span class="lyx-sr">Hide this layer</span></label>
+                </fieldset>
+              </div>
+              <div class="lyx-fold"><div class="lyx-fold-in" data-f="more"></div></div>
+            </li>
+          </template>
+
+          <template id="tpl-ly-body">
+            <div class="lyx-body">
+              <div class="lyx-tools" role="toolbar" aria-label="Layer actions">
+                <button type="button" class="btn btn-ghost btn-xs btn-square" data-lyact="editlayer" data-edit title="Edit layer" aria-label="Edit layer"><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-pencil" /></svg></button>
+                <button type="button" class="btn btn-ghost btn-xs btn-square" data-lyact="editplaces" data-edit title="Choose places and borders" aria-label="Choose places and borders"><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-checks" /></svg></button>
+                <button type="button" class="btn btn-ghost btn-xs btn-square" data-lyact="fit" title="Fit the map to this layer" aria-label="Fit the map to this layer"><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-fit" /></svg></button>
+                <button type="button" class="btn btn-ghost btn-xs btn-square lyx-danger" data-lyact="delete" data-admin title="Delete layer" aria-label="Delete layer"><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-trash" /></svg></button>
+              </div>
+              <div class="lyx-desc" data-f="desc"></div>
+              <h4 class="lyx-h">Places · <span data-f="np"></span></h4>
+              <ul class="lyx-rows" data-f="places"></ul>
+              <details class="lyx-rest" data-f="restwrap" hidden><summary data-f="restsum"></summary><ul class="lyx-rows" data-f="rest"></ul></details>
+              <p class="lyx-empty" data-f="noplaces" hidden></p>
+              <p class="lyx-muted" data-f="gone" hidden></p>
+              <section data-f="shapeswrap" hidden>
+                <h4 class="lyx-h">Borders and routes · <span data-f="ns"></span></h4>
+                <ul class="lyx-rows" data-f="shapes"></ul>
+              </section>
+              <h4 class="lyx-h">Notes about this layer · <span data-f="nn"></span></h4>
+              <ol class="lyx-notes" data-f="notes"></ol>
+              <p class="lyx-empty" data-f="nonotes" hidden>No notes yet.</p>
+              <button type="button" class="btn btn-primary btn-sm" data-lyact="addnote" data-edit><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-plus" /></svg>Add note</button>
+              <p class="lyx-lock" data-f="lock" hidden><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-lock" /></svg>Log in to change layers.</p>
+              <p class="lyx-err" data-f="err" role="alert"></p>
+            </div>
+          </template>
+
+          <template id="tpl-ly-place">
+            <li class="lyx-row" data-pid>
+              <span class="lyx-tile" data-f="icon"></span><span class="lyx-name" data-f="name"></span>
+              <button type="button" class="btn btn-ghost btn-xs btn-circle" data-lyact="removeplace" data-edit title="Remove from this layer" aria-label="Remove from this layer"><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-x" /></svg></button>
+            </li>
+          </template>
+
+          <template id="tpl-ly-shape">
+            <li class="lyx-row" data-sid><span class="lyx-tile" data-f="icon"></span><span class="lyx-name" data-f="name"></span></li>
+          </template>
+
+          <template id="tpl-ly-note">
+            <li class="lyx-note">
+              <div class="lyx-note-head">
+                <b data-f="title"></b>
+                <button type="button" class="btn btn-ghost btn-xs btn-square" data-lyact="editnote" data-edit title="Edit note" aria-label="Edit note"><svg class="lyx-i" aria-hidden="true"><use href="#ly-i-pencil" /></svg></button>
+              </div>
+              <p class="lyx-muted"><span class="lyx-lang" data-f="lang"></span> · <span data-f="when"></span></p>
+              <div class="lyx-text" data-f="text"></div>
+            </li>
+          </template>
+
+          <template id="tpl-ly-pick">
+            <li class="lyx-pick" data-pid>
+              <label><input type="checkbox" class="checkbox checkbox-sm checkbox-primary" /><span data-f="name"></span></label>
+              <span class="lyx-type" data-f="type"></span>
+            </li>
+          </template>
         </section>
         
         
@@ -334,6 +442,22 @@
       </div>
       <div id="dErr" class="sn"></div>
     </dialog>
+    <!-- layers: icon sprite (stroke icons, used by the Layers tab with <use href="#ly-i-...">) -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <symbol id="ly-i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></symbol>
+        <symbol id="ly-i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.6 0 3-.4 4.3-1M9.9 9.9a3 3 0 0 0 4.2 4.2" /></symbol>
+        <symbol id="ly-i-only" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none" /></symbol>
+        <symbol id="ly-i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></symbol>
+        <symbol id="ly-i-checks" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M3.5 6l1.3 1.3L7 5M3.5 12l1.3 1.3L7 11M3.5 18l1.3 1.3L7 17" /></symbol>
+        <symbol id="ly-i-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></symbol>
+        <symbol id="ly-i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></symbol>
+        <symbol id="ly-i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+        <symbol id="ly-i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+        <symbol id="ly-i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></symbol>
+        <symbol id="ly-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8v.01" /></symbol>
+      </defs>
+    </svg>
     <dialog id="lyDlg">
       <b id="lyTitle"></b>
       <div id="lyForm" class="pf"></div>
