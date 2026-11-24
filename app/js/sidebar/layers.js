@@ -3,6 +3,14 @@
 
 let lyCatEditing = null; // id of the category being renamed (administrators)
 
+// Shared components (components.js). layers.test.js and search.test.js load this file without it, so each use falls back to plain markup.
+const lyRowUi = (o) => (typeof uiRow === 'function' ? uiRow(o) : `<li ${o.attrs || ''}><b>${esc(o.title)}</b></li>`);
+const lyChipUi = (text, o = {}) =>
+  typeof uiChip === 'function' ? uiChip(text, o) : `<button type="button" class="chip2${o.on ? ' on' : ''}" ${o.data || ''}>${esc(text)}</button>`;
+const lyAddUi = (label, cls) => (typeof uiAdd === 'function' ? uiAdd(label, cls) : `<button type="button" class="${cls}">+ ${esc(label)}</button>`);
+const lyStateUi = (kind, msg) => (typeof uiState === 'object' ? uiState.html(kind, msg) : `<p class="sn">${esc(msg)}</p>`);
+const lyNoteUi = (n, o) => (typeof uiNote === 'function' ? uiNote(n, o) : `<article><b>${esc(n.title)}</b><p>${esc(n.text)}</p>${o.actions || ''}</article>`);
+const lyAsk = (msg, o) => (typeof uiConfirm === 'function' ? uiConfirm(msg, o) : Promise.resolve(confirm(msg)));
 const lySwatch = (c) => `<span class="swatch"${c ? ` style="background:${esc(c)}"` : ' data-none'}></span>`;
 const lyPara = (t) =>
   t
@@ -68,7 +76,11 @@ function lyRender() {
 function lyRenderActive() {
   const l = $('#lang').value,
     chip = (kind, id) =>
-      `<button class="chip on" data-lyact="unfilter" data-kind="${kind}" data-lid="${id}" title="Remove this filter">${kind === 'only' ? 'only' : 'not in'} · ${esc(lyName(lyById(id), l))} ✕</button>`;
+      lyChipUi(`${kind === 'only' ? 'only' : 'not in'} · ${lyName(lyById(id), l)}`, {
+        on: true,
+        removable: true,
+        data: `data-lyact="unfilter" data-kind="${kind}" data-lid="${id}" title="Remove this filter"`,
+      });
   $('#lyActive').innerHTML =
     [...lyState.only].map((id) => chip('only', id)).join('') + [...lyState.hide].map((id) => chip('hide', id)).join('');
 }
@@ -88,11 +100,17 @@ function lyRowHTML(ly, l) {
     np = ly.members.filter((m) => m.place).length,
     ns = ly.members.length - np,
     meta = [catName(c, l), lyWhen(ly), np + (np === 1 ? ' place' : ' places'), ns ? ns + (ns === 1 ? ' border' : ' borders') : ''].filter(Boolean);
-  return (
-    `<li data-lid="${ly.id}"><div class="t"><b>${lySwatch(ly.color)}${esc(lyName(ly, l))}</b>` +
-    `<span class="ly-btns"><button class="${lyState.only.has(ly.id) ? 'on' : ''}" data-lyact="only" data-lid="${ly.id}" title="Show on the map only the places of this layer">Only</button>` +
-    `<button class="${lyState.hide.has(ly.id) ? 'on' : ''}" data-lyact="hide" data-lid="${ly.id}" title="Hide the places of this layer">Hide</button></span></div>` +
-    `<div class="sn">${esc(meta.join(' · '))}</div></li>`
+  const btn = (kind, label, tip) =>
+    lyChipUi(label, { on: lyState[kind].has(ly.id), data: `data-lyact="${kind}" data-lid="${ly.id}" title="${tip}"` });
+  return lyRowUi({
+    icon: lySwatch(ly.color),
+    title: lyName(ly, l),
+    sub: meta.join(' · '),
+    on: lyState.open === ly.id,
+    attrs: `data-lid="${ly.id}"`,
+  }).replace(
+    /<\/li>$/,
+    `<span class="lyx-btns">${btn('only', 'Only', 'Show on the map only the places of this layer')}${btn('hide', 'Hide', 'Hide the places of this layer')}</span></li>`
   );
 }
 function lyRenderList() {
@@ -103,7 +121,12 @@ function lyRenderList() {
       .filter((ly) => (!cat || ly.category === cat) && (!q || lyHay(ly).includes(q)))
       .sort((a, b) => lyName(a, l).localeCompare(lyName(b, l)));
   $('#lyCount').textContent = rows.length + ' of ' + layers.length + ' layers';
-  $('#lyList').innerHTML = rows.length ? rows.map((ly) => lyRowHTML(ly, l)).join('') : '<li class="empty">No layers match.</li>';
+  const none = !layers.length
+    ? 'No layers yet.' + (AHM_CONFIG.canEdit ? ' Add the first one below.' : '')
+    : cat && !q
+      ? 'No layers in this category.'
+      : 'No layers match.';
+  $('#lyList').innerHTML = rows.length ? rows.map((ly) => lyRowHTML(ly, l)).join('') : `<li class="empty lyx-state">${lyStateUi('empty', none)}</li>`;
   lyPlaceDetail();
 }
 /** The details of the open layer (#lyDetail) live in the dock under the list; the list keeps all its rows and the open one is marked. */
@@ -156,7 +179,10 @@ function lyRenderDetail() {
       .filter((n) => n.layer === ly.id && (!l || n.lang === l))
       .sort((a, b) => dateKey(a.date) - dateKey(b.date) || a.title.localeCompare(b.title)),
     byId = new Map(places.map((p) => [p.id, p])),
-    editing = lyState.editing === ly.id;
+    editing = lyState.editing === ly.id,
+    inLayer = ly.members.filter((m) => m.place),
+    shown = inLayer.filter((m) => byId.get(m.place)).length, // a place deleted elsewhere is not counted
+    gone = inLayer.length - shown;
   $('#lyDetail').innerHTML =
     lyHeadHTML(ly, l, can && !editing) +
     '<div class="dock-body">' +
@@ -168,27 +194,44 @@ function lyRenderDetail() {
       .map((d) => `<div class="sn">${esc(langName(d.lang))}</div>${lyPara(d.text)}`)
       .join('') +
     '<div class="row ly-quick">' +
-    `<button class="${lyState.only.has(ly.id) ? 'on' : ''}" data-lyact="only" data-lid="${ly.id}">Only this layer</button>` +
-    `<button class="${lyState.hide.has(ly.id) ? 'on' : ''}" data-lyact="hide" data-lid="${ly.id}">Hide this layer</button>` +
+    lyChipUi('Only this layer', { on: lyState.only.has(ly.id), data: `data-lyact="only" data-lid="${ly.id}"` }) +
+    lyChipUi('Hide this layer', { on: lyState.hide.has(ly.id), data: `data-lyact="hide" data-lid="${ly.id}"` }) +
     '<button data-lyact="fit">Fit map</button></div>' +
     (editing
       ? lyEditPanel(ly, byId)
-      : `<div class="label">Places (${ly.members.filter((m) => m.place).length})</div><ul class="ly-members">` +
+      : `<div class="label">Places (${shown})</div><ul class="ly-members">` +
         (ly.members
-          .map((m, i) => byId.get(m.place) && `<li data-pid="${m.place}"><span class="sn">${i + 1}.</span> <b>${esc(label(byId.get(m.place), l))}</b> <span class="badge">${typeIcon(byId.get(m.place).type)}${esc(typeLabel(byId.get(m.place).type, l))}</span></li>`)
+          .map(
+            (m, i) =>
+              byId.get(m.place) &&
+              lyRowUi({
+                icon: typeIcon(byId.get(m.place).type),
+                title: label(byId.get(m.place), l),
+                sub: i + 1 + '. ' + typeLabel(byId.get(m.place).type, l), // uiRow escapes the subtitle
+                attrs: `data-pid="${m.place}"`,
+              })
+          )
           .filter(Boolean)
-          .join('') || '<li class="empty">No places yet.</li>') +
+          .join('') || `<li class="empty lyx-state">${lyStateUi('empty', 'No places yet.' + (can ? ' Use “Choose places” below.' : ''))}</li>`) +
         '</ul>' +
+        (gone ? `<p class="sn">${gone} ${gone === 1 ? 'place of this layer no longer exists' : 'places of this layer no longer exist'}.</p>` : '') +
         lyShapeList(ly, l)) +
     '<div class="label">Notes about this layer</div>' +
     (ns
-      .map(
-        (n) =>
-          `<div class="ly-note"><div class="note-head"><div class="note-meta"><b>${esc(n.title)}</b> <span class="sn">${n.date ? esc(dateText(n.date)) + ' · ' : ''}${esc(langName(n.lang))}</span></div>${can ? `<button type="button" class="icon-btn sm" data-lyact="editnote" data-id="${n.id}" title="Edit note" aria-label="Edit note">${AHM.icons.svg('pencil', 16)}</button>` : ''}</div>${lyPara(n.text)}</div>`
+      .map((n) =>
+        lyNoteUi(
+          { title: n.title, lang: n.lang, when: n.date ? dateText(n.date) : '', text: n.text },
+          {
+            id: n.id,
+            actions: can
+              ? `<button type="button" class="icon-btn sm" data-lyact="editnote" data-id="${n.id}" title="Edit note" aria-label="Edit note">${AHM.icons.svg('pencil', 16)}</button>`
+              : '',
+          }
+        )
       )
       .join('') || '<p class="sn">No notes yet.</p>') +
-    (AHM_CONFIG.canEdit ? '' : '<div class="sn">Log in to change layers.</div>') +
-    '<div id="lyErr" class="sn err-line"></div></div>' +
+    (can ? '' : lyStateUi('readonly', 'Log in to change layers.')) +
+    '<div id="lyErr" class="sn err-line" role="alert"></div></div>' +
     (can && !editing
       ? '<div class="dock-foot"><button class="primary" data-lyact="editplaces">Choose places</button><button data-lyact="addnote">Add note</button>' +
         (AHM_CONFIG.canLayerAdmin ? '<button class="danger" data-lyact="delete">Delete</button>' : '') +
@@ -206,8 +249,19 @@ function lyEditPanel(ly, byId) {
     `<span id="lyDelta">${add || rem ? `+${add} −${rem}` : 'no changes yet'}</span></div>` +
     searchFieldHTML('lyPickQ', 'Find a place or border…') +
     `<ul id="lyPick">${lyPickRows('', byId)}</ul>` +
-    '<div class="row"><button class="primary" data-lyact="saveplaces">Save places</button><button data-lyact="cancelplaces">Cancel</button></div></div>'
+    `<div class="row lyx-bar"><button class="primary" data-lyact="saveplaces"${add || rem ? '' : ' disabled'}>Save places</button><button data-lyact="cancelplaces">Cancel</button></div></div>`
   );
+}
+/** True when the places chosen so far differ from the saved members of the layer being edited. */
+function lyDirty() {
+  const ly = lyState.editing && lyById(lyState.editing);
+  if (!ly || !lyState.staged) return false;
+  const orig = ly.members.map((m) => m.place || m.shape);
+  return orig.length !== lyState.staged.size || orig.some((id) => !lyState.staged.has(id));
+}
+/** Leaving the choice of places (close, Cancel, another layer): asks first when there are unsaved changes. Resolves false to stay. */
+async function lyLeaveEdit() {
+  return !lyDirty() || (await lyAsk('Discard the changes to the places of this layer?', { ok: 'Discard' }));
 }
 function lyPickRows(q, byId) {
   const l = $('#lang').value;
@@ -243,6 +297,8 @@ function lyDelta() {
     add = [...lyState.staged].filter((p) => !orig.has(p)).length,
     rem = [...orig].filter((p) => !lyState.staged.has(p)).length;
   if ($('#lyDelta')) $('#lyDelta').textContent = add || rem ? `+${add} −${rem}` : 'no changes yet';
+  const save = document.querySelector('#lyDetail [data-lyact="saveplaces"]');
+  if (save) save.disabled = !(add || rem);
 }
 
 // ---- opening, closing, choosing places ----
@@ -322,11 +378,12 @@ function lyOpenForm(ly) {
   $('#lyTitle').textContent = ly ? 'Edit layer' : 'Add layer';
   $('#lyForm').innerHTML =
     `<div class="label">Names</div><div class="pf-names">${names.map((n) => pfRow(n)).join('')}</div>` +
-    '<button type="button" class="pf-add">+ Add another name</button>' +
+    lyAddUi('Add another name', 'pf-add') +
     `<div class="sn">${LANG_HINT}</div>` +
     '<div class="label">Description (one per language, optional)</div><div id="lyDescs">' +
     descs.map(lyDescRow).join('') +
-    '</div><button type="button" class="ly-dadd">+ Add a description</button>' +
+    '</div>' +
+    lyAddUi('Add a description', 'ly-dadd') +
     '<div class="label">Category (optional)</div><select id="lyFCat"><option value="">— none —</option>' +
     categories.map((c) => `<option value="${c.id}"${ly && ly.category === c.id ? ' selected' : ''}>${esc(catName(c, $('#lang').value))}</option>`).join('') +
     '</select>' +
@@ -334,9 +391,13 @@ function lyOpenForm(ly) {
     dfHTML('ly-from', ly && ly.date_from) +
     '<div class="pf-sub">To</div>' +
     dfHTML('ly-to', ly && ly.date_to) +
-    `<div class="label">Colour (optional)</div><div class="row"><label><input type="checkbox" id="lyUseColor"${ly && ly.color ? ' checked' : ''}> use a colour</label>` +
-    `<input type="color" id="lyColor" value="${ly && ly.color ? esc(ly.color) : '#9a3b2e'}"></div>`;
+    `<div class="label">Colour (optional)</div><div class="row lyx-colours"><label><input type="checkbox" role="switch" id="lyUseColor"${ly && ly.color ? ' checked' : ''}> use a colour</label>` +
+    (typeof UI_SWATCHES === 'undefined' ? [] : UI_SWATCHES)
+      .map((c) => `<button type="button" class="swatch${ly && ly.color === c ? ' on' : ''}" data-lycolor="${c}" style="background:${c}" aria-label="Colour ${c}"></button>`)
+      .join('') +
+    `<input type="color" id="lyColor" value="${ly && ly.color ? esc(ly.color) : '#9a3b2e'}" aria-label="Custom colour"></div>`;
   $('#lyErr2').textContent = '';
+  $('#lyErr2').setAttribute('role', 'alert');
   lyValidate();
   $('#lyDlg').showModal();
 }
@@ -545,7 +606,7 @@ $('#lang').addEventListener('input', () => {
 });
 $('#lyNew').onclick = () => lyOpenForm(null);
 $('#ly-add').hidden = !AHM_CONFIG.canEdit;
-$('#lyList').addEventListener('click', (e) => {
+$('#lyList').addEventListener('click', async (e) => {
   // the details handle their own clicks (they may already have re-rendered, so ask the original event path, not the detached target)
   if (e.composedPath().includes($('#lyDetail'))) return;
   const b = e.target.closest('[data-lyact]'),
@@ -553,7 +614,7 @@ $('#lyList').addEventListener('click', (e) => {
   if (b) lyToggleFilter(b.dataset.lyact, b.dataset.lid);
   else if (li && lyState.open === li.dataset.lid) {
     if (!lyState.editing) lyClose(); // a second click on the open layer folds it
-  } else if (li) lyOpen(li.dataset.lid);
+  } else if (li && (await lyLeaveEdit())) lyOpen(li.dataset.lid);
 });
 $('#lyActive').addEventListener('click', (e) => {
   const b = e.target.closest('[data-lyact="unfilter"]');
@@ -575,14 +636,16 @@ $('#lyDetail').addEventListener('click', async (e) => {
   const act = a.dataset.lyact;
   if (act === 'only' || act === 'hide') lyToggleFilter(act, ly.id);
   else if (act === 'fit') lyFit();
-  else if (act === 'close') lyClose();
+  else if (act === 'close') (await lyLeaveEdit()) && lyClose();
   else if (act === 'editlayer') lyOpenForm(ly);
   else if (act === 'editplaces') lyStartEdit();
   else if (act === 'saveplaces') lySavePlaces();
-  else if (act === 'cancelplaces') lyStopEdit();
+  else if (act === 'cancelplaces') (await lyLeaveEdit()) && lyStopEdit();
   else if (act === 'addnote') lyOpenNoteDlg(ly, null);
   else if (act === 'editnote') lyOpenNoteDlg(ly, layerNotes.find((n) => n.id === a.dataset.id));
-  else if (act === 'delete' && confirm(`Delete the layer “${lyName(ly, $('#lang').value)}”? Its places and their notes stay on the map. A copy is archived.`)) {
+  else if (act === 'delete' && AHM_CONFIG.canLayerAdmin) {
+    const ok = await lyAsk(`Delete the layer “${lyName(ly, $('#lang').value)}”? Its places and their notes stay on the map. A copy is archived.`, { ok: 'Delete' });
+    if (!ok) return;
     try {
       await postJSON(AHM_CONFIG.url.layerDelete, { id: ly.id });
       lyClose();
@@ -608,6 +671,7 @@ $('#detail').addEventListener('click', async (e) => {
   } else if (act === 'goto') {
     e.preventDefault();
     const id = a.dataset.lid;
+    if (!(await lyLeaveEdit())) return;
     closeDetail();
     lyOpen(id);
   } else if (act === 'leave') {
@@ -635,6 +699,12 @@ placeFormWire($('#lyForm'));
 $('#lyForm').addEventListener('click', (e) => {
   if (e.target.closest('.ly-dadd')) $('#lyDescs').insertAdjacentHTML('beforeend', lyDescRow({ lang: $('#lang').value || 'en', text: '' }));
   else if (e.target.closest('.ly-ddel')) e.target.closest('.ly-desc').remove();
+  const sw = e.target.closest('[data-lycolor]'); // a swatch sets the colour and turns "use a colour" on
+  if (sw) {
+    $('#lyColor').value = sw.dataset.lycolor;
+    $('#lyUseColor').checked = true;
+    $('#lyForm').querySelectorAll('[data-lycolor]').forEach((x) => x.classList.toggle('on', x === sw));
+  }
 });
 $('#lyCancel').onclick = () => $('#lyDlg').close();
 // Save is off until the layer has at least one name

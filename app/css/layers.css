@@ -1,1 +1,61 @@
-/* Layers tab: styles of this screen only (tasks/layers.md). Shared look lives in sidebar.css and base.css (foundation, read only). New class names must not collide with daisyUI (see docs/design-migration/02-shared-components.md). */
+/* Layers tab: styles of this screen only (tasks/layers.md). Shared look lives in sidebar.css and base.css (foundation, read only). New class names must not collide with daisyUI (see docs/design-migration/02-shared-components.md). Prefix: lyx- */
+
+/* list row: Only / Hide chips on the right of the shared row */
+#lyList .ui-row {
+  flex-wrap: wrap;
+}
+.lyx-btns {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.35rem;
+}
+.lyx-btns .chip2 {
+  padding: 0.15rem 0.65rem;
+  font-size: 0.8rem;
+}
+.lyx-state {
+  list-style: none;
+}
+
+/* "+ Add layer" in the prototype's dashed-pill style (the button itself is in index.html) */
+#lyNew {
+  width: 100%;
+  border: 1px dashed var(--inputbox-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--base-href-color);
+}
+#lyNew:hover:not(:disabled) {
+  background: var(--bg2-bg-color);
+}
+
+/* the members of an open layer use the shared rows without the list padding */
+.ly-members .ui-row {
+  padding: 0.4rem 0.25rem;
+}
+
+/* Choose places: Save and Cancel stay on screen while the list scrolls */
+.lyx-bar {
+  position: sticky;
+  bottom: 0;
+  gap: 0.5rem;
+  padding: 0.6rem 0;
+  background: var(--bg2-bg-color);
+  border-top: 1px solid var(--li-row-border-bottom-color);
+}
+.lyx-bar button:disabled {
+  background: var(--bg2-bg-color);
+  color: var(--muted-color);
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* layer form: colour row */
+.lyx-colours {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.lyx-colours .swatch {
+  cursor: pointer;
+}
