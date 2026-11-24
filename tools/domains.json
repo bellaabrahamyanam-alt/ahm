@@ -11,6 +11,10 @@
       "app/js/sidebar/",
       "app/css/sidebar.css",
       "app/css/shapes.css",
+      "app/css/explore.css",
+      "app/css/layers.css",
+      "tests/js/ui-explore.test.js",
+      "tests/js/ui-layers.test.js",
       "tests/js/layers.test.js",
       "tests/js/sidebar.test.js"
     ],

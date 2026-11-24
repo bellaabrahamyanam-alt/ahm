@@ -37,7 +37,7 @@ No frame for any Layers screen: list, layer sheet, Choose places, Only / Hide, c
 
 ## Files this task owns
 
-`app/js/sidebar/layers.js`, `app/js/core/layer-rules.js`, `app/css/layers.css` (new), `tests/js/sidebar.test.js` (section `ui-layers`) (new), `changes/sidebar.md`, `changes/core.md`.
+`app/js/sidebar/layers.js`, `app/js/core/layer-rules.js`, `app/css/layers.css` (already linked; exists, empty, already linked), `tests/js/ui-layers.test.js` (new).
 
 ## Shared components used
 
@@ -57,4 +57,12 @@ No frame for any Layers screen: list, layer sheet, Choose places, Only / Hide, c
 
 ## Tests
 
-`tests/js/sidebar.test.js` (section `ui-layers`): list and sheet states, Choose places Save disabled until a change, role differences, categories cannot be deleted. Then `node tests/js/run.js 2>&1 | tail -15`.
+`tests/js/ui-layers.test.js`: list and sheet states, Choose places Save disabled until a change, role differences, categories cannot be deleted. Then `node tests/js/run.js 2>&1 | tail -15`.
+
+## Hand-off rules (set by the main agent, override anything above)
+- Branch: work on a branch of your own from `feat/shared-foundation-tasks` (`feat/ui-layers`); never push to `feat/shared-foundation-tasks` or `master`.
+- Do NOT commit generated files: `app/dist/`, `graph/`, `context/`. The main agent builds and regenerates them once after all workers merge.
+- Do NOT edit `changes/*.md`, `docs/`, `tools/`, `app/index.html`, `app/css/sidebar.css`, `app/css/base.css`, `app/js/sidebar/components.js`, `period.js`, `layout.js`, `ui.js`, `tests/js/sidebar.test.js`, `tests/js/lib/`. Need one of them changed: say so in your report (what and why), do not edit.
+- Tests go in `tests/js/ui-layers.test.js` (already exists, empty). Run `node tests/js/run.js --no-browser` (all must pass; one real-browser test is welcome if a browser is available, see the report rule below).
+- New class names: no collision with daisyUI (it owns stack, label, tabs, badge, sm, list, toast, card, menu, tab, badge ...); use your own prefix.
+- Report: files changed, what was built, frames matched, tests (counts), what you could not verify, and requests for shared changes.

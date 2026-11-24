@@ -40,7 +40,7 @@ No frame for: place list rows with no filters, hover popup, point card, Nominati
 
 ## Files this task owns
 
-`app/js/sidebar/places.js`, `placeform.js`, `searchfield.js`, `actions.js` (point card actions only), `timebar.js`, `app/js/map/map.js` (popup, point card, point menu only), `app/css/explore.css` (new), `tests/js/sidebar.test.js` (section `ui-explore`) (new), `changes/sidebar.md`, `changes/map.md`.
+`app/js/sidebar/places.js`, `placeform.js`, `searchfield.js`, `actions.js` (point card actions only), `app/js/map/map.js` (popup, point card, point menu only), `app/css/explore.css` (already linked; exists, empty, already linked), `tests/js/ui-explore.test.js` (new), `changes/sidebar.md`, `changes/map.md`.
 
 ## Shared components used
 
@@ -60,4 +60,14 @@ No frame for: place list rows with no filters, hover popup, point card, Nominati
 
 ## Tests
 
-`tests/js/sidebar.test.js` (section `ui-explore`): each state above renders its message; filter chips add and remove; `#place-unknown` shows the not-found state; read-only hides edit buttons; place form blocks an invalid date. Then `node tests/js/run.js 2>&1 | tail -15`. A manual run of the app is left to the critic.
+`tests/js/ui-explore.test.js`: each state above renders its message; filter chips add and remove; `#place-unknown` shows the not-found state; read-only hides edit buttons; place form blocks an invalid date. Then `node tests/js/run.js 2>&1 | tail -15`. A manual run of the app is left to the critic.
+
+**Exception:** in `timebar.js` you may change only the first moment `tbOpen()` picks (middle of the data span instead of its start, as in frame s22); nothing else in that file.
+
+## Hand-off rules (set by the main agent, override anything above)
+- Branch: work on a branch of your own from `feat/shared-foundation-tasks` (`feat/ui-explore`); never push to `feat/shared-foundation-tasks` or `master`.
+- Do NOT commit generated files: `app/dist/`, `graph/`, `context/`. The main agent builds and regenerates them once after all workers merge.
+- Do NOT edit `changes/*.md`, `docs/`, `tools/`, `app/index.html`, `app/css/sidebar.css`, `app/css/base.css`, `app/js/sidebar/components.js`, `period.js`, `layout.js`, `ui.js`, `tests/js/sidebar.test.js`, `tests/js/lib/`. Need one of them changed: say so in your report (what and why), do not edit.
+- Tests go in `tests/js/ui-explore.test.js` (already exists, empty). Run `node tests/js/run.js --no-browser` (all must pass; one real-browser test is welcome if a browser is available, see the report rule below).
+- New class names: no collision with daisyUI (it owns stack, label, tabs, badge, sm, list, toast, card, menu, tab, badge ...); use your own prefix.
+- Report: files changed, what was built, frames matched, tests (counts), what you could not verify, and requests for shared changes.
