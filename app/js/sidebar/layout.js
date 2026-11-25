@@ -15,9 +15,11 @@ const FOLDS = ["maps", "route", "lang"];
 function tab(n) {
   const top = FOLDS.includes(n) ? "more" : n;
   curTab = top;
-  document
-    .querySelectorAll(".tabs button")
-    .forEach((b) => b.classList.toggle("on", b.dataset.tab === top));
+  document.querySelectorAll(".tabs [data-tab]").forEach((b) => {
+    b.classList.toggle("tab-active", b.dataset.tab === top);
+    b.setAttribute("aria-selected", String(b.dataset.tab === top));
+  });
+  if (typeof shellSync === "function") shellSync();
   document
     .querySelectorAll("#side section")
     .forEach((s) => (s.hidden = s.id !== "tab-" + (top === "rivers" ? "shapes" : top))); // the Rivers tab shows the panel of the Borders tab, in its own mode
@@ -38,10 +40,11 @@ document.querySelector(".tabs").addEventListener("click", (e) => {
 // the handle on the right edge of the sidebar: one button, the icon and the label say what it does now
 function sideHandle(h) {
   const b = $("#collapse"),
-    t = h ? "Expand sidebar" : "Collapse sidebar";
-  b.innerHTML = AHM.icons.svg(h ? "panel-right" : "panel-left", 14);
+    t = h ? "Show panel" : "Hide panel";
   b.title = t;
   b.setAttribute("aria-label", t);
+  $("#ahmLogo").setAttribute("aria-label", t);
+  $("#ahmLogo").setAttribute("aria-expanded", String(!h));
 }
 const toggleSide = (h) => {
   document.body.classList.toggle("collapsed", h);

@@ -36,6 +36,7 @@ function ftRender(force) {
   const root = $('#foot');
   if (!root || (ftSelf && !force)) return; // force = the hand let go: draw now
   ftInitBars();
+  if (typeof shellSync === 'function') shellSync();
   const span = ftSpan(),
     t = AHM.state.get('time'),
     moment = t.at !== null;

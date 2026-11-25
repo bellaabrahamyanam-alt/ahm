@@ -28,6 +28,8 @@ function playwright() {
 }
 
 /** runs fn(page, server) on a fresh server and page; collects page errors and fails if there are any */
+const daisyFile = () =>
+  [process.env.AHM_DAISYUI_CSS, path.join(__dirname, '..', '..', 'app', 'node_modules', 'daisyui', 'daisyui.css')].filter(Boolean).find((f) => require('fs').existsSync(f));
 async function scenario(name, seed, fn) {
   test(name, async () => {
     const pw = playwright();
@@ -51,6 +53,8 @@ async function scenario(name, seed, fn) {
     pg.on('dialog', (d) => d.accept());
     await pg.route('**/maplibre-gl*.js', (r) => r.fulfill({ contentType: 'text/javascript', body: '/* stand-in */' }));
     await pg.route((u) => !u.toString().startsWith(S.base) && !/maplibre-gl/.test(u.toString()), (r) => r.abort());
+    const dz = daisyFile(); // daisyUI from node_modules when it exists (the CDN is blocked in the sandbox): the layout tests need its classes
+    if (dz) await pg.route('**/daisyui@*/daisyui.css', (r) => r.fulfill({ contentType: 'text/css', path: dz }));
     await pg.addInitScript(STUB);
     try {
       await fn(pg, S);
@@ -153,7 +157,7 @@ scenario('browser: the Rivers tab lists only rivers, has its own add panel and f
   });
   ok(saved === 200, 'a river is saved through the shape endpoint');
   await pg.evaluate(() => tab('rivers'));
-  ok(await pg.locator('#tab-shapes').isVisible() && (await pg.locator('.tabs button.on').innerText()) === 'Rivers', 'the Rivers tab shows the shapes panel and is the selected tab');
+  ok(await pg.locator('#tab-shapes').isVisible() && (await pg.locator('.tabs .tab-active').innerText()) === 'Rivers', 'the Rivers tab shows the shapes panel and is the selected tab');
   ok(/1 of 1 rivers/.test(await pg.locator('#shCount').innerText()) && (await pg.locator('#shList li[data-sid]').count()) === 1, 'the Rivers list has the river');
   ok(/Find rivers/.test(await pg.locator('#shAdd').innerText()) && !/Add a border/.test(await pg.locator('#shAdd').innerText()), 'the Rivers tab has the river search, not the border add panel');
   await pg.fill('#shRvQ', 'Araks'); await pg.click('[data-shadd="rvfind"]'); await pg.waitForTimeout(500);
@@ -179,7 +183,7 @@ scenario('browser: the Rivers tab lists only rivers, has its own add panel and f
 
 scenario('browser: tabs, sheets, filters, layers (only / hide / search / create / choose places / notes / delete), categories', null, async (pg, S) => {
   await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
-    ok(await pg.locator('.tabs button').count()===6 && await pg.locator('#more-maps #basemap').count()===1, 'six tabs (Explore, Borders, Routes, Rivers, Layers, More); Maps is a fold in More');
+    ok(await pg.locator('.tabs [data-tab]').count()===6 && await pg.locator('#more-maps #basemap').count()===1, 'six tabs (Explore, Borders, Routes, Rivers, Layers, More); Maps is a fold in More');
     await pg.evaluate(()=>tab('route')); ok(await pg.locator('#more-route').evaluate(e=>e.open) && !(await pg.locator('#more-maps').evaluate(e=>e.open)) && await pg.locator('#tab-more').isVisible(), 'tab(route) opens the Directions fold in More');
     await pg.evaluate(()=>tab('explore'));
     // selected types are shown inside Filters only: no chips under the Filters block
@@ -484,4 +488,35 @@ scenario('browser: foundation v2: confirm (five texts of s068/s069), toast, Esca
   ok(await pg.locator('#ahm-toasts .alert').isVisible(), 'the toast shows');
   await pg.waitForTimeout(500);
   eq(0, await pg.locator('#ahm-toasts .alert').count(), 'and goes away by itself');
+});
+
+scenario('browser: foundation v2: rail (60px, tooltips, Period dot), logo toggle, tabs', null, async (pg, S) => {
+  await pg.setViewportSize({ width: 1100, height: 860 });
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1000);
+  ok(await pg.locator('#side .tabs.tabs-border .tab').count() === 6, 'six daisyUI tabs');
+  eq('true', await pg.locator('.tabs [data-tab="explore"]').getAttribute('aria-selected'), 'Explore is the selected tab');
+  await pg.click('#ahmLogo'); await pg.waitForTimeout(400);
+  eq(60, Math.round(await pg.locator('#side').evaluate((e) => e.getBoundingClientRect().width)), 'closed: the rail is 60px');
+  ok(await pg.locator('#rail').isVisible() && !(await pg.locator('#side .tabs').isVisible()), 'closed: rail shown, tab bar hidden');
+  eq('Borders: opens the panel on this tab', await pg.locator('.tooltip:has([data-rail="shapes"])').getAttribute('data-tip'), 'tooltip says what a click does');
+  ok(await pg.locator('#railDot').evaluate((e) => e.hidden), 'no dot while the Period is Any');
+  await pg.evaluate(() => { periodSetField('from', { fmt: 'y', ts: '0100-01-01T00:00:00Z', mode: 'exact', ts_to: null }); document.querySelector('#fFrom').dispatchEvent(new Event('change', { bubbles: true })); });
+  await pg.waitForTimeout(200);
+  ok(!(await pg.locator('#railDot').evaluate((e) => e.hidden)), 'a Period filter puts the dot on the clock');
+  await pg.click('[data-rail="routes"]'); await pg.waitForTimeout(400);
+  ok(!(await pg.evaluate(() => document.body.classList.contains('collapsed'))) && await pg.locator('#tab-routes').isVisible(), 'a rail icon opens the panel on that tab');
+  await pg.click('#collapse'); await pg.waitForTimeout(400);
+  ok(await pg.evaluate(() => document.body.classList.contains('collapsed')), 'the chevron closes the panel');
+});
+
+scenario('browser: foundation v2: phone bottom sheet, handle, Time button', null, async (pg, S) => {
+  await pg.setViewportSize({ width: 390, height: 844 });
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1000);
+  const box = await pg.locator('#side').boundingBox();
+  ok(box.width >= 389 && box.y > 100, 'the panel is a bottom sheet');
+  ok(await pg.locator('#resizer').isVisible(), 'the grab handle is there');
+  await pg.click('#collapse'); await pg.waitForTimeout(400);
+  ok(await pg.locator('#expand').isVisible() && await pg.locator('#ahmTime').isVisible(), 'hidden: the handle tab and the Time button stay');
+  await pg.click('#expand'); await pg.waitForTimeout(400);
+  ok((await pg.locator('#side').boundingBox()).y < 844 - 100, 'the handle tab opens the sheet again');
 });

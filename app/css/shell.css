@@ -41,3 +41,35 @@
   .ahm-hist { height: 2rem; margin-top: 0.25rem; }
   .ahm-moment b { font-size: 1.15rem; }
 }
+
+/* ---- panel shell: header, tabs, 60px rail, phone sheet (frames s001 s050-s052 s097-s100) ---- */
+#side { overflow: visible; font-family: system-ui, 'Segoe UI', Roboto, Arial, sans-serif; }
+.ahm-head { display: flex; align-items: center; gap: 0.75rem; padding: 1rem 1rem 0.25rem 1.25rem; }
+.ahm-logo { position: relative; flex: none; width: 2.25rem; height: 2.25rem; min-height: 0; padding: 0; }
+.ahm-logo-chev { display: none; position: absolute; right: -0.4rem; bottom: -0.4rem; width: 1rem; height: 1rem; border-radius: 50%; background: #fff; color: #333c43; align-items: center; justify-content: center; box-shadow: 0 1px 3px #0003; }
+.ahm-logo-chev svg { width: 0.6rem; height: 0.6rem; }
+.ahm-brand h1 { margin: 0; font-size: 1.05rem; font-weight: 600; line-height: 1.15; color: var(--content-color); }
+.ahm-brand p { margin: 1px 0 0; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ahm-muted); }
+#side .tabs { margin: 0.25rem 0.6rem 0.4rem; flex-wrap: nowrap; }
+.ahm-tab { flex: 1; min-width: 0; flex-direction: column; gap: 0.2rem; height: auto; padding: 0.5rem 0 0.55rem; font-size: 0.7rem; }
+.ahm-rail { display: none; }
+body.collapsed #side { width: 60px; transform: none; }
+body.collapsed #side .pane, body.collapsed #side .ahm-brand, body.collapsed #side #collapse, body.collapsed #side .tabs, body.collapsed #side #pick, body.collapsed #resizer { display: none; }
+body.collapsed .ahm-head { padding: 0.5rem 0.6rem; justify-content: center; border-bottom: 1px solid var(--li-row-border-bottom-color); }
+body.collapsed .ahm-logo-chev { display: flex; }
+body.collapsed .ahm-rail { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; flex: 1; padding: 0.6rem 0; }
+.ahm-rail-clock { margin-top: auto; }
+.ahm-rail-btn.ahm-rail-on { background: #edeada; color: #115098; }
+#expand { display: none !important; }
+.ahm-time { display: none; position: fixed; right: 1rem; bottom: 1rem; z-index: 10000; }
+@media (max-width: 700px) {
+  #side { top: auto; right: 0; width: 100%; height: var(--side-h, 52vh); border-right: 0; border-top: 1px solid var(--li-row-border-bottom-color); border-radius: 1rem 1rem 0 0; }
+  body.collapsed #side { width: 100%; transform: translateY(100%); }
+  body.collapsed #side .pane, body.collapsed #side .ahm-brand, body.collapsed #side .tabs, body.collapsed #side #pick { display: revert; }
+  body.collapsed .ahm-rail { display: none; }
+  #resizer { top: -0.25rem; height: 1.25rem; cursor: row-resize; }
+  #resizer::before { content: ''; position: absolute; left: 50%; top: 0.35rem; width: 2.5rem; height: 0.3rem; margin-left: -1.25rem; border-radius: 1rem; background: #b4bac0; }
+  body.collapsed #expand { display: flex !important; position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: 4rem; height: 1.6rem; justify-content: center; align-items: center; background: var(--base-bg); border: 1px solid var(--li-row-border-bottom-color); border-bottom: 0; border-radius: 0.75rem 0.75rem 0 0; z-index: 10000; }
+  body.collapsed .ahm-time { display: inline-flex; bottom: 2.2rem; }
+  #resizer:hover, #resizer:focus { background: none; opacity: 1; }
+}

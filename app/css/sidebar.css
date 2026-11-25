@@ -15,9 +15,6 @@ aside {
   transition: transform 0.2s;
   z-index: 2;
 }
-body.collapsed aside {
-  transform: translateX(-100%); /* the handle (#collapse) sticks out to the right and stays visible */
-}
 h2 {
   font: normal 20px var(--font-head);
   color: var(--content-color);
@@ -456,84 +453,6 @@ button.wide {
 }
 
 /* ---- header and tabs (prototype s1): the brand, then icon over label, the active tab has a bar under it ---- */
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 16px 4px 20px;
-}
-.brand .logo {
-  width: 32px;
-  height: 32px;
-  flex: none;
-  border-radius: var(--r-ctl);
-  background: var(--a);
-  color: var(--bg2-bg-color);
-  display: grid;
-  place-items: center;
-}
-.brand h1 {
-  margin: 0;
-  font: 600 17px/1.15 var(--font-serif);
-  color: var(--content-color);
-}
-.brand p {
-  margin: 1px 0 0;
-  font-size: 11px;
-  color: var(--muted-color);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 1px solid var(--li-row-border-bottom-color);
-  margin: 4px 10px 6px;
-}
-.tabs button {
-  flex: 1;
-  min-width: 0;
-  padding: 8px 0 9px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1;
-  color: var(--html-body-color);
-  background: transparent;
-  border: 0;
-  border-radius: var(--radius-s) var(--radius-s) 0 0;
-  position: relative;
-}
-.tabs button svg {
-  display: block;
-  flex: none;
-}
-.tabs button:hover {
-  background: var(--tab-bg-hover);
-  color: var(--tab-color-hover);
-}
-.tabs .on,
-.tabs .on:hover {
-  color: var(--header);
-}
-.tabs .on::after {
-  content: '';
-  position: absolute;
-  left: 18%;
-  right: 18%;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--a);
-}
-.tabs .on:hover {
-  color: var(--a-hover);
-}
-
 /* ---- labels = small h3 (uppercase, bottom rule) ---- */
 .label {
   font: bold 10px var(--font);
@@ -856,25 +775,6 @@ button.icon-btn:focus-visible {
 button.icon-btn:active:not(:disabled) {
   background: var(--btn-press-bg);
 }
-/* the handle on the right edge of the panel: it sticks out over the map, so it stays visible when the panel is collapsed */
-#collapse {
-  position: absolute;
-  top: 50%;
-  right: -22px;
-  width: 22px;
-  height: 56px;
-  transform: translateY(-50%);
-  z-index: 6;
-  background: var(--base-bg);
-  border: 1px solid var(--li-row-border-bottom-color);
-  border-left: 0;
-  border-radius: 0 var(--radius-m) var(--radius-m) 0;
-  box-shadow: var(--dropdown-shadow);
-}
-/* the old second button is replaced by the handle */
-#expand {
-  display: none !important;
-}
 body.collapsed #resizer {
   display: none;
 }
@@ -995,23 +895,6 @@ button.ly-dadd:hover:not(:disabled) {
     height: var(--side-h, 52vh);
     border-right: 0;
     border-top: 1px solid var(--li-row-border-bottom-color);
-  }
-  body.collapsed aside {
-    transform: translateY(100%); /* the bottom sheet slides down; its handle stays visible */
-  }
-  #collapse {
-    top: -22px;
-    right: auto;
-    left: 50%;
-    width: 56px;
-    height: 22px;
-    transform: translateX(-50%);
-    border: 1px solid var(--li-row-border-bottom-color);
-    border-bottom: 0;
-    border-radius: var(--radius-m) var(--radius-m) 0 0;
-  }
-  #collapse svg {
-    transform: rotate(-90deg);
   }
   #resizer {
     top: -4px;
@@ -1316,12 +1199,8 @@ dialog {
   --row-on-bg: #f8f5e4;
 }
 button,
-summary,
-.tabs {
+summary {
   user-select: none;
-}
-.tabs {
-  margin-top: 12px;
 }
 /* the open (selected) row is clearly different from a hovered one: light panel colour and an accent bar */
 li.on,
@@ -1755,10 +1634,6 @@ select {
   white-space: normal;
   align-items: normal;
   gap: 0;
-}
-.tabs {
-  flex-wrap: nowrap;
-  height: auto;
 }
 .badge {
   width: auto;
