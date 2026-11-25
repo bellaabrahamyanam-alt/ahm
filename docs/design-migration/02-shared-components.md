@@ -23,31 +23,31 @@ Markers: `<!-- ahm:region NAME -->` ... `<!-- /ahm:region NAME -->` (comments; t
 Git merges workers' edits because the regions are far apart in the file. The foundation creates all markers first.
 
 ## Component catalog (v2) and status
-Status key: **TODO** = to build in Foundation v2 (see `tasks/foundation.md`); **KEEP** = exists and is reused; **v1** = exists as JS strings and is replaced.
+Status key: **ready** = built in Foundation v2 and tested in a real browser (Chromium); **partly** = built, something named is missing; **not ready** = not built; **KEEP** = exists and is reused; **v1** = exists as JS strings and is replaced. Usage: `kit.*`, `fields.*`, `dialogs.*` are plain globals (classic scripts); see the examples under the table.
 | Component | Frames | Markup (daisyUI) | Binder / behaviour | Status |
 |---|---|---|---|---|
-| Theme `paper-and-pencil` | all | `base.css` variables per 01 | none | TODO (F1 had colours only) |
-| Panel shell: header, tab bar | s001, s050 | static in `shell` region | `shell.js`: `tab(n)` (existing), open/close, rail | TODO (v1 partial) |
-| Rail 60px + tooltips + Period dot | s050-s052 | `tooltip`, `indicator`, `status` | `shell.js` | TODO |
+| Theme `paper-and-pencil` | all | `base.css` variables per 01 | none | ready (colours, radii, system-ui font; owner-approved tokens) |
+| Panel shell: header, tab bar | s001, s050 | static in `shell` region | `shell.js`: `tab(n)` (existing), open/close, rail | ready (`#ahmLogo` toggle, `.ahm-head`, `tabs tabs-border`) |
+| Rail 60px + tooltips + Period dot | s050-s052 | `tooltip`, `indicator`, `status` | `shell.js` | ready (`shell.js`, test: rail) |
 | Resize edge, dock grip, larger panel | s097, s098 | own CSS | existing `layout.js` logic, KEEP | KEEP (restyle) |
-| Phone sheet + handle + Time button | s099, s100 | own CSS | `shell.js` | TODO |
-| Period / Moment footer | s001, s022, s049 | static in `footer` region: `join` toggle, `btn`, `toggle`, 48 bar `<i>`s created once, two `range` inputs | `footer.js` (logic of `period.js`, `timebar.js` kept: `periodBounds`, `tb*`) | TODO (v1 string footer) |
+| Phone sheet + handle + Time button | s099, s100 | own CSS | `shell.js` | ready (`shell.js`, `#expand` handle tab, `#ahmTime`; test: phone) |
+| Period / Moment footer | s001, s022, s049 | static in `footer` region: `join` toggle, `btn`, `toggle`, 48 bar `<i>`s created once, two `range` inputs | `footer.js` (logic of `period.js`, `timebar.js` kept: `periodBounds`, `tb*`) | ready (`footer.js`; `tbOpen()` starts mid-span; test: footer) |
 | Histogram | s001, s022 | own CSS | `uiHistogram` pure function, KEEP | KEEP |
-| Date field (mode, format, era, preview) | s007, s046-s048 | `<template id="t-date">`: `join` modes, format `dropdown`+`menu`, `input`, era `join` | `fields.js` using `dfRead` `dfSafe` `dateText` (KEEP) | TODO (v1 string + popup) |
-| Language pills + "+N" picker | s056-s058 | pills + `dropdown` radios | `fields.js`: fits as many pills as the row allows (ResizeObserver), selected language replaces the last pill when narrow, no "+N" when all fit | TODO (v1 pills no picker) |
-| Language filter (chips + checkbox picker with counts, Clear, Done) | s055 | chips + `dropdown` checkboxes | `fields.js` | TODO |
-| Name editor (names list, name card, Period row Set/Edit/Done, add another) | s007, s028, s033, s041, s088 | `<template id="t-name">` | `fields.js` `nameList(root)`: read/write `[{lang,name,date_from,date_to}]` | TODO (v1 `pfRow`) |
-| Type pills | s007, s033, s034 | chips with symbol `<img>`/svg | `fields.js` | TODO |
-| Style editor (point / line / area / river) | s020, s042-s044 | `range`, `toggle`, swatches, symbol grid, pattern tiles, preview | `fields.js` `styleEditor` (reads/writes `{color, style}`) | TODO (v1 `uiStyleEditor`) |
-| Form frame + sticky action bar | all forms | `<template id="t-form">` | `fields.js` | TODO |
-| Validation (inline errors, disabled Save) | s042, s065-s067, s082 | `validator`, `input-error`, `text-error` | `kit.invalid(el, msg)`, `kit.clear(form)` | TODO |
-| States (empty, loading skeleton, error, service down, read-only) | s060-s062, s093, s070 | `alert`, `skeleton`, empty block | `kit.state(container, kind, text, retry?)` | TODO (v1 `uiState`) |
-| Confirm modal (6 texts) | s068, s069 | one `<dialog class="modal">` | `dialogs.js` `confirm(kind, vars) -> Promise<bool>` | TODO (v1 `uiConfirm`) |
-| Toast | - | `toast` + `alert` | `dialogs.js` `toast(msg, kind)` | TODO (v1 `uiToast`) |
-| List row | s001, s073, s080, s085, s061 | `list-row` template | `kit.list` | TODO (v1 `uiRow`) |
-| Note (timeline item, Show more/less) + notes list (language chips, sort, collapse, pagination) | s003, s045, s046, s071, s086 | `<template id="t-note">` | `fields.js` | TODO (v1 `uiNote`) |
-| Accordion card | s019, s021, s080, s078 | `collapse` | none (native) | TODO (v1 `uiAccordion`) |
-| Search field, filter button + badge, chips row | s002, s073, s080 | `label.input`, `indicator` | none | TODO |
+| Date field (mode, format, era, preview) | s007, s046-s048 | `<template id="t-date">`: `join` modes, format `dropdown`+`menu`, `input`, era `join` | `fields.js` using `dfRead` `dfSafe` `dateText` (KEEP) | ready (`fields.date(date, opts)` / `fields.dateRead(node)` / `fields.dateSafe(node)`) |
+| Language pills + "+N" picker | s056-s058 | pills + `dropdown` radios | `fields.js`: fits as many pills as the row allows (ResizeObserver), selected language replaces the last pill when narrow, no "+N" when all fit | ready (`fields.pills(items, cur)`, pure `pillFit(widths, avail, plusW, sel)` tested in node) |
+| Language filter (chips + checkbox picker with counts, Clear, Done) | s055 | chips + `dropdown` checkboxes | `fields.js` | ready (`fields.langFilter(items, selected)`; `node.selected()`) |
+| Name editor (names list, name card, Period row Set/Edit/Done, add another) | s007, s028, s033, s041, s088 | `<template id="t-name">` | `fields.js` `nameList(root)`: read/write `[{lang,name,date_from,date_to}]` | ready (`fields.nameList(root, langs, names)`, `fields.nameAdd`, `fields.readNames(root)`) |
+| Type pills | s007, s033, s034 | chips with symbol `<img>`/svg | `fields.js` | ready (`fields.typePills(items, cur)`; symbol icons not drawn: items only have `name`) |
+| Style editor (point / line / area / river) | s020, s042-s044 | `range`, `toggle`, swatches, symbol grid, pattern tiles, preview | `fields.js` `styleEditor` (reads/writes `{color, style}`) | ready (`fields.styleEditor(kind, color, style, symbols)` / `fields.readStyle(node)`; no live preview swatch) |
+| Form frame + sticky action bar | all forms | `<template id="t-form">` | `fields.js` | ready (`fields.form(title, {save, cancel, danger})`, fill `[data-body]`) |
+| Validation (inline errors, disabled Save) | s042, s065-s067, s082 | `validator`, `input-error`, `text-error` | `kit.invalid(el, msg)`, `kit.clear(form)` | ready (`kit.invalid`, `kit.clear`; Save is not auto-disabled) |
+| States (empty, loading skeleton, error, service down, read-only) | s060-s062, s093, s070 | `alert`, `skeleton`, empty block | `kit.state(container, kind, text, retry?)` | ready (`kit.state(container, kind, text, retry?)`, kinds empty/loading/error/down/readonly) |
+| Confirm modal (6 texts) | s068, s069 | one `<dialog class="modal">` | `dialogs.js` `confirm(kind, vars) -> Promise<bool>` | partly: 5 texts (s068 + 4 of s069); the 6th text is not in the frames (`dialogs.confirm(kind, vars)`) |
+| Toast | - | `toast` + `alert` | `dialogs.js` `toast(msg, kind)` | ready (`dialogs.toast(msg, kind, ms)`) |
+| List row | s001, s073, s080, s085, s061 | `list-row` template | `kit.list` | ready (`fields.row({id,title,sub,count,icon})`, `kit.list` keeps rows by `data-id`) |
+| Note (timeline item, Show more/less) + notes list (language chips, sort, collapse, pagination) | s003, s045, s046, s071, s086 | `<template id="t-note">` | `fields.js` | partly: `fields.note({title,lang,when,text})` with Show more/less; the notes list (language chips, sort, collapse, pagination) is not built |
+| Accordion card | s019, s021, s080, s078 | `collapse` | none (native) | not ready|
+| Search field, filter button + badge, chips row | s002, s073, s080 | `label.input`, `indicator` | none | not ready|
 | Three-state button (show / only / hide) | s085 | `join` of 3 radio `btn`s | none | layers |
 | Map point menu | s063 | `dropdown`/`menu` in a MapLibre popup (static template) | explore | explore |
 | Colour swatches / symbol grid / pattern tiles | s020, s043, s044 | `btn` toggles | `fields.js` | with style editor |
@@ -57,3 +57,14 @@ Status key: **TODO** = to build in Foundation v2 (see `tasks/foundation.md`); **
 
 ## Rules for workers
 Read, do not edit: `kit.js`, `fields.js`, `footer.js`, `shell.js`, `dialogs.js`, `base.css`, regions `head shell footer dialogs templates`. Need a change: say so in the report. Add your own templates to your own `tpl-X` region, not to `templates`. Test UI behaviour in a real browser (`05-browser-testing.md`).
+
+
+## Usage examples (Foundation v2)
+```js
+const row = kit.tpl('t-row'); kit.fill(row, { title: 'Ani', sub: '961 - 1319 CE' });   // clone + textContent
+kit.list(ul, items, 't-row', (node, it) => kit.fill(node, { title: it.name }));        // keyed by data-id
+kit.state(box, 'error', 'Could not load.', retryFn);                                   // box.replaceChildren(clone)
+const d = fields.date(null, { modes: ['none', 'exact'] }); form.append(d); fields.dateRead(d);
+if (await dialogs.confirm('delete', { name: 'Urartu' })) { /* ... */ }
+```
+Regions: `tab-rivers` sits INSIDE `tab-borders` (the Rivers panel is a block of `#tab-shapes`), so check (c) of `tests/js/ui-rules.test.js` only counts markers, it does not require them to be disjoint. The `footer` region also holds the end of the panel (`</div></div>`, resize edge, `</aside>`), the phone Time button and `#expand`; the `shell` region ends inside `<div class="body">`.

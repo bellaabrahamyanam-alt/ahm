@@ -26,7 +26,7 @@ Formatting is automatic and checked into the repository (`.prettierrc.json`, `.p
 - Classic `<script>` files sharing one global scope. The load order is fixed in `index.html` and listed in [Project structure](04-project-structure.md). There are no modules on purpose. Production serves a minified concatenation of them (`app/dist/`, `bun tools/build.js`; names are never renamed), so a new script or style file goes inside the marked blocks of `index.html` and `app/dist/` is rebuilt.
 - Prefixes keep names apart: `ov…` for overlays, `pf…` for the place form, `df…` for the date field, `ahm-…` for map layer, source and image ids.
 - One place knows where data comes from (`data.js` with `config.js`); everything else asks it.
-- Browser code never builds HTML from raw text; it goes through `esc()`.
+- Browser code never builds markup from strings (owner decision 2026-11-24). Markup is static HTML in `app/index.html` with daisyUI v5 classes; JavaScript clones `<template>` elements and fills them with `textContent`, `value`, `dataset` and attributes, toggles `hidden` and classes, and handles events (`kit.tpl`, `kit.fill`). No `innerHTML` / `insertAdjacentHTML` with markup, no `esc()` in new code. Custom CSS only where daisyUI has no class; never define a class name daisyUI owns, use your own `ahm-` prefix. `tests/js/ui-rules.test.js` checks this.
 
 **PHP**
 

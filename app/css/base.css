@@ -46,7 +46,7 @@
   --posthilit-color: #bc2a4d;
   --error-color: #bc2a4d;
   --dropdown-shadow: 1px 3px 5px rgba(0, 0, 0, 0.2);
-  --font: Verdana, Helvetica, Arial, sans-serif;
+  --font: system-ui, "Segoe UI", Roboto, Arial, sans-serif;
   --font-head: "Trebuchet MS", Arial, Helvetica, sans-serif;
   --font-btn: "Open Sans", "Droid Sans", Verdana, Arial, Helvetica;
 }
@@ -92,18 +92,18 @@
    --------------------------------------------------------------------------- */
 :root[data-theme='paper-and-pencil'] {
   color-scheme: light;
-  --color-base-100: var(--panel-container-panel-bg-color);
-  --color-base-200: var(--bg1-bg-color);
-  --color-base-300: var(--border-color);
-  --color-base-content: var(--content-color);
+  --color-base-100: var(--base-bg); /* page and panel #f4f0d9 */
+  --color-base-200: var(--bg2-bg-color); /* card surface #f8f5e4 */
+  --color-base-300: var(--bg1-bg-color); /* inputs, sunk, segmented track #edeada */
+  --color-base-content: var(--content-color); /* #333c43 */
   --color-primary: var(--base-href-color);
   --color-primary-content: var(--inputbox-bg);
-  --color-secondary: var(--btn-hover-bg);
+  --color-secondary: var(--page-btn-bg-focus);
   --color-secondary-content: var(--content-color);
   --color-accent: var(--base-fg-hover);
   --color-accent-content: var(--inputbox-bg);
-  --color-neutral: var(--html-body-color);
-  --color-neutral-content: var(--base-bg);
+  --color-neutral: var(--page-btn-bg-focus); /* secondary buttons, grey chips #e9e9e9 */
+  --color-neutral-content: var(--base-href-color);
   --color-info: var(--route-b);
   --color-info-content: var(--inputbox-bg);
   --color-success: var(--route-a);
@@ -112,7 +112,7 @@
   --color-warning-content: var(--content-color);
   --color-error: var(--error-color);
   --color-error-content: var(--inputbox-bg);
-  --radius-selector: var(--radius-pill);
+  --radius-selector: 999px;
   --radius-field: var(--r-ctl);
   --radius-box: var(--r-card);
   --size-selector: 0.25rem;

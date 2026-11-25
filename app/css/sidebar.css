@@ -56,10 +56,10 @@ b {
   flex: 1;
 }
 
-/* ---- form controls (inputbox / select / button, as in forms.css + buttons.css) ---- */
-input,
-select,
-textarea {
+/* ---- form controls (inputbox / select / button, as in forms.css + buttons.css); daisyUI components (class btn, input, select ...) are left to daisyUI ---- */
+input:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']),
+select:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']),
+textarea:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']) {
   width: 100%;
   margin: 3px 0;
   padding: 6px 9px;
@@ -72,30 +72,30 @@ textarea {
   caret-color: var(--carter-color);
 }
 input:hover,
-input:focus,
-select:hover,
-select:focus,
-textarea:hover,
-textarea:focus {
+input:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']):focus,
+select:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']):hover,
+select:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']):focus,
+textarea:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']):hover,
+textarea:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']):focus {
   border-color: var(--inputbox-border-hover);
   outline: 0;
 }
 input::placeholder,
-textarea::placeholder {
+textarea:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle'])::placeholder {
   color: var(--muted-color);
   opacity: 0.8;
 }
-input:focus::placeholder,
-textarea:focus::placeholder {
+input:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']):focus::placeholder,
+textarea:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']):focus::placeholder {
   color: transparent;
 }
-select {
+select:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']) {
   background: var(--select-bg);
   border-color: var(--select-border-color);
   cursor: pointer;
 }
 select:hover,
-select:focus {
+select:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']):focus {
   border-color: var(--inputbox-border-hover);
 }
 textarea {
@@ -104,17 +104,17 @@ textarea {
   border-color: var(--select-border-color);
   border-radius: var(--radius-m);
 }
-input[type="checkbox"] {
+input[type="checkbox"]:not([class*='toggle']):not([class*='checkbox']):not([class*='range']):not([class*='ahm-handle']) {
   width: auto;
   accent-color: var(--a);
 }
-input[type="range"] {
+input:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle'])[type="range"] {
   padding: 0;
   border: 0;
   background: none;
   accent-color: var(--a);
 }
-button {
+button:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']) {
   font: 600 13px/1.4 var(--font-btn);
   color: var(--a);
   background: var(--page-btn-bg-focus);
@@ -125,18 +125,18 @@ button {
   cursor: pointer;
   white-space: nowrap;
 }
-/* hover and press have their own greys (the forum grey is the same as the button grey); a clicked button does not stay "hovered" */
+/* hover and press have their own greys (the forum grey is the same as the button:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']) grey); a clicked button does not stay "hovered" */
 button:hover:not(:disabled) {
   color: var(--btn-fg-hover);
   background: var(--btn-hover-bg);
 }
-button:active:not(:disabled) {
+button:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']):active:not(:disabled) {
   background: var(--btn-press-bg);
 }
-button:focus {
+button:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']):focus {
   outline: 0;
 }
-button:focus-visible {
+button:not([class*='btn']):not([class~='tab']):not([class*='input']):not([class*='select']):not([class*='radio']):not([class*='checkbox']):not([class*='toggle']):not([class*='range']):not([class*='ahm-handle']):focus-visible {
   outline: 2px solid var(--inputbox-border-hover);
   outline-offset: 1px;
 }

@@ -324,7 +324,7 @@
       </div>
       <div id="foot" class="foot" aria-label="Period and Moment">
         <div class="ahm-row ahm-foot-top">
-          <div class="join" role="group" aria-label="Period or Moment">
+          <div class="join ahm-seg" role="group" aria-label="Period or Moment">
             <input type="radio" name="ftMode" id="ftModePeriod" class="btn btn-sm join-item" value="period" aria-label="Period" checked />
             <input type="radio" name="ftMode" id="ftModeMoment" class="btn btn-sm join-item" value="moment" aria-label="Moment" />
           </div>
@@ -337,7 +337,7 @@
             <button type="button" id="ftPlay" class="btn btn-primary btn-circle" aria-label="Play"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
           </div>
         </div>
-        <div class="join ahm-speed" id="ftSpeed" data-ft="moment" role="group" aria-label="Speed, years per second" hidden><input type="radio" name="ftSpeed" class="btn btn-sm join-item" value="1" aria-label="1×" /><input type="radio" name="ftSpeed" class="btn btn-sm join-item" value="10" aria-label="10×" /><input type="radio" name="ftSpeed" class="btn btn-sm join-item" value="50" aria-label="50×" /><input type="radio" name="ftSpeed" class="btn btn-sm join-item" value="100" aria-label="100×" /><input type="radio" name="ftSpeed" class="btn btn-sm join-item" value="500" aria-label="500×" /></div>
+        <div class="join ahm-seg ahm-speed" id="ftSpeed" data-ft="moment" role="group" aria-label="Speed, years per second" hidden><input type="radio" name="ftSpeed" class="btn btn-sm join-item" value="1" aria-label="1×" /><input type="radio" name="ftSpeed" class="btn btn-sm join-item" value="10" aria-label="10×" /><input type="radio" name="ftSpeed" class="btn btn-sm join-item" value="50" aria-label="50×" /><input type="radio" name="ftSpeed" class="btn btn-sm join-item" value="100" aria-label="100×" /><input type="radio" name="ftSpeed" class="btn btn-sm join-item" value="500" aria-label="500×" /></div>
         <div class="ahm-hist" id="ftHist">
           <div class="ahm-bars" id="ftBars"></div>
           <input type="range" id="ftFrom" class="ahm-handle" min="0" max="1000" value="0" aria-label="Period from" data-ft="period" />
@@ -418,8 +418,8 @@
     <template id="t-state-down"><div class="alert alert-warning alert-soft" role="alert"><span data-bind="text"></span><button type="button" class="btn btn-sm btn-warning" data-retry>Retry</button></div></template>
     <template id="t-state-readonly"><div class="alert alert-info alert-soft" role="status"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span data-bind="text"></span><button type="button" class="btn btn-sm btn-primary" data-retry hidden>Log in</button></div></template>
     <template id="t-date"><div class="ahm-date" data-mode="none" data-fmt="y">
-      <div class="join ahm-modes" role="group" aria-label="How sure is the date" data-modes></div>
-      <details class="dropdown ahm-fmt"><summary class="btn btn-sm btn-neutral btn-soft"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span data-bind="fmt"></span><span aria-hidden="true">⌄</span></summary><ul class="dropdown-content menu bg-base-200 rounded-box ahm-menu" data-menu></ul></details>
+      <div class="join ahm-seg ahm-modes" role="group" aria-label="How sure is the date" data-modes></div>
+      <details class="dropdown ahm-fmt"><summary class="btn btn-sm btn-outline"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span data-bind="fmt"></span><span aria-hidden="true">⌄</span></summary><ul class="dropdown-content menu bg-base-200 rounded-box ahm-menu" data-menu></ul></details>
       <div class="ahm-date-body" data-body></div>
       <p class="ahm-hint" aria-live="polite" data-bind="preview"></p></div></template>
     <template id="t-date-mode"><input type="radio" class="btn btn-sm join-item" /></template>
@@ -431,7 +431,7 @@
       <input type="number" class="input input-sm" data-f="m" placeholder="MM" min="1" max="12" step="1" aria-label="MM" />
       <input type="number" class="input input-sm" data-f="y" placeholder="YYYY" min="1" max="99999" step="1" aria-label="YYYY" />
       <input type="number" class="input input-sm" data-f="n" min="1" step="1" aria-label="Number" /><span data-bind="word"></span>
-      <div class="join" role="group" aria-label="Era"><input type="radio" class="btn btn-sm join-item" data-era="CE" aria-label="CE" /><input type="radio" class="btn btn-sm join-item" data-era="BCE" aria-label="BCE" /></div></div></div></template>
+      <div class="join ahm-seg" role="group" aria-label="Era"><input type="radio" class="btn btn-sm join-item" data-era="CE" aria-label="CE" /><input type="radio" class="btn btn-sm join-item" data-era="BCE" aria-label="BCE" /></div></div></div></template>
     <template id="t-pills"><div class="ahm-pills" role="group"><div class="ahm-pill-row" data-pills></div>
       <details class="dropdown dropdown-end ahm-more" hidden><summary class="btn btn-sm btn-neutral btn-soft rounded-full" data-bind="more"></summary><ul class="dropdown-content menu bg-base-200 rounded-box ahm-menu" data-menu></ul></details></div></template>
     <template id="t-pill"><button type="button" class="btn btn-sm rounded-full ahm-pill"><span data-bind="code"></span></button></template>
@@ -450,7 +450,7 @@
       <label class="ahm-row" data-sec="fill"><span class="ahm-grow">Fill opacity</span><input type="range" class="range range-primary range-xs" data-st="fill_opacity" min="0" max="0.8" step="0.05" /><output data-out></output></label>
       <label class="ahm-row" data-sec="width"><span class="ahm-grow" data-bind="widthLabel">Width</span><input type="range" class="range range-primary range-xs" data-st="width" min="1" max="12" step="0.5" /><output data-out></output></label>
       <label class="ahm-row" data-sec="opacity"><span class="ahm-grow">Opacity</span><input type="range" class="range range-primary range-xs" data-st="opacity" min="0.1" max="1" step="0.05" /><output data-out></output></label>
-      <div data-sec="pattern"><div class="ahm-hint" data-bind="patternLabel">Pattern</div><div class="join" role="group" aria-label="Pattern" data-patterns></div></div>
+      <div data-sec="pattern"><div class="ahm-hint" data-bind="patternLabel">Pattern</div><div class="join ahm-seg" role="group" aria-label="Pattern" data-patterns></div></div>
       <label class="ahm-row" data-sec="arrow"><span class="ahm-grow">Arrow shows the direction</span><input type="checkbox" class="toggle toggle-primary" data-st="arrow" /></label></div></template>
     <template id="t-swatch"><button type="button" class="btn btn-circle btn-xs ahm-swatch" data-swatch></button></template>
     <template id="t-sym"><button type="button" class="btn btn-square btn-sm ahm-sym" data-symbol><span data-bind="name"></span></button></template>
