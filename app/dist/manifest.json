@@ -1,5 +1,5 @@
 {
-  "hash": "29aed98d355beb529818c9f87e648380a1c9a3f9fead016bba95c999e5b430ba",
+  "hash": "3b9b4a2f3fbd522d0ce1a7ef1b58e3333dd3839552de38defe534b5d70533549",
   "js": [
     "js/config.js",
     "js/ahm.js",
@@ -13,6 +13,7 @@
     "js/core/search.js",
     "js/core/providers.js",
     "js/sidebar/datefield.js",
+    "js/sidebar/kit.js",
     "js/sidebar/components.js",
     "js/sidebar/searchfield.js",
     "js/sidebar/period.js",
@@ -27,21 +28,26 @@
     "js/sidebar/layout.js",
     "js/sidebar/places.js",
     "js/sidebar/timebar.js",
+    "js/sidebar/fields.js",
+    "js/sidebar/footer.js",
+    "js/sidebar/shell.js",
     "js/sidebar/actions.js",
     "js/sidebar/admin.js",
+    "js/sidebar/dialogs.js",
     "js/sidebar/ui.js",
     "js/features.js"
   ],
   "css": [
     "css/base.css",
     "css/sidebar.css",
+    "css/shell.css",
     "css/map.css",
     "css/shapes.css",
     "css/explore.css",
     "css/layers.css"
   ],
   "bytes": {
-    "app.min.js": 271020,
-    "app.min.css": 39046
+    "app.min.js": 287685,
+    "app.min.css": 45832
   }
 }
