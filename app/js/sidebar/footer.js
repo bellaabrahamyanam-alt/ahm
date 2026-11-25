@@ -50,9 +50,10 @@ function ftRender(force) {
     $('#ftAxL').textContent = ftLabel(span[0]);
     $('#ftAxR').textContent = ftLabel(span[1] - 1);
     const z = $('#ftAxZ'),
-      zero = span[0] < 0 && span[1] > 0;
+      y0 = daysFromCivil(0, 1, 1) * DAY_SECONDS, // the year 0, not the 1970 epoch
+      zero = span[0] < y0 && span[1] > y0;
     kit.show(z, zero);
-    if (zero) z.style.left = (100 * (0 - span[0])) / (span[1] - span[0]) + '%';
+    if (zero) z.style.left = (100 * (y0 - span[0])) / (span[1] - span[0]) + '%';
   }
   if (moment) {
     const at = isoToSec(t.at);

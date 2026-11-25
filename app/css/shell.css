@@ -117,3 +117,11 @@ body.collapsed .ahm-rail { display: flex; flex-direction: column; align-items: c
 /* dark tooltips (01-design-system): daisyUI tooltips use the neutral colour, which is a light grey here */
 [data-tip] { --tt-bg: #333c43; --tt-tail: #333c43; }
 [data-tip]::before { color: #f4f0d9; }
+
+/* tabs as in s001: dark icons and labels, active one blue with the underline (daisyUI fades inactive tabs) */
+.ahm-tabs { --tab-bg: transparent; border-bottom: 1px solid var(--li-row-border-bottom-color); }
+.ahm-tab { color: var(--content-color); opacity: 1; font-size: 0.75rem; font-weight: 500; background: none; }
+.ahm-tab.tab-active { color: var(--base-href-color); font-weight: 600; }
+.ahm-brand h1 { font-size: 1.2rem; font-weight: 700; }
+.ahm-logo { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; }
+#collapse { color: var(--base-href-color); }
