@@ -66,11 +66,11 @@ function timePage() {
   return p;
 }
 
-test('time bar: "Time" starts at the earliest date of the data, "Off" switches back and stops play', () => {
+test('time bar: "Moment" starts in the middle of the data span, "Off" switches back and stops play', () => {
   const p = timePage();
   eq(null, p.time().at);
   p.X('tbOpen()');
-  eq('0100-01-01T00:00:00Z', p.time().at);
+  eq('0300-07-03T00:00:00Z', p.time().at); // the middle of 0100-01-01 .. 0500-12-31
   p.X('tbPlay(true)');
   eq(true, p.time().playing);
   p.X('tbOff()');

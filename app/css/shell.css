@@ -10,3 +10,34 @@
 .ahm-empty { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 2rem 0; text-align: center; color: var(--ahm-muted, #7b858b); }
 .ahm-empty p { margin: 0; }
 .ahm-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---- the Period | Moment footer (frames s001 s022) ---- */
+.foot { padding: 0.75rem 1rem 0.5rem; }
+.foot [hidden] { display: none !important; }
+.ahm-foot-top { justify-content: space-between; }
+.ahm-end { justify-content: flex-end; }
+.ahm-between { justify-content: space-between; margin-top: 0.4rem; }
+.ahm-moment { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.ahm-moment small { letter-spacing: 0.08em; color: var(--ahm-muted, #7b858b); }
+.ahm-moment b { font-size: 1.4rem; }
+.ahm-speed { display: flex; margin-top: 0.5rem; }
+.ahm-speed .btn { flex: 1; }
+.ahm-hist { position: relative; height: 2.75rem; margin: 0.5rem 0.5rem 0; }
+.ahm-bars { position: absolute; inset: 0 0 0.75rem; display: flex; align-items: flex-end; gap: 2px; }
+.ahm-bars i { flex: 1; background: #d9d3a8; border-radius: 2px 2px 0 0; }
+.ahm-bars i.in { background: #115098; }
+.ahm-hist::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0.4rem; height: 3px; background: #edeada; border-radius: 2px; }
+.ahm-handle { position: absolute; left: -0.5rem; width: calc(100% + 1rem); bottom: 0; margin: 0; height: 1.1rem; background: none; pointer-events: none; appearance: none; -webkit-appearance: none; z-index: 1; }
+.ahm-handle::-webkit-slider-runnable-track { background: none; height: 3px; }
+.ahm-handle::-moz-range-track { background: none; height: 3px; }
+.ahm-handle::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 1.1rem; height: 1.1rem; margin-top: -0.5rem; border-radius: 50%; background: #fff; border: 3px solid #115098; cursor: grab; }
+.ahm-handle::-moz-range-thumb { pointer-events: auto; width: 0.7rem; height: 0.7rem; border-radius: 50%; background: #fff; border: 3px solid #115098; cursor: grab; }
+.ahm-axis { position: relative; height: 1.1rem; margin: 0.15rem 0.5rem 0; font-size: 0.75rem; color: var(--ahm-muted, #7b858b); }
+.ahm-axis span { position: absolute; transform: translateX(-50%); }
+.ahm-ax-l { left: 0; transform: none !important; }
+.ahm-ax-r { right: 0; transform: none !important; }
+@media (max-width: 700px) {
+  .foot { padding: 0.4rem 0.9rem 0.25rem; }
+  .ahm-hist { height: 2rem; margin-top: 0.25rem; }
+  .ahm-moment b { font-size: 1.15rem; }
+}

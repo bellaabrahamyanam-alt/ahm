@@ -5,10 +5,10 @@ const TB_TICK = 200; // ms between two steps of play
 let tbTimer = null;
 const tbPatch = (p) => AHM.state.patch('time', p);
 const tbSpan = () => timeSpan([...places, ...shapes]);
-/** The time-travel button of the Period footer: switch the bar on at the earliest date of the data (nothing happens while no object has a date). */
+/** The Moment side of the footer toggle: switch the Moment on at the middle of the data span, frame s22 (nothing happens while no object has a date). */
 function tbOpen() {
   const span = tbSpan();
-  if (span) tbPatch({ at: secToIso(span[0]) });
+  if (span) tbPatch({ at: secToIso(Math.round(span[0] + (span[1] - 1 - span[0]) / 2)) });
 }
 function tbStop() {
   clearTimeout(tbTimer);

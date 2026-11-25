@@ -382,21 +382,24 @@ scenario('browser: names over time (T-043): a name with a period saves in the pl
 
 scenario('browser: foundation: the Period / Moment footer, language and type pills, the date format menu', null, async (pg, S) => {
   await pg.goto(S.base + '/'); await pg.waitForTimeout(1200);
-  ok((await pg.locator('#foot .ft-period').count()) === 1 && (await pg.locator('#tbOpen, #timebar').count()) === 0, 'the footer is there and the old time bar is gone');
-  ok(/Any/.test(await pg.locator('#foot .ft-txt').innerText()), 'Period reads Any at the start');
-  ok((await pg.locator('#foot .ft-bars i').count()) === 48, 'the histogram has 48 steps');
+  ok((await pg.locator('#foot').count()) === 1 && (await pg.locator('#tbOpen, #timebar').count()) === 0, 'the footer is there and the old time bar is gone');
+  eq('Any', (await pg.locator('#ftRange').innerText()).trim(), 'Period reads Any at the start');
+  eq(48, await pg.locator('#ftBars i').count(), 'the histogram has 48 steps');
+  const bar0 = await pg.evaluate(() => document.querySelector('#ftBars i'));
   await pg.evaluate(() => { const f = document.querySelector('#ftFrom'); f.value = '400'; f.dispatchEvent(new Event('input', { bubbles: true })); f.dispatchEvent(new Event('change', { bubbles: true })); });
   await pg.waitForTimeout(300);
   ok(await pg.evaluate(() => periodActive()), 'moving the handle sets the Period filter');
-  ok(!/Any/.test(await pg.locator('#foot .ft-txt').innerText()), 'the footer shows the new range');
+  ok(!/Any/.test(await pg.locator('#ftRange').innerText()), 'the footer shows the new range');
+  eq(48, await pg.locator('#ftBars i').count(), 'still 48 bars after a redraw');
   await pg.click('#ftClear'); await pg.waitForTimeout(200);
-  ok(!(await pg.evaluate(() => periodActive())) && /Any/.test(await pg.locator('#foot .ft-txt').innerText()), 'the cross resets the Period to Any');
-  await pg.click('#ftTravel'); await pg.waitForTimeout(200);
-  ok((await pg.locator('#foot .ft-moment').count()) === 1 && (await pg.evaluate(() => AHM.state.get('time').at)) !== null, 'time travel shows the Moment footer and sets the moment');
-  await pg.click('#ftSpeed [data-speed="50"]');
+  ok(!(await pg.evaluate(() => periodActive())) && /Any/.test(await pg.locator('#ftRange').innerText()), 'the cross resets the Period to Any');
+  await pg.locator('#ftModeMoment').check({ force: true }); await pg.waitForTimeout(200);
+  ok(await pg.locator('#ftDate').isVisible() && (await pg.evaluate(() => AHM.state.get('time').at)) !== null, 'Moment shows the Moment controls and sets the moment');
+  ok(!(await pg.locator('#ftFrom').isVisible()), 'the Period handles are hidden in Moment');
+  await pg.locator('#ftSpeed input[value="50"]').check({ force: true });
   eq(50, await pg.evaluate(() => AHM.state.get('time').speed), 'the speed buttons set the speed');
-  await pg.click('#ftOff'); await pg.waitForTimeout(200);
-  ok((await pg.locator('#foot .ft-period').count()) === 1 && (await pg.evaluate(() => AHM.state.get('time').at)) === null, 'the cross of the Moment returns to the Period');
+  await pg.locator('#ftModePeriod').check({ force: true }); await pg.waitForTimeout(200);
+  ok(/Any/.test(await pg.locator('#ftRange').innerText()) && (await pg.evaluate(() => AHM.state.get('time').at)) === null, 'Period returns to the Period footer');
   await pg.evaluate(() => openDlg('place', { lon: 44.5, lat: 40.1, name: 'Pillville' }));
   await pg.click('#dPlaceForm .lang-pill[data-lang="hy"]');
   eq('hy', await pg.locator('#dPlaceForm .pf-name .nl').inputValue(), 'a language pill sets the select that holds the value');
