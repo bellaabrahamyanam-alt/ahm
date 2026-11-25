@@ -17,6 +17,10 @@
       "tests/js/ui-rules.test.js",
       "tests/js/ui-explore.test.js",
       "tests/js/ui-layers.test.js",
+      "tests/js/ui-borders.test.js",
+      "tests/js/ui-routes.test.js",
+      "tests/js/ui-rivers.test.js",
+      "tests/js/ui-more.test.js",
       "tests/js/layers.test.js",
       "tests/js/sidebar.test.js"
     ],

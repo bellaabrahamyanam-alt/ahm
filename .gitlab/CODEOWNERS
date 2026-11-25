@@ -11,6 +11,10 @@
 /tests/js/ui-rules.test.js @bellaabrahamyan.am
 /tests/js/ui-explore.test.js @bellaabrahamyan.am
 /tests/js/ui-layers.test.js @bellaabrahamyan.am
+/tests/js/ui-borders.test.js @bellaabrahamyan.am
+/tests/js/ui-routes.test.js @bellaabrahamyan.am
+/tests/js/ui-rivers.test.js @bellaabrahamyan.am
+/tests/js/ui-more.test.js @bellaabrahamyan.am
 /tests/js/layers.test.js @bellaabrahamyan.am
 /tests/js/sidebar.test.js @bellaabrahamyan.am
 /changes/sidebar.md @bellaabrahamyan.am

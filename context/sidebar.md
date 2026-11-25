@@ -31,7 +31,7 @@ The left panel: place list and details, search and period, layers, categories, l
 
 ## Files of this domain (where most changes of this area happen; you may change others when the TODO item needs it)
 
-`app/js/sidebar/`, `app/css/sidebar.css`, `app/css/shell.css`, `app/css/shapes.css`, `app/css/explore.css`, `app/css/layers.css`, `tests/js/ui-rules.test.js`, `tests/js/ui-explore.test.js`, `tests/js/ui-layers.test.js`, `tests/js/layers.test.js`, `tests/js/sidebar.test.js`, and the log `changes/sidebar.md`.
+`app/js/sidebar/`, `app/css/sidebar.css`, `app/css/shell.css`, `app/css/shapes.css`, `app/css/explore.css`, `app/css/layers.css`, `tests/js/ui-rules.test.js`, `tests/js/ui-explore.test.js`, `tests/js/ui-layers.test.js`, `tests/js/ui-borders.test.js`, `tests/js/ui-routes.test.js`, `tests/js/ui-rivers.test.js`, `tests/js/ui-more.test.js`, `tests/js/layers.test.js`, `tests/js/sidebar.test.js`, and the log `changes/sidebar.md`.
 
 ## Token rules
 
