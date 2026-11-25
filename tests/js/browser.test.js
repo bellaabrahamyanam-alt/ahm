@@ -397,12 +397,12 @@ scenario('browser: foundation: the Period / Moment footer, language and type pil
   eq(48, await pg.locator('#ftBars i').count(), 'still 48 bars after a redraw');
   await pg.click('#ftClear'); await pg.waitForTimeout(200);
   ok(!(await pg.evaluate(() => periodActive())) && /Any/.test(await pg.locator('#ftRange').innerText()), 'the cross resets the Period to Any');
-  await pg.locator('#ftModeMoment').check({ force: true }); await pg.waitForTimeout(200);
+  await pg.evaluate(() => document.querySelector('#ftModeMoment').click()); await pg.waitForTimeout(200);
   ok(await pg.locator('#ftDate').isVisible() && (await pg.evaluate(() => AHM.state.get('time').at)) !== null, 'Moment shows the Moment controls and sets the moment');
   ok(!(await pg.locator('#ftFrom').isVisible()), 'the Period handles are hidden in Moment');
-  await pg.locator('#ftSpeed input[value="50"]').check({ force: true });
+  await pg.evaluate(() => document.querySelector('#ftSpeed input[value="50"]').click());
   eq(50, await pg.evaluate(() => AHM.state.get('time').speed), 'the speed buttons set the speed');
-  await pg.locator('#ftModePeriod').check({ force: true }); await pg.waitForTimeout(200);
+  await pg.evaluate(() => document.querySelector('#ftModePeriod').click()); await pg.waitForTimeout(200);
   ok(/Any/.test(await pg.locator('#ftRange').innerText()) && (await pg.evaluate(() => AHM.state.get('time').at)) === null, 'Period returns to the Period footer');
   await pg.evaluate(() => openDlg('place', { lon: 44.5, lat: 40.1, name: 'Pillville' }));
   await pg.click('#dPlaceForm .lang-pill[data-lang="hy"]');

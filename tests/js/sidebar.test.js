@@ -167,8 +167,8 @@ test('time bar: every change of the moment refreshes the lists and the map (upda
   const HTML2 = fs.readFileSync(path.join(ROOT, 'app', 'index.html'), 'utf8');
   const LAYOUT = fs.readFileSync(path.join(ROOT, 'app', 'js', 'sidebar', 'layout.js'), 'utf8');
   test('foundation F2: the shell has the brand header and six tabs, each an icon over a label, in the prototype order', () => {
-    ok(/<header class="brand">[\s\S]*<h1>Armenian Highlands<\/h1>/.test(HTML2), 'brand header with the title');
-    const tabs = [...HTML2.matchAll(/<button data-tab="(\w+)"[^>]*><svg[^>]*aria-hidden="true">[\s\S]*?<\/svg><span>([^<]+)<\/span><\/button>/g)];
+    ok(/<header class="ahm-head">[\s\S]*<h1>Armenian Highlands<\/h1>/.test(HTML2), 'brand header with the title');
+    const tabs = [...HTML2.matchAll(/<button type="button" role="tab" data-tab="(\w+)"[^>]*><svg[^>]*aria-hidden="true">[\s\S]*?<\/svg><span>([^<]+)<\/span><\/button>/g)];
     eq(['explore:Explore', 'shapes:Borders', 'routes:Routes', 'rivers:Rivers', 'layers:Layers', 'more:More'], tabs.map((m) => m[1] + ':' + m[2]), 'tabs');
   });
   test('foundation F2: a click on the icon or the label of a tab opens the tab (closest, not target)', () => {
