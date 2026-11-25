@@ -520,3 +520,67 @@ scenario('browser: foundation v2: phone bottom sheet, handle, Time button', null
   await pg.click('#expand'); await pg.waitForTimeout(400);
   ok((await pg.locator('#side').boundingBox()).y < 844 - 100, 'the handle tab opens the sheet again');
 });
+
+scenario('browser: foundation v2: fields (date, pills +N, language filter, names, style editor, form, note, row)', null, async (pg, S) => {
+  await pg.setViewportSize({ width: 400, height: 860 });
+  await pg.goto(S.base + '/'); await pg.waitForTimeout(1000);
+  const r = await pg.evaluate(() => {
+    const out = {}, host = document.createElement('div'); host.style.width = '360px'; document.body.append(host);
+    // date: write -> read gives the same value; BCE; format change keeps the typed date; unknown is null
+    const d0 = { fmt: 'y', ts: '0500-01-01T00:00:00Z', mode: 'exact', ts_to: null };
+    const d = fields.date(d0); host.append(d);
+    out.dateSame = JSON.stringify(fields.dateRead(d)) === JSON.stringify(dfRead(dfHtmlNode(d0), 'Date'));
+    function dfHtmlNode(x) { const w = document.createElement('div'); w.innerHTML = dfHTML('t', x); return w.firstChild; }
+    d.querySelector('[data-era="BCE"]').checked = true; d.querySelector('[data-era="BCE"]').dispatchEvent(new Event('change', { bubbles: true }));
+    out.bce = fields.dateRead(d).ts.startsWith('-') || /^-/.test(fields.dateRead(d).ts) || /BCE/.test(d.querySelector('[data-bind="preview"]').textContent);
+    d.querySelector('[data-fmt="dmy"]').click();
+    out.fmt = d.dataset.fmt === 'dmy' && fields.dateRead(d) !== undefined;
+    const u = fields.date(null); out.unknown = fields.dateRead(u) === null;
+    const range = fields.date({ fmt: 'y', ts: '0100-01-01T00:00:00Z', mode: 'range', ts_to: '0200-01-01T00:00:00Z' }); host.append(range);
+    out.range = range.querySelectorAll('.ahm-date-g').length === 2 && fields.dateRead(range).mode === 'range';
+    const bad = fields.date({ fmt: 'y', ts: '0100-01-01T00:00:00Z', mode: 'exact', ts_to: null }); host.append(bad); bad.querySelector('[data-f="y"]').value = '';
+    out.safe = fields.dateSafe(bad) === null && bad.classList.contains('ahm-bad');
+    // pills: all fit -> no +N; many -> +N, selected pill stays visible
+    const langs = ['en', 'hy', 'ru', 'fa', 'tr', 'ar', 'ka', 'de', 'fr'].map((c) => ({ code: c, name: c.toUpperCase() + ' language' }));
+    const few = fields.pills(langs.slice(0, 2), 'en'); host.append(few); fields.fit(few);
+    out.noPlus = few.querySelector('.ahm-more').hidden === true;
+    const many = fields.pills(langs, 'fr'); host.style.width = '230px'; host.append(many); fields.fit(many);
+    const shown = many._pills.filter((b) => !b.hidden).map((b) => b.dataset.code);
+    out.plus = !many.querySelector('.ahm-more').hidden && /^\+\d+$/.test(many.querySelector('[data-bind="more"]').textContent) && shown.includes('fr') && shown.length < 9;
+    out.noWrap = many.getBoundingClientRect().height < 50;
+    let changed = 0; many.addEventListener('change', () => changed++);
+    many._pills.find((b) => !b.hidden).click(); out.pick = changed === 1 && many.dataset.value === shown[0];
+    // names with a period
+    const names = document.createElement('div'); host.append(names);
+    fields.nameList(names, langs, [{ lang: 'en', name: 'Ani' }, { lang: 'hy', name: 'Անի', date_from: d0, date_to: null }]);
+    fields.nameAdd(names, 'ru'); out.names = names.querySelectorAll('.ahm-name').length === 3;
+    out.read = JSON.stringify(fields.readNames(names).map((n) => [n.lang, n.name, !!n.date_from])) === JSON.stringify([['en', 'Ani', false], ['hy', 'Անի', true]]);
+    const row = names.children[0]; row.querySelector('[data-act="period"]').click();
+    out.periodOpen = row.querySelectorAll('.ahm-date').length === 2 && row.querySelector('[data-bind="periodBtn"]').textContent === 'Done';
+    row.querySelector('[data-act="period"]').click(); out.periodDone = row.querySelector('[data-period-body]').hidden;
+    names.children[1].querySelector('[data-act="up"]').click(); out.up = names.children[0].querySelector('[data-value="name"]').value === 'Անի';
+    names.children[0].querySelector('[data-act="del"]').click(); out.del = names.querySelectorAll('.ahm-name').length === 2;
+    // style editor, four kinds
+    const kinds = {}; for (const k of ['point', 'line', 'area', 'river']) { const e = fields.styleEditor(k, '#b3261e', null, [{ name: 'castle' }]); host.append(e); kinds[k] = [...e.querySelectorAll('[data-sec]')].filter((s) => !s.hidden).map((s) => s.dataset.sec).join(); }
+    out.kinds = JSON.stringify(kinds) === JSON.stringify({ point: 'point,size', line: 'width,opacity,pattern,arrow', area: 'fill,width,pattern', river: 'width,opacity,pattern' });
+    const pe = fields.styleEditor('point', '#b3261e', { symbol: 'castle', size: 9 }, [{ name: 'castle' }]); host.append(pe);
+    out.styleRead = JSON.stringify(fields.readStyle(pe)) === JSON.stringify({ color: '#b3261e', style: { symbol: 'castle', size: 9 } });
+    const ae = fields.styleEditor('area', '#115098', { fill_opacity: 0.3, outline: { width: 3, pattern: 'dashed', opacity: 1 } }); host.append(ae);
+    out.areaRead = JSON.stringify(fields.readStyle(ae)) === JSON.stringify({ color: '#115098', style: { fill_opacity: 0.3, outline: { width: 3, pattern: 'dashed', opacity: 1 } } });
+    // language filter
+    const lf = fields.langFilter(langs.map((l, i) => ({ ...l, count: 10 - i })), []); host.append(lf);
+    lf.querySelector('[data-code]').click(); out.filterOne = JSON.stringify(lf.selected()) === JSON.stringify(['en']);
+    lf.querySelector('[data-act="clear"]').click(); out.filterClear = lf.selected().length === 0;
+    out.filterMore = !lf.querySelector('.ahm-more').hidden && /^\+5/.test(lf.querySelector('[data-bind="more"]').textContent);
+    // form, note, row
+    const f = fields.form('Edit', { danger: true }); host.append(f); out.form = f.querySelector('[data-act="save"]').classList.contains('btn-error') && f.querySelector('h3').textContent === 'Edit';
+    const short = fields.note({ title: 'T', lang: 'en', text: 'short' }), long = fields.note({ title: 'T', lang: 'en', text: 'word '.repeat(80) });
+    host.append(short, long);
+    out.moreHidden = short.querySelector('[data-more]').hidden; long.querySelector('[data-more]').click();
+    out.moreOpen = !long.querySelector('.ahm-text').classList.contains('ahm-clamp') && /less/.test(long.querySelector('[data-more]').textContent);
+    const li = fields.row({ id: 7, title: '<b>x</b>', sub: 's', count: 2 }); host.append(li);
+    out.rowText = li.querySelector('[data-bind="title"]').textContent === '<b>x</b>' && !li.querySelector('b') && li.dataset.id === '7';
+    return out;
+  });
+  for (const k of Object.keys(r)) ok(r[k] === true, 'fields: ' + k);
+});

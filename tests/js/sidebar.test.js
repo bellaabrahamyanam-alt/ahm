@@ -273,3 +273,16 @@ test('time bar: every change of the moment refreshes the lists and the map (upda
     ok(!/<i>T/.test(f) && /Save version/.test(f) && /data-act="cancel"/.test(f), 'form: title escaped, own save label, cancel');
   });
 }
+
+// ---- foundation v2: pillFit (pure) ----
+test('foundation v2: pillFit shows all pills when they fit, no "+N"', () => {
+  const p = load(['fields.js'], UI_STANDINS);
+  eq({ shown: [0, 1, 2], more: 0 }, J(p.X('pillFit([40, 40, 40], 200, 30, 1)')));
+});
+test('foundation v2: pillFit leaves room for "+N" and keeps the selected pill visible by replacing the last one', () => {
+  const p = load(['fields.js'], UI_STANDINS);
+  eq({ shown: [0, 1, 2], more: 3 }, J(p.X('pillFit([40, 40, 40, 40, 40, 40], 190, 30, 0)')));
+  eq({ shown: [0, 1, 5], more: 3 }, J(p.X('pillFit([40, 40, 40, 40, 40, 40], 190, 30, 5)')));
+  eq({ shown: [0, 1, 2], more: 3 }, J(p.X('pillFit([40, 40, 40, 40, 40, 40], 200, 30, 2)')), 'a selected pill already shown changes nothing');
+  eq({ shown: [0, 1, 3], more: 3 }, J(p.X('pillFit([40, 40, 40, 40, 40, 40], 200, 30, 3)')), 'the selected pill takes the place of the last one that fits');
+});
