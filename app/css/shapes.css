@@ -223,3 +223,7 @@
 .bd-view { gap: 0.9rem; }
 .bd-view input[type="checkbox"] { width: 1.15rem; height: 1.15rem; border-radius: 0.25rem; flex: none; }
 .bd-view label.ahm-row { font-size: 0.9rem; }
+#shForm { gap: 0.5rem; }
+#shForm > .bd-cap, #shForm > .bd-ev > .bd-cap:not(:first-child) { margin-top: 0.9rem; }
+#shForm > .bd-ev { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.4rem; }
+#shForm > .ahm-hint { margin-top: 0.25rem; }

@@ -548,8 +548,8 @@ function shOpenForm(f) {
     v = kit.tpl('t-bd-formview'),
     q = (x) => v.querySelector(x);
   kit.fill(v, {
-    title: prev ? 'New version of “' + shapeName(prev, l) + '”' : f.id ? 'Edit details' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)',
-    sub: prev ? `Move the points on the map, then save with the dates when this shape was true. “${shapeWhen(prev) || 'no dates'}” stays as it is.` : f.id ? 'Names, type, dates and sources.' : 'Name it, choose a type and give the dates it was true.',
+    title: prev ? 'New version of “' + shapeName(prev, l) + '”' : f.id ? 'Edit “' + shapeName(f, l) + '”' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)',
+    sub: prev ? `Move the points on the map, then save with the dates when this shape was true. “${shapeWhen(prev) || 'no dates'}” stays as it is.` : f.id ? 'Names, type, dates and sources. The outline is changed with Edit shape.' : 'Name it, choose a type and give the dates it was true.',
     save: prev ? 'Save version' : 'Save',
   });
   fields.nameList(q('[data-names]'), languages.map((x) => ({ code: x.code, name: langName(x.code) })), names);
