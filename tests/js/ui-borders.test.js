@@ -98,6 +98,7 @@ function scenario(name, fn) {
 const shot = async (pg, name) => {
   fs.mkdirSync(SHOTS, { recursive: true });
   await pg.setViewportSize({ width: 800, height: 860 });
+  await pg.evaluate(() => document.activeElement && document.activeElement.blur());
   await pg.waitForTimeout(300);
   await pg.screenshot({ path: path.join(SHOTS, name + '.png'), clip: { x: 0, y: 0, width: 400, height: 860 } });
   await pg.setViewportSize({ width: 400, height: 860 });
@@ -123,6 +124,7 @@ const DRAW = () => {
 scenario('borders (browser): list: intro with More, search, type chips with counts, eye toggle, hidden row, pinned Add border', async (pg, S) => {
   await open(pg, S);
   ok(await pg.locator('#tab-shapes').isVisible(), 'the Borders tab is shown');
+  await shot(pg, 's073-list');
   const n = await pg.evaluate(() => shapes.filter((s) => shapeGroup(s) === 'border').length);
   eq(n, await pg.locator('#shList li[data-sid]').count(), 'one row per border');
   ok(/^\d+ of \d+ borders$/.test(await pg.locator('#shCount').innerText()), 'count line');
@@ -149,7 +151,6 @@ scenario('borders (browser): list: intro with More, search, type chips with coun
   eq('sticky', await pg.locator('#shAdd .bd-bar').evaluate((e) => getComputedStyle(e).position), 'Add border is pinned');
   ok(/Add border/.test(await pg.locator('#shAdd').innerText()), 'the pinned button');
   eq(true, await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('.body').scrollWidth <= document.querySelector('.body').clientWidth + 1), 'no sideways scroll at 400px');
-  await shot(pg, 's073-list');
 });
 
 scenario('borders (browser): card: icons on top, look, layers, notes; a version chip switches the shape; delete asks the shared modal', async (pg, S) => {

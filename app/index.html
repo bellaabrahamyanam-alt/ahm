@@ -229,7 +229,7 @@
         <!-- ahm:region tab-borders -->
         <section id="tab-shapes" class="bd-tab" hidden>
           <div id="bdMain">
-          <div class="bd-intro"><svg class="bd-info" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><p id="shIntro" class="ahm-hint bd-clamp">Borders of countries, regions and other areas, and lines. Colour them, make them transparent and show their names on the map. They can belong to layers and follow the period filter of Explore.</p><button type="button" id="shMore" class="link link-primary" aria-expanded="false">More</button></div>
+          <div class="bd-intro"><svg class="bd-info" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><div class="bd-introtxt"><p id="shIntro" class="ahm-hint bd-clamp">Borders of countries, regions and other areas, and lines. Colour them, make them transparent and show their names on the map. They can belong to layers and follow the period filter of Explore.</p><button type="button" id="shMore" class="link link-primary" aria-expanded="false">More</button></div></div>
           <label class="input w-full bd-search"><span class="ahm-sr" id="shSearchLbl">Search borders</span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="shQ" type="search" placeholder="Search borders…" autocomplete="off" aria-labelledby="shSearchLbl" /></label>
           <div id="shTypes" class="ahm-row ahm-wrap"></div>
           <div class="ahm-row ahm-between bd-countline"><output id="shCount"><b data-bind="n"></b> <span data-bind="rest"></span></output><button type="button" id="shFit" class="btn btn-ghost btn-sm btn-square text-primary" aria-label="Fit map" title="Zoom the map to the borders in the list"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="ahm-sr">Fit map</span></button></div>
@@ -487,7 +487,7 @@
       <div class="bd-headcard"><h3 data-bind="title"></h3><p class="ahm-hint" data-bind="sub"></p></div>
       <div id="shForm" class="ahm-col">
       <h4 class="bd-cap">Names</h4><div class="ahm-col" data-names></div>
-        <button type="button" class="btn btn-dash btn-primary btn-sm rounded-full bd-addname" data-act="addname"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add another name</button><p class="ahm-hint" data-bind="langhint"></p>
+        <button type="button" class="btn btn-dash btn-primary btn-sm rounded-full bd-addname" data-act="addname"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add another name</button>
       <h4 class="bd-cap">Type</h4><div data-type></div>
       <h4 class="bd-cap">Began</h4><div data-from></div>
       <h4 class="bd-cap">Ended</h4><div data-to></div><p class="ahm-hint">Leave “Unknown” for a modern border or when you do not know. Borders with dates follow the period filter.</p>
@@ -499,7 +499,7 @@
           <input class="input input-sm pf-st" placeholder="Title" aria-label="Source title" /><input class="input input-sm pf-sc" placeholder="Citation (optional)" aria-label="Source citation" /><input class="input input-sm pf-su" placeholder="Link, https://… (optional)" aria-label="Source link" />
           <button type="button" class="btn btn-sm btn-primary" data-act="srcadd">Add source</button><p class="text-error ahm-hint pf-srcerr" role="alert"></p></div></details></div>
       <div id="shErr" class="alert alert-error alert-soft bd-err" role="alert"></div></div>
-      <div class="bd-bar"><button type="button" class="btn btn-primary" data-shact="save" data-bind="save"></button><button type="button" class="btn btn-neutral btn-soft" data-shact="cancel">Cancel</button></div></div></template>
+      <div class="bd-bar"><button type="button" class="btn btn-primary" data-shact="save" data-bind="save"></button><button type="button" class="btn bd-sec" data-shact="cancel">Cancel</button></div></div></template>
     <template id="t-bd-add"><div class="bd-view">
       <div class="bd-headcard"><h3>Add a border</h3><p class="ahm-hint">Find it on OpenStreetMap, draw it, or import a file.</p>
         <div class="ahm-row"><label class="input ahm-grow bd-search"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="shGeoQ" type="search" placeholder="Country, region, district…" autocomplete="off" aria-label="Search OpenStreetMap" /></label><button type="button" class="btn btn-primary" data-shadd="search">Search</button></div></div>
@@ -517,12 +517,12 @@
       <div class="bd-headcard"><h3 data-bind="title"></h3><p class="ahm-hint"><output id="bdPts"></output></p><p class="ahm-hint" data-bind="vnote" hidden></p></div>
       <p class="bd-keys"><kbd class="kbd">Click</kbd> the map to add points.<br /><kbd class="kbd">Drag</kbd> a point to move it.<br /><kbd class="kbd">Right-click</kbd> a point to remove it. Backspace undoes.<br /><kbd class="kbd">Enter</kbd> or a double click finishes. Esc cancels.</p>
       <div data-river hidden><label class="ahm-row"><input type="checkbox" id="shRiverOn" class="checkbox checkbox-sm checkbox-primary" /><span>Follow a river between the points I click</span></label>
-        <div class="ahm-row" data-riverq><input type="text" id="shRiverQ" class="input ahm-grow" placeholder="River name, e.g. Araks" /><button type="button" class="btn btn-neutral btn-soft" data-shadd="riverfind">Find</button></div>
+        <div class="ahm-row" data-riverq><input type="text" id="shRiverQ" class="input ahm-grow" placeholder="River name, e.g. Araks" /><button type="button" class="btn bd-sec" data-shadd="riverfind">Find</button></div>
         <p class="ahm-hint" id="shRiverMsg"></p></div>
       <div id="shDrawErr" class="alert alert-error alert-soft" role="alert" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg><span data-bind="err"></span></div>
-      <div><button type="button" class="btn btn-neutral btn-soft btn-sm" data-shadd="undo"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg> Undo</button></div>
+      <div><button type="button" class="btn bd-sec btn-sm" data-shadd="undo"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg> Undo</button></div>
       <div id="shAddMsg" class="alert alert-error alert-soft bd-err" role="alert"></div>
-      <div class="bd-bar"><button type="button" class="btn btn-primary" id="shFinish" data-shadd="finish" disabled></button><button type="button" class="btn btn-neutral btn-soft" data-shadd="canceldraw">Cancel</button></div></div></template>
+      <div class="bd-bar"><button type="button" class="btn btn-primary" id="shFinish" data-shadd="finish" disabled></button><button type="button" class="btn bd-sec" data-shadd="canceldraw">Cancel</button></div></div></template>
     <!-- /ahm:region tpl-borders -->
     <!-- ahm:region tpl-routes -->
     <!-- /ahm:region tpl-routes -->
