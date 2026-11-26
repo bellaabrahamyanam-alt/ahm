@@ -1,1 +1,80 @@
 /* Layers tab: styles of this screen only (tasks/layers.md). Shared look lives in sidebar.css and base.css (foundation, read only). New class names must not collide with daisyUI (see docs/design-migration/02-shared-components.md). */
+.ly-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.ly-i { width: 1rem; height: 1rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+.ly-view { container-type: inline-size; display: flex; flex-direction: column; gap: 0.75rem; min-height: 100%; }
+.ly-view[hidden] { display: none; }
+.ly-info, .ly-banner { align-items: start; text-align: start; border: 1px solid var(--color-base-300); background: var(--color-base-200); color: var(--content-color); }
+.ly-banner { border-inline-start: 0.25rem solid var(--color-primary); }
+.ly-info p, .ly-banner p { margin: 0; text-wrap: pretty; }
+.ly-filters { display: grid; grid-template-columns: 1fr minmax(8rem, 42%); gap: 0.5rem; }
+.ly-filters > * { min-width: 0; }
+.ly-count { margin: 0; font-size: 0.8rem; color: color-mix(in oklab, var(--color-base-content) 70%, transparent); }
+.ly-chips { display: flex; align-items: center; gap: 0.5rem; margin: 0; }
+.ly-num { padding: 0.15rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; background: var(--color-base-100); border: 1px solid var(--color-base-300); color: var(--content-color); }
+.ly-num-add { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-primary-content); }
+
+/* a layer: the colour edge is the layer's own colour (--ly-c, set from the data) */
+.ly-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.ly-card { background: var(--color-base-200); border: 1px solid var(--color-base-300); border-inline-start: 0.3rem solid var(--ly-c, var(--color-base-300)); border-radius: var(--radius-box); }
+.ly-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.6rem 0.6rem 0.75rem; }
+.ly-card .ly-open { flex: 1 1 auto; min-width: 0; height: auto; min-height: 0; display: grid; gap: 0.1rem; justify-content: stretch; justify-items: start; padding: 0; border: 0; background: none; box-shadow: none; text-align: start; font-weight: inherit; color: var(--content-color); }
+.ly-name { font-size: 1.05rem; font-weight: 700; color: var(--content-color); line-height: 1.25; text-wrap: balance; }
+.ly-cat { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ahm-muted, #7b858b); }
+.ly-meta { font-size: 0.8rem; color: var(--ahm-muted, #7b858b); }
+.ly-item:has(.ly-hidden), .ly-hidden .ly-open { opacity: 1; }
+.ly-hidden .ly-open { opacity: 0.55; }
+
+/* show | only | hide: three radios in a join, no script switches the look */
+.ly-three { position: relative; background: var(--bg1-bg-color, #edeada); padding: 3px; border-radius: 0.6rem; gap: 2px; flex: none; }
+.ly-three label { position: relative; border: 0; box-shadow: none; background: transparent; color: var(--html-body-color); border-radius: 0.45rem; }
+.ly-three label:has(:checked) { background: var(--color-base-100); color: var(--color-primary); box-shadow: 0 1px 3px #0002; }
+.ly-three label:has(:focus-visible) { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.ly-three input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; appearance: none; }
+
+/* the open card */
+.ly-body { display: flex; flex-direction: column; gap: 0.5rem; padding: 0 0.75rem 0.75rem; border-top: 1px solid var(--color-base-300); transition: opacity 0.15s; @starting-style { opacity: 0; } }
+.ly-body[hidden] { display: none; }
+.ly-tools { display: flex; align-items: center; gap: 0.25rem; padding-top: 0.5rem; border-bottom: 1px solid var(--color-base-300); padding-bottom: 0.5rem; }
+.ly-tools[hidden] { display: none; }
+.ly-end { margin-inline-start: auto; }
+.ly-sec { margin: 0.5rem 0 0; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ahm-muted, #7b858b); }
+.ly-sec[hidden] { display: none; }
+.ly-p { margin: 0; white-space: pre-line; text-wrap: pretty; }
+.ly-hint { margin: 0; font-size: 0.8rem; color: var(--ahm-muted, #7b858b); }
+.ly-members { padding: 0; }
+.ly-prow { padding: 0.25rem 0; align-items: center; }
+.ly-members .ly-link { display: flex; align-items: center; justify-content: flex-start; gap: 0.6rem; height: auto; min-height: 0; padding: 0; border: 0; background: none; box-shadow: none; text-align: start; font-weight: inherit; color: var(--content-color); min-width: 0; }
+.ly-ico { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; flex: none; border-radius: 0.5rem; background: var(--color-base-100); border: 1px solid var(--bg1-bg-color, #edeada); }
+.ly-dot { width: 0.9rem; height: 0.9rem; border-radius: 0.2rem; background: var(--ly-c); }
+.ly-dot[hidden], .ly-ti[hidden] { display: none; }
+.ly-more { align-self: start; margin-inline-start: 2.85rem; }
+.ly-notes { display: flex; flex-direction: column; }
+.ly-self { align-self: start; }
+
+/* the bar that stays at the bottom: Add layer, Save places */
+.ly-bar { position: sticky; bottom: 0; margin-top: auto; padding: 0.75rem 0; background: var(--base-bg); }
+.ly-bar2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+
+/* choose places and borders */
+.ly-picklist { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.ly-picklist label { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0; cursor: pointer; }
+.ly-pname { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.ly-tag { text-transform: uppercase; letter-spacing: 0.05em; flex: none; }
+
+/* the form */
+.ly-fields { display: flex; flex-direction: column; gap: 0.5rem; }
+.ly-ta { field-sizing: content; min-height: 4rem; resize: none; }
+.ly-descrow .ahm-row { align-items: start; }
+
+@container (max-width: 20rem) {
+  .ly-filters { grid-template-columns: 1fr; }
+  .ly-head { flex-wrap: wrap; }
+}
+
+/* a search field: daisyUI label.input with a bare field inside (the legacy sidebar.css would draw a second box) */
+.ly-view .ly-bare { width: 100%; height: auto; min-width: 0; margin: 0; padding: 0; border: 0; box-shadow: none; background: none; outline: 0; font-size: inherit; }
+.ly-full { width: 100%; }
+.ly-check { display: flex; align-items: center; gap: 0.5rem; text-transform: none; letter-spacing: 0; font-size: 0.9rem; color: var(--content-color); }
+#lyState:empty { display: none; }
+.ly-fields input[type='color'] { width: 2.5rem; height: 2rem; margin: 0; padding: 0.1rem; }
