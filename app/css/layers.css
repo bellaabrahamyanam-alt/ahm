@@ -400,3 +400,23 @@
   border: 0;
   background: none;
 }
+
+/* s086/s087 finishing: blue x on members, parchment tiles, pill chips, bold card title, banner title dark */
+#tab-layers .ly-mem [data-act='leave'] {
+  color: var(--color-primary);
+}
+.ly-tile {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: color-mix(in oklab, var(--color-base-200) 70%, var(--color-base-100));
+}
+.ly-delta .badge {
+  border-radius: 999px;
+}
+.ly-banner .ahm-title {
+  color: var(--color-base-content);
+  font-weight: 700;
+}
+.ly-more {
+  color: var(--ly-muted);
+}
