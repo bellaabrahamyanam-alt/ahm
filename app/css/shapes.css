@@ -220,3 +220,6 @@
 .bd-sec { background: color-mix(in oklab, var(--color-base-content) 7%, white); }
 #shDrawErr { background: color-mix(in oklab, var(--color-error) 8%, white); }
 .bd-headcard { background: color-mix(in oklab, var(--color-base-100) 60%, white); }
+.bd-view { gap: 0.9rem; }
+.bd-view input[type="checkbox"] { width: 1.15rem; height: 1.15rem; border-radius: 0.25rem; flex: none; }
+.bd-view label.ahm-row { font-size: 0.9rem; }

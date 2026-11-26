@@ -95,8 +95,9 @@ function scenario(name, fn) {
   });
 }
 // the panel frames are 400x860 of the open desktop panel (the page itself is a phone sheet below 700px): shoot its left 400x860
-const shot = async (pg, name) => {
+const shot = async (pg, name, phone) => {
   fs.mkdirSync(SHOTS, { recursive: true });
+  if (phone) return pg.evaluate(() => document.activeElement && document.activeElement.blur()).then(() => pg.waitForTimeout(300)).then(() => pg.screenshot({ path: path.join(SHOTS, name + '.png') })); // dialogs are centred on the page: shoot the 400px page itself
   await pg.setViewportSize({ width: 800, height: 860 });
   await pg.evaluate(() => document.activeElement && document.activeElement.blur());
   await pg.waitForTimeout(300);
@@ -183,6 +184,7 @@ scenario('borders (browser): card: icons on top, look, layers, notes; a version 
   await card.locator('[data-shact=delete]').click();
   ok(await pg.locator('#ahm-confirm').isVisible(), 'delete asks the shared confirm');
   ok(/Delete “/.test(await pg.locator('#ahm-confirm h3').innerText()), 'with the s068 title');
+  await shot(pg, 's068-confirm-delete', true);
   await pg.click('#ahm-confirm [data-ok]');
   await pg.waitForTimeout(700);
   eq(ids.n - 1, await pg.evaluate(() => shapes.length), 'confirming deletes the border');
@@ -219,6 +221,10 @@ scenario('borders (browser): drawing an area: point count, error under 3 points,
   await pg.click('[data-shadd=open]');
   await pg.click('[data-shadd=drawline]');
   ok(await pg.locator('[data-river]').isVisible() && /Drawing a line/.test(await pg.locator('#bdPanel').innerText()), 'a line offers Follow a river');
+  await pg.click('#shRiverOn');
+  await pg.fill('#shRiverQ', 'Araks');
+  await pg.evaluate(() => __push(4));
+  await shot(pg, 's077-drawing-line-river');
   await pg.evaluate(() => shCancelDraw());
 });
 
@@ -299,6 +305,7 @@ scenario('borders (browser): add a border: OSM search (results, none, service do
   await pg.setInputFiles('#shFile', { name: 'three.geojson', mimeType: 'application/json', buffer: Buffer.from(fc(3)) });
   await pg.waitForSelector('#ahm-confirm[open]');
   eq('Import 3 shapes as borders?', (await pg.locator('#ahm-confirm h3').innerText()).trim(), 'the import confirm (s069)');
+  await shot(pg, 's069-confirm-import', true);
   const n1 = await pg.evaluate(() => shapes.length);
   await pg.click('#ahm-confirm form .btn-soft');
   await pg.waitForTimeout(300);

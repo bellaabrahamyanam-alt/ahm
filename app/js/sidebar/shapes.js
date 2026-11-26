@@ -781,7 +781,7 @@ function shRenderAdd() {
     p.querySelector('#shRiverOn').checked = sh.river.on;
     kit.show(p.querySelector('[data-riverq]'), sh.river.on);
     p.querySelector('#shRiverQ').value = sh.river.q;
-    p.querySelector('#shRiverMsg').textContent = sh.river.on ? (sh.river.lines.length ? sh.river.lines.length + ' river lines loaded (blue). Click near the start, then near the end.' : 'Type the river name and press Find.') : '';
+    p.querySelector('#shRiverMsg').textContent = sh.river.on ? (sh.river.lines.length ? sh.river.lines.length + ' river lines loaded (blue). Click near the start, then near the end. ' : '') + 'Type the river name and press Find.' : '';
     p.querySelector('#shFinish').textContent = d.mode === 'version' ? 'Next: dates' : d.mode === 'edit' ? 'Save shape' : 'Finish';
     box.textContent = '';
     shView(p);
