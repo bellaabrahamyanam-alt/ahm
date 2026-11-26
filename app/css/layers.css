@@ -508,7 +508,7 @@
 #tab-layers .ly-catsel,
 #tab-layers .ly-wide.select,
 #tab-layers .ly-form .select {
-  background: color-mix(in oklab, var(--color-base-300) 55%, var(--color-base-200));
+  background-color: color-mix(in oklab, var(--color-base-300) 55%, var(--color-base-200));
   border-color: transparent;
   box-shadow: none;
 }
@@ -574,7 +574,7 @@
 #tab-layers .ly-catsel,
 #tab-layers .ly-wide.select,
 #tab-layers .ly-form .select {
-  background: color-mix(in oklab, var(--color-base-300) 80%, var(--color-base-200));
+  background-color: color-mix(in oklab, var(--color-base-300) 80%, var(--color-base-200));
 }
 #tab-layers .ly-link {
   font-weight: 400;
@@ -599,4 +599,93 @@
 }
 #tab-layers .ly-more {
   font-weight: 400;
+}
+
+/* round 3, from the side-by-side images */
+#tab-layers .ly-info {
+  background: color-mix(in oklab, #f2e6a8 38%, var(--color-base-200));
+  border: 1px solid color-mix(in oklab, #d8c97a 45%, var(--color-base-300));
+  border-radius: 0.875rem;
+}
+#tab-layers .ly-name {
+  font-size: 1rem;
+  font-weight: 700;
+}
+#tab-layers .ly-row {
+  padding-block: 0.875rem;
+  border-radius: 0.875rem;
+}
+.ly-tri .btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  min-height: 0;
+}
+.ly-tri {
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+/* form: filled grey pills, one name has no up / delete, no empty gap under the dates, one row of swatches, a pinned Save bar, grey Year button */
+.ly-form .ahm-pill:not(.btn-primary) {
+  background: var(--color-base-300);
+  border-color: transparent;
+  color: var(--color-base-content);
+}
+.ly-form .ahm-name:only-child [data-act='up'],
+.ly-form .ahm-name:only-child [data-act='del'] {
+  display: none;
+}
+.ly-form .ahm-date > p:empty {
+  display: none;
+}
+.ly-form .ahm-fmt summary {
+  background-color: color-mix(in oklab, var(--color-base-300) 80%, var(--color-base-200));
+  border-color: transparent;
+  color: var(--color-base-content);
+  font-weight: 500;
+}
+.ly-colour .ahm-style > .ahm-row > .ahm-grow,
+.ly-colour .ahm-color {
+  display: none;
+}
+#lyFormView > form {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+#lyFormView .ahm-form-body {
+  flex: 1;
+}
+#lyFormView .ahm-bar {
+  position: sticky;
+  bottom: 0;
+  padding-top: 0.75rem;
+  background: var(--color-base-100);
+}
+
+/* round 4 */
+.ly-form .ahm-name input.input,
+.ly-form .ahm-name input[data-value='name'] {
+  background-color: color-mix(in oklab, var(--color-base-300) 70%, var(--color-base-200));
+  border-color: transparent;
+}
+.ly-form .ahm-name input[data-value='name']:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+.ly-form fieldset > .ahm-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ly-form fieldset > .ahm-hint:last-child,
+.ly-form .ahm-name + .ahm-hint {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  font-size: 0.8125rem;
+}
+.ly-colour [data-swatches] {
+  padding: 0.25rem;
 }
