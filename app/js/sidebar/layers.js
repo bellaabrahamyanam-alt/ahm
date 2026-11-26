@@ -114,6 +114,7 @@ function lyRenderView() {
   kit.show($('#lyListView'), listing);
   kit.show($('#lyPickView'), pick);
   kit.show($('#lyFormView'), form);
+  kit.show($('#lyFind'), listing); // the search and the category stay above an open card (s086)
   kit.show($('#lyInfo'), browse);
   kit.show($('#lyCount'), browse && lyLoaded);
   kit.show($('#lyBox'), browse);
@@ -208,7 +209,7 @@ function lyMemberRow(it, can) {
   kit.fill(li, { name: it.name });
   li.dataset.id = it.id;
   li.dataset.kind = it.kind;
-  kit.show(li.querySelector('[data-act="leave"]'), can);
+  kit.show(li.querySelector('[data-act="leave"]'), can && it.kind === 'place'); // only places have the x (s086); a border or route is taken out in Choose places
   const src = it.kind === 'place' && typeof typeIcon === 'function' ? /src="([^"]+)"/.exec(typeIcon(it.type)) : null; // typeIcon (map domain) gives an <img> string: only its src is used
   if (src) {
     img.src = src[1];
@@ -357,7 +358,7 @@ function lyRenderPick() {
     ss = shapes.filter(hit).sort((a, b) => shapeName(a, l).localeCompare(shapeName(b, l))),
     rows = ps.map((p) => lyPickRow(p.id, label(p, l), typeLabel(p.type, l), lyState.staged.has(p.id)));
   if (ss.length) {
-    rows.push(kit.fill(kit.tpl('t-ly-pick-head'), { title: 'Borders and routes' }));
+    rows.push(kit.fill(kit.tpl('t-ly-pick-head'), { title: 'Borders' }));
     ss.forEach((s) => rows.push(lyPickRow(s.id, shapeName(s, l), shapeType(s.type).label, lyState.staged.has(s.id))));
   }
   $('#lyPick').replaceChildren(...rows);

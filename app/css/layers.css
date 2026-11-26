@@ -364,3 +364,24 @@
     padding-inline-start: 0.75rem;
   }
 }
+
+/* s087: the type tag sits at the far right of its row; s088: section labels are small uppercase grey text */
+#tab-layers .ly-pickrow .ly-check {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ly-form .fieldset-legend {
+  padding: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ly-muted);
+}
+.ly-form .fieldset {
+  border: 0;
+  padding: 0;
+}
+.ly-morebox summary {
+  list-style: none;
+}

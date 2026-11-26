@@ -308,7 +308,7 @@
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg>
               <span>A layer is a subset of the main map, for example one campaign. Places stay on the main map; use <b>Only</b> to isolate a layer or <b>Hide</b> to remove it.</span>
             </div>
-            <div class="ly-find">
+            <div id="lyFind" class="ly-find">
               <label class="input ly-grow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="lyQ" type="search" placeholder="Search layers…" aria-label="Search layers" autocomplete="off" /></label>
               <select id="lyCat" class="select ly-catsel" aria-label="Category"></select>
             </div>
@@ -330,7 +330,6 @@
             <p class="ly-delta">
               <output id="lyPlus" class="badge badge-primary" title="Added to the layer">+0</output>
               <output id="lyMinus" class="badge badge-ghost" title="Taken out of the layer">−0</output>
-              <span class="ahm-hint">no changes yet when both are 0</span>
             </p>
             <label class="input ly-wide"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="lyPickQ" type="search" placeholder="Find a place or border…" aria-label="Find a place or border" autocomplete="off" /></label>
             <ul id="lyPick" class="list ly-checks"></ul>
