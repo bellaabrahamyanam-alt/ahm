@@ -483,3 +483,54 @@
   font-size: 0.9375rem;
   margin: 0 0 0.125rem;
 }
+
+/* round of eye-comparison fixes against s085/s086: dark titles, quiet filled fields, no row rules, blue tool icons, cream info box */
+#tab-layers .ly-main,
+#tab-layers .ly-link {
+  color: var(--color-base-content);
+}
+#tab-layers .ly-link {
+  font-size: 0.9375rem;
+}
+#tab-layers .ly-link:hover {
+  color: var(--color-primary);
+}
+#tab-layers .ly-info {
+  background: color-mix(in oklab, var(--color-warning) 10%, var(--color-base-200));
+  border-color: var(--color-base-300);
+  color: var(--color-base-content);
+}
+#tab-layers .ly-info > svg {
+  color: var(--color-primary);
+  margin-top: 0.125rem;
+}
+#tab-layers label.input,
+#tab-layers .ly-catsel,
+#tab-layers .ly-wide.select,
+#tab-layers .ly-form .select {
+  background: color-mix(in oklab, var(--color-base-300) 55%, var(--color-base-200));
+  border-color: transparent;
+  box-shadow: none;
+}
+#tab-layers .ly-mem,
+#tab-layers .ly-pickrow {
+  border: 0;
+  box-shadow: none;
+}
+#tab-layers .list-row::after,
+#tab-layers .list-row::before {
+  display: none;
+}
+#tab-layers .ly-tools .btn {
+  color: var(--color-primary);
+}
+#tab-layers .ly-tools .ly-danger {
+  color: var(--color-error);
+}
+#tab-layers .ly-tile {
+  border-radius: 0.625rem;
+  background: var(--color-base-200);
+}
+#tab-layers .ly-mem [data-act='leave'] {
+  margin-inline-start: auto;
+}
