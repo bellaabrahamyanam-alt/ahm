@@ -420,3 +420,66 @@
 .ly-more {
   color: var(--ly-muted);
 }
+
+/* s088: dark title, pill-sized dashed buttons, Unknown/Exact control beside the format, number + era on one line; s087: rounded-square checkboxes */
+#lyFormView .ahm-title {
+  color: var(--color-base-content);
+  font-weight: 700;
+}
+.ly-form .ly-pill {
+  justify-self: start;
+}
+.ly-form .ahm-date {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+.ly-form .ahm-date .ahm-modes {
+  display: flex;
+}
+.ly-form .ahm-date .ahm-modes .btn {
+  flex: 1;
+}
+.ly-form .ahm-date .ahm-date-body,
+.ly-form .ahm-date > p {
+  grid-column: 1 / -1;
+}
+.ly-form .ahm-date-g .ahm-row {
+  flex-wrap: nowrap;
+}
+.ly-form .ahm-date-g input.input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#tab-layers .checkbox {
+  --radius-selector: 0.3rem;
+}
+
+/* s087 banner is cream with a blue edge; the +N / -N chips are bigger; Cancel is a quiet grey button like the design */
+#tab-layers .ly-banner {
+  background: color-mix(in oklab, var(--color-warning) 12%, var(--color-base-200));
+  border-color: var(--color-base-300);
+  border-left-color: var(--color-primary);
+}
+.ly-delta .badge {
+  height: 1.75rem;
+  padding-inline: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.ly-delta #lyPlus {
+  background: var(--color-primary);
+  color: var(--color-primary-content);
+  border-color: var(--color-primary);
+}
+#tab-layers .ahm-bar .btn-soft,
+#lyFormView .ahm-bar .btn-soft {
+  background: var(--color-base-300);
+  color: var(--color-base-content);
+  border-color: transparent;
+}
+.ly-banner .ahm-title {
+  font-size: 0.9375rem;
+  margin: 0 0 0.125rem;
+}

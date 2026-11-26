@@ -474,8 +474,10 @@ function lyOpenForm(ly) {
       .map((c) => opt(c.id, catName(c, l)))
   );
   sel.value = ly && categories.some((c) => c.id === ly.category) ? ly.category : '';
-  body.querySelector('[data-from]').append(fields.date(ly && ly.date_from));
-  body.querySelector('[data-to]').append(fields.date(ly && ly.date_to));
+  // the design offers Unknown / Exact; a layer that already has an approximate or ranged date keeps all four modes
+  const lyModes = (d) => (d && (d.mode === 'approx' || d.mode === 'range') ? undefined : ['none', 'exact']);
+  body.querySelector('[data-from]').append(fields.date(ly && ly.date_from, { modes: lyModes(ly && ly.date_from) }));
+  body.querySelector('[data-to]').append(fields.date(ly && ly.date_to, { modes: lyModes(ly && ly.date_to) }));
   colour.querySelectorAll('[data-sec]').forEach((s) => (s.hidden = true)); // only the colour row of the style editor
   body.querySelector('[data-colour]').append(colour);
   body.querySelector('[data-colour]').addEventListener('click', () => (body.querySelector('[data-usecolor]').checked = true)); // choosing a swatch means "use a colour"
