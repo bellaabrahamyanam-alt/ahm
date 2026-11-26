@@ -394,3 +394,9 @@
   background: none;
   box-shadow: none;
 }
+#tab-layers li.ly-morebox {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+}
