@@ -312,7 +312,7 @@
               <label class="input ly-grow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="lyQ" type="search" placeholder="Search layers…" aria-label="Search layers" autocomplete="off" /></label>
               <select id="lyCat" class="select ly-catsel" aria-label="Category"></select>
             </div>
-            <p id="lyCount" class="ly-count" aria-live="polite"></p>
+            <p id="lyCount" class="ly-count" aria-live="polite"><b id="lyCountN"></b> <span id="lyCountT"></span></p>
             <div id="lyBox"></div>
             <ul id="lyList" class="list ly-list"></ul>
             <div id="lyCard" hidden></div>
@@ -520,7 +520,7 @@
       <section data-sec="shapes"><h4 class="ly-h">Borders and routes · <span data-bind="ns"></span></h4><ul class="list ly-mems" data-shapes></ul></section>
       <section data-sec="notes"><h4 class="ly-h">Notes about this layer · <span data-bind="nn"></span></h4><div class="ly-notes" data-notes></div><p class="ahm-hint" data-bind="nonotes" hidden></p>
         <button type="button" class="btn btn-primary btn-sm" data-act="addnote"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add note</button></section>
-      <div data-readonly></div>
+      <p class="ly-lock ahm-hint" data-readonly hidden><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Log in to change layers.</span></p>
       <p class="ly-error" role="alert" data-error hidden></p>
     </article></template>
     <template id="t-ly-member"><li class="list-row ly-mem">

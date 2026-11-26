@@ -1,7 +1,7 @@
 // Layers tab: tests of tasks/layers.md (own file, so that parallel workers never edit the same test file).
 // Part 1: the pure rules in node (core/layer-rules.js). Part 2: the screens in a real browser (headless Chromium via Playwright), against the dev server
 // on a throw-away copy of the data; the map library is a stand-in, so map drawing is not exercised. Skipped with --no-browser or without Chromium.
-/* global window, document, getComputedStyle, innerWidth, run, searchOptions, layers, places, categories, layerNotes, lyById, lyState, lySet, lyRender, lyRenderList, lyFail, lyOpen, lyStartEdit, lyStopEdit, lyOpenForm, AHM_CONFIG, lyLoaded:writable */
+/* global window, document, getComputedStyle, innerWidth, run, searchOptions, layers, places, categories, layerNotes, lyById, lyState, lySet, lyRender, shapes, lyRenderList, lyFail, lyOpen, lyStartEdit, lyStopEdit, lyOpenForm, AHM_CONFIG, lyLoaded:writable */
 const { load, UI_STANDINS } = require('./lib/ctx');
 const { test, ok, eq } = require('./lib/harness');
 const { start } = require('./lib/devserver');
@@ -293,4 +293,48 @@ scenario('ui-layers (browser): 400x860 phone: every screen fits the width', { ph
   await pg.evaluate(() => lyOpenForm(null));
   await fits('form');
   await shot(pg, 'phone-s088-form');
+});
+
+scenario('ui-layers (browser): three layers like the design: bold count, colour edges, hidden layer greyed, "+ N more", lock line, swatches', {}, async (pg, S) => {
+  await open(pg, S);
+  await pg.evaluate(() => {
+    const base = layers[0],
+      mk = (id, name, color, members) => ({ ...base, id, names: [{ lang: 'en', name }], color, members });
+    const ps = places.slice(0, 7).map((p) => ({ place: p.id }));
+    lySet([base, mk('L2', 'Campaign of Tigranes II', '#1f5a8a', [...ps, ...shapes.slice(0, 1).map((x) => ({ shape: x.id }))]), mk('L3', 'Artaxiad capitals', '#5a7a2a', ps.slice(0, 4))], [], categories);
+  });
+  eq('3', (await pg.locator('#lyCountN').innerText()).trim(), 'the number of layers is its own bold element');
+  eq('3 layers', (await pg.locator('#lyCount').innerText()).trim(), 'count line');
+  eq(3, await pg.locator('#lyList li').count(), 'three rows');
+  const edges = await pg.locator('#lyList li').evaluateAll((l) => l.map((e) => getComputedStyle(e).borderLeftColor));
+  ok(new Set(edges).size === 3, 'each layer has its own colour edge: ' + edges);
+  await tri(pg, '#lyList li:nth-child(3)', 'hide');
+  ok(Number(await pg.locator('#lyList li:nth-child(3) .ly-main').evaluate((e) => getComputedStyle(e).opacity)) < 1, 'the hidden layer is greyed');
+  await shot(pg, 's085-three-layers');
+  await pg.fill('#lyQ', 'tigranes');
+  eq('1', (await pg.locator('#lyCountN').innerText()).trim(), 'filtered count');
+  ok(/of 3 layers/.test(await pg.locator('#lyCount').innerText()), 'filtered count says "of 3 layers"');
+  await pg.click('#lyList li [data-act=open]');
+  ok(await pg.locator('#lyFind').isVisible(), 'the search stays above the open card');
+  eq(3, await pg.locator('#lyCard [data-places] > li.ly-mem').count(), 'three place rows are shown');
+  eq('+ 4 more', (await pg.locator('#lyCard .ly-more').innerText()).trim(), 'the fold says how many more');
+  eq(0, await pg.locator('#lyCard [data-shapes] [data-act=leave]:visible').count(), 'a border row shows no x');
+  await pg.click('#lyCard .ly-more');
+  eq(7, await pg.locator('#lyCard [data-places] li.ly-mem:visible').count(), 'the fold opens to all seven');
+  await shot(pg, 's086-fold');
+  await pg.evaluate(() => {
+    AHM_CONFIG.canEdit = false;
+    lyRender();
+  });
+  ok(await pg.locator('#lyCard .ly-lock svg').isVisible(), 'the visitor line has the lock icon');
+  await pg.evaluate(() => {
+    AHM_CONFIG.canEdit = true;
+    lyRender();
+  });
+  await pg.click('#lyCard [data-act=close]');
+  await pg.click('#lyNew');
+  ok(await pg.locator('#lyFormView [data-swatch]').first().isVisible(), 'the colour swatches are visible at once');
+  ok(!(await pg.locator('#lyFormView [data-usecolor]').isChecked()), 'no colour until one is chosen');
+  await pg.locator('#lyFormView [data-swatch]').nth(2).click();
+  ok(await pg.locator('#lyFormView [data-usecolor]').isChecked(), 'choosing a swatch ticks "use a colour"');
 });

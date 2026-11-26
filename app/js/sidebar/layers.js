@@ -160,6 +160,11 @@ function lyFillRow(node, ly, l) {
   node.style.setProperty('--ly-c', ly.color || ''); // the colour of the layer, from the data; empty = the default edge
   lyTri(node, ly.id, 'r');
 }
+/** The count line: the number in bold, then the words. */
+function lyCount(n, text) {
+  $('#lyCountN').textContent = n;
+  $('#lyCountT').textContent = text;
+}
 function lyRenderList() {
   if (!lyLive()) return;
   const box = $('#lyBox'),
@@ -168,11 +173,12 @@ function lyRenderList() {
   if (!lyLoaded) {
     kit.state(box, 'loading', 'Loading layers…');
     list.replaceChildren();
-    $('#lyCount').textContent = '';
+    lyCount('', '');
     return lyRenderView();
   }
   const rows = lyRows($('#lyQ').value, $('#lyCat').value, l);
-  $('#lyCount').textContent = rows.length === layers.length ? lyPlural(layers.length, 'layer') : `${rows.length} of ${lyPlural(layers.length, 'layer')}`;
+  if (rows.length === layers.length) lyCount(rows.length, layers.length === 1 ? 'layer' : 'layers');
+  else lyCount(rows.length, `of ${lyPlural(layers.length, 'layer')}`); // s085: "3 layers", the number in bold
   if (!layers.length) kit.state(box, 'empty', AHM_CONFIG.canEdit ? 'No layers yet. Add the first one below.' : 'No layers yet.');
   else if (!rows.length) kit.state(box, 'empty', 'No layers match.');
   else box.replaceChildren();
@@ -290,7 +296,7 @@ function lyRenderDetail() {
     }
     q('[data-notes]').append(a);
   }
-  if (!can) kit.state(q('[data-readonly]'), 'readonly', 'Log in to change layers.');
+  kit.show(q('[data-readonly]'), !can); // the lock line of s086
   box.replaceChildren(node);
   lyRenderView();
 }
@@ -472,6 +478,7 @@ function lyOpenForm(ly) {
   body.querySelector('[data-to]').append(fields.date(ly && ly.date_to));
   colour.querySelectorAll('[data-sec]').forEach((s) => (s.hidden = true)); // only the colour row of the style editor
   body.querySelector('[data-colour]').append(colour);
+  body.querySelector('[data-colour]').addEventListener('click', () => (body.querySelector('[data-usecolor]').checked = true)); // choosing a swatch means "use a colour"
   body.querySelector('[data-usecolor]').checked = !!(ly && ly.color);
   lyOn(form, 'click', '[data-act]', (e, b) => {
     const act = b.dataset.act;

@@ -348,8 +348,11 @@
   field-sizing: content;
   min-height: 4.5rem;
 }
-.ly-colour:has([data-usecolor]:not(:checked)) [data-colour] {
-  display: none;
+.ly-lock {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
 }
 .ly-fchip {
   gap: 0.25rem;
@@ -384,4 +387,10 @@
 }
 .ly-morebox summary {
   list-style: none;
+}
+#tab-layers .ly-morebox details {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
 }
