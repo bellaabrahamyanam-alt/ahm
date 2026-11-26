@@ -25,18 +25,15 @@ class sql_transfer
     private $db;
     private $p;
 
-    public function __construct(\PDO $db, $prefix = '')
+    public function __construct(sql_driver $db)
     {
         $this->db = $db;
-        $this->p = $prefix;
-        $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        $db->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-        $db->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, false);
+        $this->p = $db->prefix();
     }
 
     // ---- schema ----
 
-    /** The schema file of a database layer: phpBB's name (sqlite3, mysqli) or PDO's (sqlite, mysql). */
+    /** The schema file of a database layer: phpBB's name (sqlite3, mysqli) or the driver's (sqlite, mysql). */
     public static function schema_file($layer)
     {
         if ($layer === 'sqlite' || $layer === 'sqlite3') {
@@ -63,7 +60,7 @@ class sql_transfer
 
     public function create_schema()
     {
-        foreach (self::statements(self::schema_file($this->db->getAttribute(\PDO::ATTR_DRIVER_NAME)), $this->p) as $sql) {
+        foreach (self::statements(self::schema_file($this->db->name()), $this->p) as $sql) {
             $this->db->exec($sql);
         }
     }
@@ -82,24 +79,11 @@ class sql_transfer
         return $this->p . $name;
     }
 
-    /** Runs a prepared statement. A float goes in as its shortest exact text, so that no digit of a coordinate is lost. */
-    private function run($sql, array $params = [])
+    private static function read_json($file, $default = null)
     {
-        $st = $this->db->prepare($sql);
-        $i = 0;
-        foreach ($params as $v) {
-            $i++;
-            if (is_float($v)) {
-                $v = json_encode($v);
-            }
-            $st->bindValue($i, $v, $v === null ? \PDO::PARAM_NULL : (is_int($v) ? \PDO::PARAM_INT : \PDO::PARAM_STR));
+        if ($default !== null && !is_file($file)) {
+            return $default;   // an older store may not have this file (no sources yet, no layers)
         }
-        $st->execute();
-        return $st;
-    }
-
-    private static function read_json($file)
-    {
         $d = is_file($file) ? json_decode(file_get_contents($file), true) : null;
         if (!is_array($d)) {
             throw new \InvalidArgumentException("cannot read $file");
@@ -114,7 +98,7 @@ class sql_transfer
         }
     }
 
-    private static function json($v)
+    public static function json($v)
     {
         return json_encode($v, self::JSON);
     }
@@ -130,20 +114,95 @@ class sql_transfer
         return $names ? (string) ($names[0]['name'] ?? '') : '';
     }
 
-    private static function iso($ts)
+    public static function iso($ts)
     {
         return $ts === null ? null : gmdate('Y-m-d\TH:i:s\Z', (int) $ts);
     }
 
-    private function revision($kind, $id, $label, array $snapshot, $import, $now)
+    /** A snapshot for ahm_revisions: the state as gzip JSON, in base64 so that every database layer can keep it as text. */
+    public static function snapshot(array $state)
     {
-        $this->run(
-            'INSERT INTO ' . $this->t('ahm_revisions') . ' (entity_kind, entity_id, rev_no, action, user_id, at, label, import_id, snapshot) VALUES (?, ?, 1, ?, NULL, ?, ?, ?, ?)',
-            [$kind, $id, 'import', $now, mb_substr($label, 0, 255), $import, gzencode(self::json($snapshot))]
-        )->closeCursor();
+        return base64_encode(gzencode(self::json($state)));
     }
 
-    // ---- files -> tables ----
+    public static function unsnapshot($s)
+    {
+        return json_decode((string) gzdecode(base64_decode($s)), true);
+    }
+
+    // ---- an entry of a file <-> a row
+
+    /**
+     * The columns of an entry of places (a Feature), shapes (a Feature) or layers (an array): id, type, lon, lat, created, updated (seconds
+     * or null) and data (what the columns do not hold; a shape's geometry is data.geometry; `label` is derived, so it is not kept).
+     */
+    public static function object_from_entry($kind, array $e)
+    {
+        if ($kind === 'place') {
+            $p = $e['properties'];
+            if (($e['geometry']['type'] ?? '') !== 'Point') {
+                throw new \InvalidArgumentException('place ' . ($p['id'] ?? '?') . ' is not a point');
+            }
+            list($lon, $lat) = $e['geometry']['coordinates'];
+            $id = $p['id'];
+            $type = $p['type'];
+            unset($p['id'], $p['type'], $p['label']);
+            return ['id' => $id, 'type' => $type, 'lon' => (float) $lon, 'lat' => (float) $lat, 'created' => null, 'updated' => null, 'data' => $p];
+        }
+        if ($kind === 'shape') {
+            $p = $e['properties'];
+            $o = ['id' => $p['id'], 'type' => $p['type'], 'lon' => null, 'lat' => null,
+                'created' => isset($p['created']) ? strtotime($p['created']) : null, 'updated' => isset($p['updated']) ? strtotime($p['updated']) : null];
+            unset($p['id'], $p['type'], $p['created'], $p['updated']);
+            $p['geometry'] = $e['geometry'];
+            return $o + ['data' => $p];
+        }
+        $o = ['id' => $e['id'], 'type' => null, 'lon' => null, 'lat' => null,
+            'created' => isset($e['created']) ? strtotime($e['created']) : null, 'updated' => isset($e['updated']) ? strtotime($e['updated']) : null];
+        unset($e['id'], $e['created'], $e['updated']);
+        return $o + ['data' => $e];
+    }
+
+    /** The entry of a file from a row of ahm_objects (id, type, lon, lat, created_at, updated_at, data as an array). */
+    public static function entry_from_object($kind, array $r)
+    {
+        $d = $r['data'];
+        if ($kind === 'place') {
+            return ['type' => 'Feature', 'geometry' => ['type' => 'Point', 'coordinates' => [(float) $r['lon'], (float) $r['lat']]],
+                'properties' => ['id' => $r['id'], 'label' => self::label($d['names'] ?? []), 'type' => $r['type']] + $d];
+        }
+        if ($kind === 'shape') {
+            $g = $d['geometry'];
+            unset($d['geometry']);
+            return ['type' => 'Feature', 'geometry' => $g,
+                'properties' => ['id' => $r['id'], 'type' => $r['type']] + $d + ['created' => self::iso($r['created_at']), 'updated' => self::iso($r['updated_at'])]];
+        }
+        return ['id' => $r['id']] + $d + ['created' => self::iso($r['created_at']), 'updated' => self::iso($r['updated_at'])];
+    }
+
+    /** [key, data] of an entry of a list. */
+    public static function list_parts($list, array $item)
+    {
+        $f = self::LISTS[$list][1];
+        $key = (string) $item[$f];
+        unset($item[$f]);
+        return [$key, $item];
+    }
+
+    public static function list_entry($list, $key, array $data)
+    {
+        return [self::LISTS[$list][1] => $key] + $data;
+    }
+
+    private function revision($kind, $id, $label, array $snapshot, $import, $now)
+    {
+        $this->db->exec(
+            'INSERT INTO ' . $this->t('ahm_revisions') . ' (entity_kind, entity_id, rev_no, action, user_id, at, label, import_id, snapshot) VALUES (?, ?, 1, ?, NULL, ?, ?, ?, ?)',
+            [$kind, $id, 'import', $now, mb_substr($label, 0, 255), $import, self::snapshot($snapshot)]
+        );
+    }
+
+    // ---- files -> tables
 
     /**
      * Loads the files of a store (current format, see store::migrate()) into the tables: lists, places, shapes, layers, and one `import`
@@ -152,23 +211,21 @@ class sql_transfer
     public function import($dir, $file_name = 'files', $user_id = null)
     {
         $dir = rtrim($dir, '/') . '/';
-        $now = time();
-        $n = ['lists' => 0, 'places' => 0, 'shapes' => 0, 'layers' => 0];
-        $this->db->beginTransaction();
-        try {
-            $this->run('INSERT INTO ' . $this->t('ahm_imports') . ' (file_name, user_id, at) VALUES (?, ?, ?)', [$file_name, $user_id, $now])->closeCursor();
-            $import = (int) $this->db->lastInsertId();
+        return $this->db->transaction(function () use ($dir, $file_name, $user_id) {
+            $now = time();
+            $n = ['lists' => 0, 'places' => 0, 'shapes' => 0, 'layers' => 0];
+            $this->db->exec('INSERT INTO ' . $this->t('ahm_imports') . ' (file_name, user_id, at) VALUES (?, ?, ?)', [$file_name, $user_id, $now]);
+            $import = $this->db->insert_id();
             foreach (self::LISTS as $list => $def) {
-                $f = self::read_json($dir . $list . '.json');
+                $f = self::read_json($dir . $list . '.json', ['version' => self::FILE_VERSION, $def[0] => []]);
                 self::only_keys($f, ['version', $def[0]], "$list.json");
                 if ($f['version'] !== self::FILE_VERSION) {
                     throw new \InvalidArgumentException("$list.json is version " . json_encode($f['version']) . ', this code reads version ' . self::FILE_VERSION);
                 }
                 foreach ($f[$def[0]] as $pos => $item) {
-                    $key = (string) $item[$def[1]];
-                    unset($item[$def[1]]);
-                    $this->run('INSERT INTO ' . $this->t('ahm_lists') . ' (list, item_key, pos, updated_at, data) VALUES (?, ?, ?, ?, ?)', [$list, $key, $pos, $now, self::json($item)])->closeCursor();
-                    $this->revision('list', $list . '/' . $key, self::label($item['names'] ?? []) ?: (string) ($item['title'] ?? $item['name'] ?? $key), [$def[1] => $key] + $item, $import, $now);
+                    list($key, $data) = self::list_parts($list, $item);
+                    $this->db->exec('INSERT INTO ' . $this->t('ahm_lists') . ' (list, item_key, pos, updated_at, data) VALUES (?, ?, ?, ?, ?)', [$list, $key, $pos, $now, self::json($data)]);
+                    $this->revision('list', $list . '/' . $key, self::label($data['names'] ?? []) ?: (string) ($data['title'] ?? $data['name'] ?? $key), [$def[1] => $key] + $data, $import, $now);
                     $n['lists']++;
                 }
             }
@@ -177,64 +234,35 @@ class sql_transfer
             if ($f['version'] !== self::PLACES_VERSION) {
                 throw new \InvalidArgumentException('places.geojson is version ' . json_encode($f['version']) . ', this code reads version ' . self::PLACES_VERSION);
             }
-            foreach ($f['features'] as $pos => $feat) {
-                $p = $feat['properties'];
-                if (($feat['geometry']['type'] ?? '') !== 'Point') {
-                    throw new \InvalidArgumentException('place ' . $p['id'] . ' is not a point');
-                }
-                list($lon, $lat) = $feat['geometry']['coordinates'];
-                $id = $p['id'];
-                $type = $p['type'];
-                unset($p['id'], $p['type'], $p['label']);
-                $this->insert_object($id, 'place', $pos, (float) $lon, (float) $lat, $type, $import, $now, $now, $p);
-                $this->revision('place', $id, self::label($p['names']), ['type' => $type, 'lon' => $lon, 'lat' => $lat] + $p, $import, $now);
-                $n['places']++;
-            }
-            $f = self::read_json($dir . 'shapes.geojson');
+            $groups = ['place' => $f['features']];
+            $f = self::read_json($dir . 'shapes.geojson', ['type' => 'FeatureCollection', 'features' => []]);
             self::only_keys($f, ['type', 'features'], 'shapes.geojson');
-            foreach ($f['features'] as $pos => $feat) {
-                $p = $feat['properties'];
-                $id = $p['id'];
-                $type = $p['type'];
-                $c = isset($p['created']) ? strtotime($p['created']) : $now;
-                $u = isset($p['updated']) ? strtotime($p['updated']) : $now;
-                unset($p['id'], $p['type'], $p['created'], $p['updated']);
-                $p['geometry'] = $feat['geometry'];
-                $this->insert_object($id, 'shape', $pos, null, null, $type, $import, $c, $u, $p);
-                $this->revision('shape', $id, self::label($p['names']), ['type' => $type] + $p, $import, $now);
-                $n['shapes']++;
-            }
-            $f = self::read_json($dir . 'layers.json');
+            $groups['shape'] = $f['features'];
+            $f = self::read_json($dir . 'layers.json', ['version' => self::FILE_VERSION, 'layers' => []]);
             self::only_keys($f, ['version', 'layers'], 'layers.json');
-            foreach ($f['layers'] as $pos => $l) {
-                $id = $l['id'];
-                $c = isset($l['created']) ? strtotime($l['created']) : $now;
-                $u = isset($l['updated']) ? strtotime($l['updated']) : $now;
-                unset($l['id'], $l['created'], $l['updated']);
-                $this->insert_object($id, 'layer', $pos, null, null, null, $import, $c, $u, $l);
-                $this->revision('layer', $id, self::label($l['names']), $l, $import, $now);
-                $n['layers']++;
+            $groups['layer'] = $f['layers'];
+            foreach ($groups as $kind => $entries) {
+                foreach ($entries as $pos => $e) {
+                    $o = self::object_from_entry($kind, $e);
+                    $this->insert_object($kind, $pos, $o, $import, $now);
+                    $this->revision($kind, $o['id'], self::label($o['data']['names'] ?? []), $o['data'] + ['type' => $o['type'], 'lon' => $o['lon'], 'lat' => $o['lat']], $import, $now);
+                    $n[$kind . 's']++;
+                }
             }
-            $this->run('UPDATE ' . $this->t('ahm_imports') . ' SET places = ?, shapes = ? WHERE id = ?', [$n['places'], $n['shapes'], $import])->closeCursor();
-            $this->db->commit();
-        } catch (\Throwable $e) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
-            throw $e;
-        }
-        return $n + ['import_id' => $import];
+            $this->db->exec('UPDATE ' . $this->t('ahm_imports') . ' SET places = ?, shapes = ? WHERE id = ?', [$n['places'], $n['shapes'], $import]);
+            return $n + ['import_id' => $import];
+        });
     }
 
-    private function insert_object($id, $kind, $pos, $lon, $lat, $type, $import, $created, $updated, array $data)
+    private function insert_object($kind, $pos, array $o, $import, $now)
     {
-        $this->run(
+        $this->db->exec(
             'INSERT INTO ' . $this->t('ahm_objects') . ' (id, kind, pos, lon, lat, type, import_id, created_at, updated_at, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$id, $kind, $pos, $lon, $lat, $type, $import, $created, $updated, self::json($data)]
-        )->closeCursor();
+            [$o['id'], $kind, $pos, $o['lon'], $o['lat'], $o['type'], $import, $o['created'] ?? $now, $o['updated'] ?? $now, self::json($o['data'])]
+        );
     }
 
-    // ---- tables -> files ----
+    // ---- tables -> files
 
     /** Writes places.geojson, shapes.geojson, layers.json and the five lists as files of a store (notes are not written). */
     public function export($dir)
@@ -246,43 +274,40 @@ class sql_transfer
         $pretty = self::JSON | JSON_PRETTY_PRINT;
         foreach (self::LISTS as $list => $def) {
             $items = [];
-            $st = $this->run('SELECT item_key, data FROM ' . $this->t('ahm_lists') . ' WHERE list = ? ORDER BY pos, item_key', [$list]);
-            foreach ($st->fetchAll(\PDO::FETCH_NUM) as $r) {
-                $items[] = [$def[1] => $r[0]] + json_decode($r[1], true);
+            foreach ($this->db->rows('SELECT item_key, data FROM ' . $this->t('ahm_lists') . ' WHERE list = ? ORDER BY pos, item_key', [$list]) as $r) {
+                $items[] = self::list_entry($list, $r['item_key'], json_decode($r['data'], true));
             }
             file_put_contents($dir . $list . '.json', json_encode(['version' => self::FILE_VERSION, $def[0] => $items], $pretty));
         }
-        $features = [];
+        $place = [];
         foreach ($this->objects('place') as $o) {
-            $names = $o['data']['names'];
-            $props = ['id' => $o['id'], 'label' => self::label($names), 'type' => $o['type']] + $o['data'];
-            $features[] = ['type' => 'Feature', 'geometry' => ['type' => 'Point', 'coordinates' => [$o['lon'], $o['lat']]], 'properties' => $props];
+            $place[] = self::entry_from_object('place', $o);
         }
-        file_put_contents($dir . 'places.geojson', json_encode(['type' => 'FeatureCollection', 'version' => self::PLACES_VERSION, 'features' => $features], $pretty));
-        $features = [];
+        file_put_contents($dir . 'places.geojson', json_encode(['type' => 'FeatureCollection', 'version' => self::PLACES_VERSION, 'features' => $place], $pretty));
+        $shape = [];
         foreach ($this->objects('shape') as $o) {
-            $geometry = $o['data']['geometry'];
-            unset($o['data']['geometry']);
-            $props = ['id' => $o['id'], 'type' => $o['type']] + $o['data'] + ['created' => self::iso($o['created_at']), 'updated' => self::iso($o['updated_at'])];
-            $features[] = ['type' => 'Feature', 'geometry' => $geometry, 'properties' => $props];
+            $shape[] = self::entry_from_object('shape', $o);
         }
-        file_put_contents($dir . 'shapes.geojson', json_encode(['type' => 'FeatureCollection', 'features' => $features], $pretty));
+        file_put_contents($dir . 'shapes.geojson', json_encode(['type' => 'FeatureCollection', 'features' => $shape], $pretty));
         $layers = [];
         foreach ($this->objects('layer') as $o) {
-            $layers[] = ['id' => $o['id']] + $o['data'] + ['created' => self::iso($o['created_at']), 'updated' => self::iso($o['updated_at'])];
+            $layers[] = self::entry_from_object('layer', $o);
         }
         file_put_contents($dir . 'layers.json', json_encode(['version' => self::FILE_VERSION, 'layers' => $layers], $pretty));
     }
 
-    /** The rows of one kind, in file order: id, lon, lat, type, topic_id, version, created_at, updated_at, data (decoded). */
+    /** The rows of one kind, in file order: id, type, lon, lat, topic_id, version, created_at, updated_at, data (decoded). */
     public function objects($kind)
     {
         $out = [];
-        $st = $this->run('SELECT id, lon, lat, type, topic_id, version, created_at, updated_at, data FROM ' . $this->t('ahm_objects') . ' WHERE kind = ? ORDER BY pos, id', [$kind]);
-        foreach ($st->fetchAll(\PDO::FETCH_ASSOC) as $r) {
+        foreach ($this->db->rows('SELECT id, lon, lat, type, topic_id, version, created_at, updated_at, data FROM ' . $this->t('ahm_objects') . ' WHERE kind = ? ORDER BY pos, id', [$kind]) as $r) {
             $r['data'] = json_decode($r['data'], true);
             $r['lon'] = $r['lon'] === null ? null : (float) $r['lon'];
             $r['lat'] = $r['lat'] === null ? null : (float) $r['lat'];
+            $r['topic_id'] = $r['topic_id'] === null ? null : (int) $r['topic_id'];
+            $r['version'] = (int) $r['version'];
+            $r['created_at'] = (int) $r['created_at'];
+            $r['updated_at'] = (int) $r['updated_at'];
             $out[] = $r;
         }
         return $out;
@@ -292,15 +317,15 @@ class sql_transfer
     public function lists()
     {
         $out = [];
-        foreach ($this->db->query('SELECT list, item_key, data FROM ' . $this->t('ahm_lists') . ' ORDER BY list, pos')->fetchAll(\PDO::FETCH_NUM) as $r) {
-            $out[$r[0]][$r[1]] = json_decode($r[2], true);
+        foreach ($this->db->rows('SELECT list, item_key, data FROM ' . $this->t('ahm_lists') . ' ORDER BY list, pos') as $r) {
+            $out[$r['list']][$r['item_key']] = json_decode($r['data'], true);
         }
         return $out;
     }
 
     public function set_topic($object_id, $topic_id)
     {
-        $this->run('UPDATE ' . $this->t('ahm_objects') . ' SET topic_id = ? WHERE id = ?', [$topic_id, $object_id])->closeCursor();
+        $this->db->exec('UPDATE ' . $this->t('ahm_objects') . ' SET topic_id = ? WHERE id = ?', [$topic_id, $object_id]);
     }
 
     // ---- notes ----
@@ -387,15 +412,15 @@ class sql_transfer
 
     public function add_note_meta($post_id, array $meta)
     {
-        $this->run('INSERT INTO ' . $this->t('ahm_note_meta') . ' (post_id, data) VALUES (?, ?)', [$post_id, self::json($meta)])->closeCursor();
+        $this->db->exec('INSERT INTO ' . $this->t('ahm_note_meta') . ' (post_id, data) VALUES (?, ?)', [$post_id, self::json($meta)]);
     }
 
     /** post_id => meta */
     public function note_metas()
     {
         $out = [];
-        foreach ($this->db->query('SELECT post_id, data FROM ' . $this->t('ahm_note_meta') . ' ORDER BY post_id')->fetchAll(\PDO::FETCH_NUM) as $r) {
-            $out[(int) $r[0]] = json_decode($r[1], true);
+        foreach ($this->db->rows('SELECT post_id, data FROM ' . $this->t('ahm_note_meta') . ' ORDER BY post_id') as $r) {
+            $out[(int) $r['post_id']] = json_decode($r['data'], true);
         }
         return $out;
     }

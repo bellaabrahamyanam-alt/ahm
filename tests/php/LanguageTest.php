@@ -50,6 +50,7 @@ test('save_language: bad code, duplicate, missing name', function () {
 });
 
 test('save_language: archives the old dictionary', function () {
+    skip_unless_files();
     $s = fresh_store($dir);
     $s->save_language(['code' => 'abc', 'name' => 'Abc']);
     ok(count(glob("$dir/archive/languages-*.json")) >= 1);

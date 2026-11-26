@@ -15,7 +15,9 @@ class main
         \phpbb\user $user,
         \phpbb\path_helper $path_helper,
         $root_path,
-        $editors
+        $editors,
+        $db = null,
+        $table_prefix = ''
     ) {
         $this->auth = $auth;
         $this->helper = $helper;
@@ -23,8 +25,19 @@ class main
         $this->user = $user;
         $this->path_helper = $path_helper;
         $this->editors = $editors;
-        $this->data = $root_path . 'store/ahm_map/'; // live data: writable, outside the extension, survives upgrades
-        $this->store = new \ahm\map\service\store($this->data);
+        $this->data = $root_path . 'store/ahm_map/'; // writable, outside the extension, survives upgrades: the pictures of overlays
+        if ($db !== null) {
+            // the data is in the tables of the board and the posts of the forum Map (T-104), through the connection phpBB uses
+            $repo = new \ahm\map\service\sql_repository(
+                new \ahm\map\service\dbal_driver($db, $table_prefix),
+                new \ahm\map\service\phpbb_gateway($db, $table_prefix, $root_path),
+                (int) $user->data['user_id'],
+                $this->data . '.lock'
+            );
+            $this->store = new \ahm\map\service\store($this->data, $repo);
+        } else {
+            $this->store = new \ahm\map\service\store($this->data);   // files: only the tests that run without a database
+        }
     }
 
     private function anon()
@@ -175,8 +188,13 @@ class main
                 ['Content-Type' => 'application/json; charset=utf-8', 'Cache-Control' => 'private, no-cache']
             );
         }
-        $file = $f === 'places' ? 'places.geojson' : ($f === 'notes-index' ? 'notes/index.json' : null);
-        return $this->send($file, $f === 'places' ? 'application/geo+json' : 'application/json');
+        if ($f === 'places' || $f === 'notes-index') {
+            return $this->body(
+                json_encode($f === 'places' ? $this->store->places() : $this->store->notes_index(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                $f === 'places' ? 'application/geo+json' : 'application/json'
+            );
+        }
+        return new Response('', 404);
     }
 
     public function note($place, $id)
@@ -184,24 +202,19 @@ class main
         if (!preg_match(\ahm\map\service\store::UUID, $place) || !preg_match(\ahm\map\service\store::UUID, $id)) {
             return new Response('', 400);
         }
-        return $this->send('notes/' . $place . '/' . $id . '.md', 'text/markdown');
+        $t = $this->store->note_raw($place, $id);
+        return $t === null ? new Response('', 404) : $this->body($t, 'text/markdown');
     }
 
-    private function send($file, $type)
+    /** A body with its ETag: browsers re-check every time, and an unchanged body costs only a 304. */
+    private function body($body, $type)
     {
-        if ($file === null || !is_file($this->data . $file)) {
-            return new Response('', 404);
-        }
-        $etag = '"' . md5_file($this->data . $file) . '"'; // browsers re-check every time; unchanged files cost only a 304
+        $etag = '"' . md5($body) . '"';
         $h = ['ETag' => $etag, 'Cache-Control' => 'private, no-cache'];
-        if ($this->request->server('HTTP_IF_NONE_MATCH', '') === $etag) {
+        if (htmlspecialchars_decode($this->request->server('HTTP_IF_NONE_MATCH', '')) === $etag) {
             return new Response('', 304, $h);
         }
-        return new Response(
-            file_get_contents($this->data . $file),
-            200,
-            $h + ['Content-Type' => $type . '; charset=utf-8']
-        );
+        return new Response($body, 200, $h + ['Content-Type' => $type . '; charset=utf-8']);
     }
 
     /** POST /map/save: add or edit a place, add or edit a note. Names and notes must use a language of the dictionary. */
@@ -444,7 +457,7 @@ class main
         }
         $etag = '"' . md5_file($f[0]) . '"';
         $h = ['ETag' => $etag, 'Cache-Control' => 'private, no-cache'];
-        if ($this->request->server('HTTP_IF_NONE_MATCH', '') === $etag) {
+        if (htmlspecialchars_decode($this->request->server('HTTP_IF_NONE_MATCH', '')) === $etag) {
             return new Response('', 304, $h);
         }
         return new Response(file_get_contents($f[0]), 200, $h + ['Content-Type' => $f[1]]);

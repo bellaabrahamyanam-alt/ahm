@@ -1,6 +1,13 @@
 <?php
 namespace ahm\map\service;
 
+if (!interface_exists(__NAMESPACE__ . '\\repository', false)) {
+    require __DIR__ . '/repository.php';
+}
+if (!class_exists(__NAMESPACE__ . '\\file_repository', false)) {
+    require __DIR__ . '/file_repository.php';
+}
+
 /** All reading and writing of the map data (places.geojson + notes/<place>/<note-id>.md). Knows nothing about phpBB. */
 class store
 {
@@ -32,11 +39,15 @@ class store
         'la' => ['Latin', 'Latina'],
         'xur' => ['Urartian', '']
     ];
+    /** The folder of the store: the data files with the file repository, only the pictures of overlays with the SQL repository. */
     private $base;
+    private $repo;
 
-    public function __construct($dir)
+    /** $repo: where the data lives (T-104); without one the data is in files in $dir. */
+    public function __construct($dir, repository $repo = null)
     {
         $this->base = rtrim($dir, '/') . '/';
+        $this->repo = $repo ?: new file_repository($dir);
     }
 
     public static function uuid4()
@@ -71,14 +82,9 @@ class store
         return $meta;
     }
 
-    /** Add a place and/or add or edit a note. Returns the place id. */
     public function save(array $in)
     {
-        $arch = $this->base . 'archive/';
-        @mkdir($arch, 0775, true);
-        $lock = fopen($this->base . '.lock', 'c');
-        flock($lock, LOCK_EX);
-        try {
+        return $this->repo->transaction(function () use ($in) {
             $this->migrate();
             $codes = array_column($this->lang_load(), 'code'); // the only languages a name or note may use
             $types = array_column(array_filter($this->type_load(), function ($t) {
@@ -109,22 +115,19 @@ class store
             if (isset($in['note']) && is_array($in['note']) && array_key_exists('layers', $in['note'])) {
                 $tags = $this->clean_note_layers($in['note']['layers'], $in['place_id'] ?? ($in['place_update']['id'] ?? null), $joins);
             }
-            $geo = $this->base . 'places.geojson';
-            $fc = json_decode(file_get_contents($geo), true);
+            $fc = $this->places_doc();
             $pid = $in['place_id'] ?? null;
-            $stamp = date('Ymd-His');
             if (isset($in['place'])) {
                 $c = self::clean_place($in['place'], $codes, $types);
                 list($ev) = self::clean_evidence($in['place'], array_column($this->sources_data()['sources'], 'id'), true);
                 $c['props'] += $ev;
                 $pid = self::uuid4();
-                copy($geo, $this->archive_path('places', 'geojson'));
                 $fc['features'][] = [
                     'type' => 'Feature',
                     'geometry' => ['type' => 'Point', 'coordinates' => [$c['lon'], $c['lat']]],
                     'properties' => ['id' => $pid] + $c['props']
                 ];
-                self::write_atomic($geo, json_encode($fc, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                $this->repo->put_doc('places', $fc);
                 foreach ($joins as $lid) {
                     $this->change_members($lid, [$pid], []); // the place stays in the general layer as well
                 }
@@ -146,8 +149,7 @@ class store
                 if (!$found) {
                     throw self::bad('unknown place');
                 }
-                copy($geo, $this->archive_path('places', 'geojson'));
-                self::write_atomic($geo, json_encode($fc, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+                $this->repo->put_doc('places', $fc);
             } else {
                 $ok = false;
                 foreach ($fc['features'] as $f) {
@@ -162,29 +164,30 @@ class store
             if (isset($in['note'])) {
                 $n = $in['note'];
                 list($lang, $title, $text, $date) = self::clean_note($n, $codes);
-                $dir = $this->base . 'notes/' . $pid;
-                @mkdir($dir, 0775, true);
                 $nid = (string) ($n['id'] ?? '');
                 $kept = [];
                 if ($nid !== '') {
                     // edit an existing note
-                    if (!preg_match(self::UUID, $nid) || !is_file("$dir/$nid.md")) {
+                    $old = preg_match(self::UUID, $nid) ? $this->repo->note($pid, $nid) : null;
+                    if ($old === null || $old['kind'] !== 'place') {
                         throw self::bad('unknown note');
                     }
-                    $kept = self::layer_ids(self::note_meta("$dir/$nid.md")['layers'] ?? '');
-                    copy("$dir/$nid.md", $this->archive_path("note-$pid-$nid", 'md'));
+                    $kept = $old['layers'];
                 } else {
                     $nid = self::uuid4();
                 } // new note: any number per place and language
                 // layers: a note may be tied to the layers its place belongs to (it stays visible in the general layer)
-                self::write_atomic("$dir/$nid.md", self::note_file($nid, $lang, $title, $date, $text, $tags ?? $kept));
+                $this->repo->put_note(['owner' => $pid, 'kind' => 'place', 'id' => $nid, 'lang' => $lang, 'title' => $title, 'date' => $date, 'layers' => $tags ?? $kept, 'text' => $text]);
             }
-            $this->rebuild_index();
             return $pid;
-        } finally {
-            flock($lock, LOCK_UN);
-            fclose($lock);
-        }
+        });
+    }
+
+    /** The places as a document; an empty one when there are none yet. */
+    private function places_doc()
+    {
+        $d = $this->repo->doc('places');
+        return is_array($d) && isset($d['features']) && is_array($d['features']) ? $d : ['type' => 'FeatureCollection', 'version' => 3, 'features' => []];
     }
 
     private static function one_line($v, $max)
@@ -307,37 +310,49 @@ class store
     /** notes/index.json is generated from the note files and is only used for searching. */
     public function rebuild_index()
     {
-        $root = $this->base . 'notes/';
+        if ($this->repo instanceof file_repository) {
+            $this->repo->rebuild_indexes();
+        }
+    }
+
+    /** The places as a GeoJSON FeatureCollection (what places.geojson held). */
+    public function places()
+    {
+        return $this->locked(function () {
+            return $this->places_doc();
+        });
+    }
+
+    /** One note as the browser reads it (a note file: header, then the text), null when there is no such note. */
+    public function note_raw($owner, $id)
+    {
+        if (!preg_match(self::UUID, (string) $owner) || !preg_match(self::UUID, (string) $id)) {
+            return null;
+        }
+        $n = $this->repo->note($owner, $id);
+        return $n === null ? null : file_repository::note_file($n);
+    }
+
+    /** The notes of places as the browser searches them (what notes/index.json held): id, place, lang, title, layers, date, text. */
+    public function notes_index()
+    {
+        return $this->locked(function () {
+            return $this->index_of('place');
+        });
+    }
+
+    private function index_of($kind)
+    {
         $out = [];
-        foreach (scandir($root) as $pl) {
-            if (!preg_match(self::UUID, $pl)) {
+        foreach ($this->repo->notes() as $n) {
+            if ($n['kind'] !== $kind) {
                 continue;
             }
-            foreach (scandir($root . $pl) as $fn) {
-                if (substr($fn, -3) !== '.md') {
-                    continue;
-                }
-                $parts = explode("---\n", file_get_contents("$root$pl/$fn"), 3);
-                if (count($parts) < 3) {
-                    continue;
-                }
-                $meta = self::meta($parts[1]);
-                $stem = substr($fn, 0, -3);
-                $out[] = [
-                    'id' => $meta['id'] ?? $stem,
-                    'place' => $pl,
-                    'lang' => $meta['lang'] ?? $stem,
-                    'title' => $meta['title'] ?? '',
-                    'layers' => self::layer_ids($meta['layers'] ?? ''),
-                    'date' => self::note_date($meta),
-                    'text' => trim($parts[2])
-                ];
-            }
+            $out[] = $kind === 'place'
+                ? ['id' => $n['id'], 'place' => $n['owner'], 'lang' => $n['lang'], 'title' => $n['title'], 'layers' => $n['layers'], 'date' => $n['date'], 'text' => $n['text']]
+                : ['id' => $n['id'], 'layer' => $n['owner'], 'lang' => $n['lang'], 'title' => $n['title'], 'date' => $n['date'], 'text' => $n['text']];
         }
-        self::write_atomic(
-            $root . 'index.json',
-            json_encode(['version' => 1, 'notes' => $out], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
-        );
+        return ['version' => 1, 'notes' => $out];
     }
 
     /** The date of a note from its header: the "date:" JSON, or (older files) "year:" + "when:" converted. null = unknown. */
@@ -360,7 +375,10 @@ class store
      */
     public function migrate()
     {
-        $count = $this->migrate_note_files() + $this->migrate_place_dates() + $this->migrate_note_dates() + $this->migrate_shape_types();
+        // the older file formats exist only in files; the SQL repository starts in the current format
+        $count = $this->repo instanceof file_repository
+            ? $this->migrate_note_files() + $this->migrate_place_dates() + $this->migrate_note_dates() + $this->migrate_shape_types()
+            : 0;
         $this->lang_load();
         if ($count) {
             $this->rebuild_index();
@@ -497,8 +515,7 @@ class store
     /** Reads languages.json; when it does not exist yet, creates it from the languages already used. Caller holds the lock. */
     private function lang_load()
     {
-        $f = $this->base . 'languages.json';
-        $d = is_file($f) ? json_decode(file_get_contents($f), true) : null;
+        $d = $this->repo->doc('languages');
         if (is_array($d) && isset($d['languages']) && is_array($d['languages'])) {
             return $d['languages'];
         }
@@ -515,8 +532,7 @@ class store
             $k = self::KNOWN_LANGS[$c] ?? [$c, ''];
             $list[] = ['code' => $c, 'name' => $k[0], 'native' => $k[1]];
         }
-        @mkdir($this->base, 0775, true);
-        self::write_atomic($f, json_encode(['version' => 1, 'languages' => $list], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        $this->repo->put_doc('languages', ['version' => 1, 'languages' => $list]);
         return $list;
     }
 
@@ -524,24 +540,17 @@ class store
     private function used_lang_codes()
     {
         $used = [];
-        $geo = $this->base . 'places.geojson';
-        $fc = is_file($geo) ? json_decode(file_get_contents($geo), true) : null;
-        foreach ($fc['features'] ?? [] as $f) {
+        $fc = $this->repo->doc('places');
+        foreach (is_array($fc) ? $fc['features'] ?? [] : [] as $f) {
             foreach ($f['properties']['names'] ?? [] as $n) {
                 if (!empty($n['lang'])) {
                     $used[$n['lang']] = true;
                 }
             }
         }
-        $root = $this->base . 'notes/';
-        foreach (is_dir($root) ? scandir($root) : [] as $pl) {
-            if (!preg_match(self::UUID, $pl) || !is_dir($root . $pl)) {
-                continue;
-            }
-            foreach (scandir($root . $pl) as $fn) {
-                if (substr($fn, -3) === '.md' && preg_match('/^lang: *(.+)$/m', substr(file_get_contents("$root$pl/$fn"), 0, 600), $m)) {
-                    $used[trim($m[1])] = true;
-                }
+        foreach ($this->repo->notes() as $n) {
+            if ($n['lang'] !== '') {
+                $used[$n['lang']] = true;
             }
         }
         return array_keys($used);
@@ -574,16 +583,13 @@ class store
             if (!$edit && $at !== null) {
                 throw self::bad("language \"$code\" is already in the list");
             }
-            $f = $this->base . 'languages.json';
-            @mkdir($this->base . 'archive/', 0775, true);
-            copy($f, $this->archive_path('languages', 'json'));
             $entry = ['code' => $code, 'name' => $name, 'native' => $native];
             if ($edit) {
                 $list[$at] = $entry;
             } else {
                 $list[] = $entry;
             }
-            self::write_atomic($f, json_encode(['version' => 1, 'languages' => $list], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+            $this->repo->put_doc('languages', ['version' => 1, 'languages' => $list]);
             return $code;
         });
     }
@@ -621,10 +627,9 @@ class store
     /** Reads types.json; when it does not exist yet, creates it from the seed (the types that existed before). Caller holds the lock. */
     private function type_load()
     {
-        $f = $this->base . 'types.json';
-        if (is_file($f)) {
-            // Never replace a file that exists: a damaged one must not silently drop the types an administrator added.
-            $d = json_decode((string) file_get_contents($f), true);
+        $d = $this->repo->doc('types');
+        if ($d !== null) {
+            // Never replace a document that exists: a damaged one must not silently drop the types an administrator added.
             if (!is_array($d) || !isset($d['types']) || !is_array($d['types'])) {
                 throw self::bad('types.json cannot be read; restore it from the archive folder or fix it, nothing was changed');
             }
@@ -641,18 +646,13 @@ class store
             ];
         }
         $list = array_merge($list, self::builtin_shape_types());
-        @mkdir($this->base, 0775, true);
-        self::write_atomic($f, json_encode(['version' => 1, 'types' => $list], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        $this->repo->put_doc('types', ['version' => 1, 'types' => $list]);
         return $list;
     }
 
     private function put_types(array $list)
     {
-        $f = $this->base . 'types.json';
-        if (is_file($f)) {
-            copy($f, $this->archive_path('types', 'json'));
-        }
-        self::write_atomic($f, json_encode(['version' => 1, 'types' => array_values($list)], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        $this->repo->put_doc('types', ['version' => 1, 'types' => array_values($list)]);
     }
 
     /** Code of a new type: its English name in lower case, letters and digits joined by "-"; "-2", "-3" ... when taken. */
@@ -810,16 +810,14 @@ class store
             if ($code === 'mountain') {
                 throw self::bad('the type "mountain" cannot be removed (a mountain has a height instead of dates)');
             }
-            $geo = $this->base . 'places.geojson';
-            $fc = is_file($geo) ? json_decode(file_get_contents($geo), true) : null;
+            $fc = $this->repo->doc('places');
             $used = 0;
             foreach ($fc['features'] ?? [] as $f) {
                 if (($f['properties']['type'] ?? '') === $code) {
                     $used++;
                 }
             }
-            $sh = $this->base . 'shapes.geojson';
-            $sfc = is_file($sh) ? json_decode(file_get_contents($sh), true) : null;
+            $sfc = $this->repo->doc('shapes');
             $shapes = 0;
             foreach ($sfc['features'] ?? [] as $f) {
                 if (($f['properties']['type'] ?? '') === $code) {
@@ -900,19 +898,14 @@ class store
 
     private function list_data($file, $key)
     {
-        $f = $this->base . $file;
-        $d = is_file($f) ? json_decode(file_get_contents($f), true) : null;
+        $d = $this->repo->doc(substr($file, 0, -5));
         return is_array($d) && isset($d[$key]) && is_array($d[$key]) ? $d : ['version' => 1, $key => []];
     }
 
     /** Writes categories.json / layers.json; the old file is copied to archive/ first. */
     private function put_list($file, $stem, array $d)
     {
-        $f = $this->base . $file;
-        if (is_file($f)) {
-            copy($f, $this->archive_path($stem, 'json'));
-        }
-        self::write_atomic($f, json_encode($d, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+        $this->repo->put_doc(substr($file, 0, -5), $d);
     }
 
     private function categories_data()
@@ -952,9 +945,7 @@ class store
     public function layer_notes_index()
     {
         return $this->locked(function () {
-            $f = $this->base . 'layer-notes/index.json';
-            $d = is_file($f) ? json_decode(file_get_contents($f), true) : null;
-            return is_array($d) && isset($d['notes']) ? $d : ['version' => 1, 'notes' => []];
+            return $this->index_of('layer');
         });
     }
 
@@ -1222,7 +1213,7 @@ class store
     /** [place id => true] of every place. */
     private function place_ids()
     {
-        $fc = json_decode((string) @file_get_contents($this->base . 'places.geojson'), true);
+        $fc = $this->repo->doc('places');
         $out = [];
         foreach (is_array($fc) ? $fc['features'] ?? [] : [] as $f) {
             $out[$f['properties']['id'] ?? ''] = true;
@@ -1294,32 +1285,12 @@ class store
     /** Takes the layer id out of the "layers:" header of the notes of one place (or of all places when $pid is null). */
     private function untag_notes($lid, $pid = null)
     {
-        $root = $this->base . 'notes/';
-        foreach ($pid === null ? (is_dir($root) ? scandir($root) : []) : [$pid] as $pl) {
-            if (!preg_match(self::UUID, $pl) || !is_dir($root . $pl)) {
+        foreach ($this->repo->notes($pid) as $n) {
+            if ($n['kind'] !== 'place' || !in_array($lid, $n['layers'], true)) {
                 continue;
             }
-            foreach (scandir($root . $pl) as $fn) {
-                if (substr($fn, -3) !== '.md') {
-                    continue;
-                }
-                $file = "$root$pl/$fn";
-                $parts = explode("---\n", file_get_contents($file), 3);
-                if (count($parts) < 3) {
-                    continue;
-                }
-                $ids = self::layer_ids(self::meta($parts[1])['layers'] ?? '');
-                if (!in_array($lid, $ids, true)) {
-                    continue;
-                }
-                copy($file, $this->archive_path('note-' . $pl . '-' . substr($fn, 0, -3) . '-untag', 'md'));
-                $head = preg_replace('/^layers: .*\n?/m', '', $parts[1]);
-                $ids = array_values(array_diff($ids, [$lid]));
-                if ($ids) {
-                    $head = rtrim($head, "\n") . "\nlayers: " . implode(',', $ids) . "\n";
-                }
-                self::write_atomic($file, "---\n" . $head . "---\n" . $parts[2]);
-            }
+            $n['layers'] = array_values(array_diff($n['layers'], [$lid]));
+            $this->repo->put_note($n, 'untag');
         }
     }
 
@@ -1379,19 +1350,16 @@ class store
                 throw self::bad('a note is required');
             }
             list($lang, $title, $text, $date) = self::clean_note($n, $codes);
-            $dir = $this->base . 'layer-notes/' . $lid;
-            @mkdir($dir, 0775, true);
             $nid = (string) ($n['id'] ?? '');
             if ($nid !== '') {
-                if (!preg_match(self::UUID, $nid) || !is_file("$dir/$nid.md")) {
+                $old = preg_match(self::UUID, $nid) ? $this->repo->note($lid, $nid) : null;
+                if ($old === null || $old['kind'] !== 'layer') {
                     throw self::bad('unknown note');
                 }
-                copy("$dir/$nid.md", $this->archive_path("layer-note-$lid-$nid", 'md'));
             } else {
                 $nid = self::uuid4();
             }
-            self::write_atomic("$dir/$nid.md", self::note_file($nid, $lang, $title, $date, $text));
-            $this->rebuild_layer_notes_index();
+            $this->repo->put_note(['owner' => $lid, 'kind' => 'layer', 'id' => $nid, 'lang' => $lang, 'title' => $title, 'date' => $date, 'layers' => [], 'text' => $text]);
             return $nid;
         });
     }
@@ -1399,50 +1367,9 @@ class store
     /** Moves every note of an owner (a layer or a shape) to archive/ and rebuilds the index. Nothing happens when it has no notes. */
     private function archive_layer_notes($id)
     {
-        $dir = $this->base . 'layer-notes/' . $id;
-        if (!is_dir($dir)) {
-            return;
-        }
-        foreach (scandir($dir) as $fn) {
-            if (substr($fn, -3) === '.md') {
-                rename("$dir/$fn", $this->archive_path('layer-note-' . $id . '-' . substr($fn, 0, -3), 'md'));
-            }
-        }
-        @rmdir($dir);
-        $this->rebuild_layer_notes_index();
+        $this->repo->remove_notes($id);
     }
 
-    /** layer-notes/index.json: generated from the note files, used for showing and searching. */
-    private function rebuild_layer_notes_index()
-    {
-        $root = $this->base . 'layer-notes/';
-        @mkdir($root, 0775, true);
-        $out = [];
-        foreach (scandir($root) as $ly) {
-            if (!preg_match(self::UUID, $ly) || !is_dir($root . $ly)) {
-                continue;
-            }
-            foreach (scandir($root . $ly) as $fn) {
-                $parts = substr($fn, -3) === '.md' ? explode("---\n", file_get_contents("$root$ly/$fn"), 3) : [];
-                if (count($parts) < 3) {
-                    continue;
-                }
-                $meta = self::meta($parts[1]);
-                $out[] = [
-                    'id' => $meta['id'] ?? substr($fn, 0, -3),
-                    'layer' => $ly,
-                    'lang' => $meta['lang'] ?? '',
-                    'title' => $meta['title'] ?? '',
-                    'date' => self::note_date($meta),
-                    'text' => trim($parts[2])
-                ];
-            }
-        }
-        self::write_atomic(
-            $root . 'index.json',
-            json_encode(['version' => 1, 'notes' => $out], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
-        );
-    }
 
     /** Administrators only (checked by the controller). Removes a layer; its places and their notes stay in the general layer. */
     public function delete_layer($id)
@@ -1560,23 +1487,14 @@ class store
 
     private function read_shapes()
     {
-        $f = $this->base . 'shapes.geojson';
-        $d = is_file($f) ? json_decode(file_get_contents($f), true) : null;
+        $d = $this->repo->doc('shapes');
         return is_array($d) && isset($d['features']) && is_array($d['features']) ? $d : ['type' => 'FeatureCollection', 'features' => []];
     }
 
     /** One feature per line: a change shows in git as a change of one line, not of thousands of numbers. The old file is archived first. */
     private function put_shapes(array $d)
     {
-        $f = $this->base . 'shapes.geojson';
-        if (is_file($f)) {
-            copy($f, $this->archive_path('shapes', 'geojson'));
-        }
-        $lines = [];
-        foreach ($d['features'] as $ft) {
-            $lines[] = json_encode($ft, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        }
-        self::write_atomic($f, '{"type":"FeatureCollection","features":[' . "\n" . implode(",\n", $lines) . "\n]}\n");
+        $this->repo->put_doc('shapes', $d);
     }
 
     /** [shape id => true] of every shape. */
@@ -1875,30 +1793,18 @@ class store
 
     private function locked(callable $fn)
     {
-        @mkdir($this->base, 0775, true);
-        $lock = fopen($this->base . '.lock', 'c');
-        flock($lock, LOCK_EX);
-        try {
-            return $fn();
-        } finally {
-            flock($lock, LOCK_UN);
-            fclose($lock);
-        }
+        return $this->repo->transaction($fn);
     }
 
     public function overlays()
     {
-        $f = $this->base . 'overlays.json';
-        $d = is_file($f) ? json_decode(file_get_contents($f), true) : null;
+        $d = $this->repo->doc('overlays');
         return is_array($d) && isset($d['overlays']) ? $d : ['version' => 1, 'overlays' => []];
     }
 
     private function write_overlays(array $d)
     {
-        self::write_atomic(
-            $this->base . 'overlays.json',
-            json_encode($d, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)
-        );
+        $this->repo->put_doc('overlays', $d);
     }
 
     /** [absolute path, mime] of an overlay's image, or null. */

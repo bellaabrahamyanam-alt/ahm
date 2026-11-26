@@ -1,8 +1,11 @@
 <?php
 namespace ahm\map\tests;
 
+use ahm\map\service\pdo_driver;
 use ahm\map\service\sql_transfer;
 
+require_once dirname(__DIR__, 2) . '/service/sql_driver.php';
+require_once dirname(__DIR__, 2) . '/service/pdo_driver.php';
 require_once dirname(__DIR__, 2) . '/service/sql_transfer.php';
 
 /** A database to try on: SQLite in memory, or MySQL when AHM_TEST_MYSQL_DSN (and _USER, _PASS) are set. */
@@ -10,11 +13,11 @@ function sql_db($mysql = false)
 {
     if ($mysql) {
         $db = new \PDO(getenv('AHM_TEST_MYSQL_DSN'), (string) getenv('AHM_TEST_MYSQL_USER'), (string) getenv('AHM_TEST_MYSQL_PASS'));
-        $t = new sql_transfer($db, 'tst_');
+        $t = new sql_transfer(new pdo_driver($db, 'tst_'));
         $t->drop_schema();
     } else {
         need_pdo('sqlite');
-        $t = new sql_transfer(new \PDO('sqlite::memory:'));
+        $t = new sql_transfer(new pdo_driver(new \PDO('sqlite::memory:')));
     }
     $t->create_schema();
     return $t;
@@ -45,7 +48,7 @@ function files_equal($a, $b)
 
 function round_trip($mysql)
 {
-    $s = fresh_store($dir);
+    $s = file_store($dir);
     $t = sql_db($mysql);
     $n = $t->import($dir, 'sample');
     same(count(json_file("$dir/places.geojson")['features']), $n['places']);
@@ -84,22 +87,22 @@ test('sql: a place with two names of one language keeps both, in the order of th
 });
 
 test('sql: every thing loaded gets one `import` revision and the load is written down in ahm_imports', function () {
-    $s = fresh_store($dir);
+    $s = file_store($dir);
     $t = sql_db(false);
     $n = $t->import($dir, 'sample.zip', 7);
-    $db = (new \ReflectionProperty($t, 'db'));
-    $db->setAccessible(true);
-    $pdo = $db->getValue($t);
+    $rp = new \ReflectionProperty($t, 'db');
+    $rp->setAccessible(true);
+    $drv = $rp->getValue($t);
     $things = $n['lists'] + $n['places'] + $n['shapes'] + $n['layers'];
-    same($things, (int) $pdo->query("SELECT COUNT(*) FROM ahm_revisions WHERE action = 'import' AND rev_no = 1")->fetchColumn());
-    $row = $pdo->query('SELECT file_name, user_id, places, shapes FROM ahm_imports')->fetch(\PDO::FETCH_NUM);
-    same(['sample.zip', 7, $n['places'], $n['shapes']], [$row[0], (int) $row[1], (int) $row[2], (int) $row[3]]);
-    $snap = $pdo->query("SELECT snapshot FROM ahm_revisions WHERE entity_kind = 'place' LIMIT 1")->fetchColumn();
-    ok(is_array(json_decode(gzdecode($snap), true)), 'a snapshot is gzip JSON');
+    same($things, (int) $drv->value("SELECT COUNT(*) FROM ahm_revisions WHERE action = 'import' AND rev_no = 1"));
+    $row = $drv->rows('SELECT file_name, user_id, places, shapes FROM ahm_imports')[0];
+    same(['sample.zip', 7, $n['places'], $n['shapes']], [$row['file_name'], (int) $row['user_id'], (int) $row['places'], (int) $row['shapes']]);
+    $snap = $drv->value("SELECT snapshot FROM ahm_revisions WHERE entity_kind = 'place' LIMIT 1");
+    ok(is_array(json_decode(gzdecode(base64_decode($snap)), true)), 'a snapshot is gzip JSON');
 });
 
 test('sql: a field that the tables do not know stops the whole load and nothing stays in the tables', function () {
-    $s = fresh_store($dir);
+    $s = file_store($dir);
     $f = json_file("$dir/languages.json");
     $f['wikidata'] = 'Q1';
     file_put_contents("$dir/languages.json", json_encode($f));
@@ -122,7 +125,7 @@ function near($v)
 
 function precision_case($mysql)
 {
-    $s = fresh_store($dir);
+    $s = file_store($dir);
     mt_srand(11);
     $features = [];
     for ($i = 0; $i < 3000; $i++) {
@@ -158,7 +161,7 @@ test('sql: 3000 places with coordinates of full precision come back (SQLite: to 
 
 function notes_case($mysql)
 {
-    $s = fresh_store($dir);
+    $s = file_store($dir);
     $before = count(sql_transfer::read_notes($dir));
     $layer = json_file("$dir/layers.json")['layers'][0];
     $pid = $layer['members'][0]['place'];

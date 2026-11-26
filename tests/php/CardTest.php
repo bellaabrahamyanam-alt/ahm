@@ -2,8 +2,11 @@
 namespace ahm\map\tests;
 
 use ahm\map\service\card;
+use ahm\map\service\pdo_driver;
 use ahm\map\service\sql_transfer;
 
+require_once dirname(__DIR__, 2) . '/service/sql_driver.php';
+require_once dirname(__DIR__, 2) . '/service/pdo_driver.php';
 require_once dirname(__DIR__, 2) . '/service/sql_transfer.php';
 require_once dirname(__DIR__, 2) . '/service/card.php';
 

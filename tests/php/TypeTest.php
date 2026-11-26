@@ -33,6 +33,7 @@ test('types: the sample dictionary has every type the sample places use (point t
 });
 
 test('types: a dictionary with line and area types but no river type (made before rivers) still offers the river type, and a river can be saved at once', function () {
+    skip_unless_files();
     $s = fresh_store($dir);
     $f = json_file("$dir/types.json");
     $f['types'] = array_values(array_filter($f['types'], function ($t) {
@@ -45,6 +46,7 @@ test('types: a dictionary with line and area types but no river type (made befor
     ok(is_string($id), 'a river of the offered type is saved');
 });
 test('types: a dictionary file without line and area types still offers the 12 built-in ones, and keeps them when an administrator saves a type', function () {
+    skip_unless_files();
     $s = fresh_store($dir);
     $f = json_file("$dir/types.json");
     $f['types'] = array_values(array_filter($f['types'], function ($t) {
@@ -160,9 +162,12 @@ test('save_type: edit changes names, colour and style but never the code or the 
 });
 
 test('save_type: archives the old dictionary', function () {
+    skip_unless_files();
     $s = fresh_store($dir);
     $s->save_type(iron());
-    ok(count(glob("$dir/archive/types-*.json")) >= 1);
+    files_only(function () use ($dir) {
+        ok(count(glob("$dir/archive/types-*.json")) >= 1);
+    });
 });
 
 test('delete_type: removes an unused type; a type that places use, "mountain" and an unknown code are refused', function () {
@@ -181,7 +186,9 @@ test('delete_type: removes an unused type; a type that places use, "mountain" an
     throws('/unknown type/', function () use ($s) {
         $s->delete_type('salt-mine');
     });
-    ok(count(glob("$dir/archive/types-*.json")) >= 1, 'the old dictionary is archived');
+    files_only(function () use ($dir) {
+        ok(count(glob("$dir/archive/types-*.json")) >= 1, 'the old dictionary is archived');
+    });
 });
 
 test('delete_type: the count in the message is the number of places', function () {
@@ -221,6 +228,7 @@ test('save_type: a custom symbol needs a clean path (only drawing commands and n
 });
 
 test('types: a types.json that cannot be read is never replaced by the seed, and nothing is written', function () {
+    skip_unless_files();
     $s = fresh_store($dir);
     $s->save_type(iron());
     file_put_contents("$dir/types.json", '{"version":1,"types":[{"code":"iron-mi'); // cut in the middle
@@ -283,6 +291,7 @@ test('save_type: a place can use every point type of the dictionary, the seed an
 });
 
 test('types: the dictionary is read from the file on every call (a change made by another process is seen)', function () {
+    skip_unless_files();
     $s = fresh_store($dir);
     $other = new store($dir);
     $other->save_type(iron());
@@ -352,6 +361,7 @@ test('delete_type: a line or area type that shapes use is refused with the count
 });
 
 test('migrate: a border of the old type "region" (that code is now a place type) becomes "province"; safe to repeat; archived first', function () {
+    skip_unless_files();
     $s = fresh_store($dir);
     $f = json_file("$dir/shapes.geojson");
     $f['features'][0]['properties']['type'] = 'region';
@@ -359,7 +369,9 @@ test('migrate: a border of the old type "region" (that code is now a place type)
     $s->migrate();
     $types = array_column(array_column(json_file("$dir/shapes.geojson")['features'], 'properties'), 'type');
     ok(in_array('province', $types, true) && !in_array('region', $types, true), implode(',', $types));
-    ok(count(glob("$dir/archive/shapes-*.geojson")) >= 1, 'the old file is archived');
+    files_only(function () use ($dir) {
+        ok(count(glob("$dir/archive/shapes-*.geojson")) >= 1, 'the old file is archived');
+    });
     $before = file_get_contents("$dir/shapes.geojson");
     $s->migrate();
     same($before, file_get_contents("$dir/shapes.geojson"), 'a second run changes nothing');

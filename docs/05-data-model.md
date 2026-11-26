@@ -196,9 +196,9 @@ Before any file is replaced or an image deleted, the old version is copied here 
 ---
 
 
-### SQL tables (made, not yet used by the map)
+### SQL tables (where the map keeps its data, T-104)
 
-`service/sql/schema.mysql.sql` and `schema.sqlite.sql` define five tables (prefix of the board in front, `phpbb_ahm_objects`, ...); `migrations/m001_storage.php` makes them when the extension is enabled; `service/sql_transfer.php` moves the files of a store into them and back. The files stay the format of the map until T-104.
+`service/sql/schema.mysql.sql` and `schema.sqlite.sql` define five tables (prefix of the board in front, `phpbb_ahm_objects`, ...); `migrations/m001_storage.php` makes them when the extension is enabled; `service/sql_repository.php` keeps the map's data in them and in the posts of the forum Map; `service/sql_transfer.php` moves the files of a store into them and back (the first load, GeoJSON in and out). The files described above are the format of the seed, of GeoJSON and of the tests (`service/file_repository.php`); the running map writes none of them.
 
 | Table | One row is | Holds |
 | --- | --- | --- |

@@ -21,6 +21,7 @@ test('note: created with a language, title, text; stored as Markdown; found in t
     same([], $n['layers']);
     same("Line 1\n\nLine 2", $n['text']);
     same($before + 1, count(note_index($dir)));
+    sync($dir);
     ok(is_file("$dir/notes/$pid/{$n['id']}.md"));
 });
 
@@ -77,7 +78,9 @@ test('note edit: same id, archived copy of the old file, index updated', functio
     $n = find_by(note_index($dir), 'id', $id);
     same('v2', $n['title']);
     same('two', $n['text']);
-    ok(count(glob("$dir/archive/note-$pid-$id-*.md")) >= 1, 'old note archived');
+    files_only(function () use ($dir, $id, $pid) {
+        ok(count(glob("$dir/archive/note-$pid-$id-*.md")) >= 1, 'old note archived');
+    });
 });
 
 test('note edit: unknown or malformed id is refused', function () {

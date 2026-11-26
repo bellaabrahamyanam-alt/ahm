@@ -29,7 +29,8 @@ tools/dev/phpbb-up.sh reset    # delete the board
 - Needs git, composer and PHP with sqlite3, pdo_sqlite, mbstring, xml, zip, curl and gd. The board is in `.dev/` (ignored by git; change it with `AHM_DEV_DIR`, the tag of phpBB with `PHPBB_TAG`, the port with `PORT`). The extension is linked into `ext/ahm/map`, so edits show at once.
 - Enabling the extension runs `migrations/m001_storage.php`, which makes `ahm_objects`, `ahm_lists`, `ahm_note_meta`, `ahm_imports` and `ahm_revisions` from `service/sql/schema.sqlite.sql` (or `schema.mysql.sql` on MySQL and MariaDB, where `data` is the native `JSON` type).
 - `tools/dev/seed.php` then loads the files of `store/ahm_map/` into the tables, makes the forum Map with Places, Layers and Shapes, one topic with a card for every place, shape and layer (the text of `service/card.php`, edit-locked) and the notes as posts with their row in `ahm_note_meta`. Run again, it does nothing.
-- The map still reads and writes the files; the SQL tables are what the next steps (T-104 on) will use.
+- The map reads and writes the tables and the posts (T-104): `store/ahm_map/` holds only the pictures of overlays and a lock file. `check` also writes through the store (a place with a note, an edit, a rename, a layer, a delete) and looks for data files.
+- The PHP tests run every store test on the files, on SQLite and, when `AHM_TEST_MYSQL_DSN` is set, on MySQL.
 - The PHP tests need `php-sqlite3` (`apt install php-sqlite3`). To run the SQL tests on MySQL too: `AHM_TEST_MYSQL_DSN='mysql:host=127.0.0.1;dbname=ahm_test;charset=utf8mb4' AHM_TEST_MYSQL_USER=… AHM_TEST_MYSQL_PASS=… php tests/php/run.php sql` (the database must exist; the tests make and drop their tables with the prefix `tst_`).
 
 ---

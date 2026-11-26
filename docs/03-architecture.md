@@ -19,14 +19,16 @@
    │     controller (login, permissions)     │
    │        └── service/store.php  (all data │
    │            rules, no phpBB inside)      │
+   │              └── repository: tables+posts│
    │   in development: browser-sync          │
    │        └── dev/save-handler.js (same    │
    │            rules, written in Node)      │
    └──────────────────┬──────────────────────┘
                       ▼
-        FILES (no database): places.geojson,
-        notes/<place>/<note>.md, notes/index.json,
-        overlays.json, overlays/<id>.png, archive/
+        THE BOARD'S DATABASE (T-104): ahm_objects, ahm_lists,
+        ahm_note_meta, ahm_revisions, ahm_imports, and the posts of the
+        forum "Map" (one topic per object, one post per note);
+        FILES only for pictures: store/ahm_map/overlays/<id>.png
 
    Outside services used by the browser, all behind js/config.js:
    base-map tiles · satellite tiles · place search · directions

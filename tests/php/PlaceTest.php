@@ -131,7 +131,9 @@ test('place_update: changes fields, keeps the id, archives the old file', functi
     same('Renamed', $p['properties']['label']);
     same('town', $p['properties']['type']);
     ok($p['geometry']['coordinates'] == [45, 41], 'moved');
-    ok(count(glob("$dir/archive/places-*.geojson")) >= 1, 'old places.geojson archived');
+    files_only(function () use ($dir) {
+        ok(count(glob("$dir/archive/places-*.geojson")) >= 1, 'old places.geojson archived');
+    });
 });
 
 test('place_update: unknown id is refused', function () {
@@ -152,6 +154,7 @@ test('place_update: a failed validation leaves the file untouched', function () 
 });
 
 test('every write archives the old file under a name that is never reused', function () {
+    skip_unless_files();
     $s = fresh_store($dir);
     for ($i = 0; $i < 3; $i++) {
         $s->save(['place' => BASE]);

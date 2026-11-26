@@ -31,7 +31,9 @@ test('sources: add, rename, change the link; a missing link is removed; the list
     $now = $s->sources()['sources'][$n];
     same('Pliny the Elder', $now['title']);
     ok(!array_key_exists('url', $now), 'the link is gone when it is not sent');
-    ok(count(glob("$dir/archive/sources-*.json")) >= 1, 'the old file is archived');
+    files_only(function () use ($dir) {
+        ok(count(glob("$dir/archive/sources-*.json")) >= 1, 'the old file is archived');
+    });
 });
 
 test('certainty: a place keeps certainty, radius and sources when an update does not send them, and null / [] clears them', function () {
