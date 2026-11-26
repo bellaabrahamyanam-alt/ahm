@@ -14,6 +14,7 @@ const sh = {
   adding: false, // the add panel is open
   geo: [], // results of the OpenStreetMap search
   geoQ: '',
+  loaded: false, // the data has arrived (until then the list shows a loading skeleton)
   rsel: new Set(), // the selected rivers (T-057), by id; this session only
   rbase: new Map(), // the selected rivers of the base map: "b:<name>" -> { id, name, geometry }
   rOnly: false, // "Show only these": the map draws only the selected rivers
@@ -23,8 +24,6 @@ const sh = {
 const shCan = () => AHM_CONFIG.canEdit;
 const shBox = (s) => s._box || (s._box = geomBBox(s.geometry));
 const shUrl = () => AHM_CONFIG.url;
-const shBtn = (act, icon, text, extra = '') =>
-  `<button type="button" class="icon-btn" data-shact="${act}" ${extra} title="${text}" aria-label="${text}">${AHM.icons.svg(icon, 16)}</button>`;
 
 // ---- the type marker: a small picture of the line pattern and the fill of the type, like the markers of the place types ----
 const shIcons = {};
@@ -61,6 +60,15 @@ function shIcon(type) {
   return (shIcons[type] = `<img class="ti" alt="" width="16" height="16" src="${c.toDataURL()}">`);
 }
 
+/** The marker of a type as an <img> element (the string form above stays for the other tabs). */
+function shIconNode(type) {
+  const i = document.createElement('img');
+  i.className = 'ti';
+  i.alt = '';
+  i.width = i.height = 16;
+  i.src = /src="([^"]+)"/.exec(shIcon(type))[1];
+  return i;
+}
 // ---- the two tabs of this module: Borders and Rivers (the card, the form, the notes and the drawing tool are shared) ----
 const SH_TEXT = {
   borders: { intro: 'Borders of countries, regions and other areas, and lines. Colour them, make them transparent and show their names on the map. They can belong to layers and follow the period filter of Explore.', search: 'Search borders', ph: 'Search borders…', fit: 'Zoom the map to the borders in the list' },
@@ -97,6 +105,7 @@ const shOnTab = () => curTab === (sh.mode === 'rivers' ? 'rivers' : 'shapes');
 const shWord = () => (sh.mode === 'rivers' ? 'rivers' : 'borders');
 async function shReload() {
   shapes = await loadShapes();
+  sh.loaded = true;
   shRefresh();
   shRenderView();
 }
@@ -142,42 +151,65 @@ function shPush() {
 
 // ---- the list ----
 function shRenderTypes() {
-  const c = {};
+  const c = {},
+    box = $('#shTypes');
   shapes.filter((s) => shapeGroup(s) === SH_GROUP[sh.mode]).forEach((s) => (c[s.type] = (c[s.type] || 0) + 1));
-  $('#shTypes').innerHTML = shTypeList().filter((t) => c[t] || sh.types.has(t))
-    .map((t) => `<button class="chip${sh.types.has(t) ? ' on' : ''}" data-t="${t}">${shIcon(t)}${esc(SHAPE_TYPES[t].label)} <span>${c[t] || 0}</span></button>`)
-    .join('');
+  box.replaceChildren();
+  shTypeList()
+    .filter((t) => c[t] || sh.types.has(t))
+    .forEach((t) => {
+      const b = kit.tpl('t-bd-type'),
+        on = sh.types.has(t);
+      b.dataset.t = t;
+      b.classList.toggle('btn-primary', on);
+      b.setAttribute('aria-pressed', String(on));
+      b.querySelector('[data-icon]').append(shIconNode(t));
+      kit.fill(b, { label: SHAPE_TYPES[t].label, count: c[t] || 0 });
+      box.append(b);
+    });
 }
 function shRenderList() {
+  if (typeof kit === 'undefined') return; // the node test pages (layers.test.js uiPage) load no templates
   const l = $('#lang').value,
-    rows = shVisible();
+    rows = shVisible(),
+    all = shapes.filter((s) => shapeGroup(s) === SH_GROUP[sh.mode]).length,
+    ul = $('#shList');
   shRenderTypes();
-  $('#shCount').textContent = rows.length + ' of ' + shapes.filter((s) => shapeGroup(s) === SH_GROUP[sh.mode]).length + ' ' + shWord();
-  $('#shList').innerHTML = rows.length
-    ? rows
-        .map((s) => {
-          const t = shapeType(s.type),
-            when = shapeWhen(s);
-          return (
-            `<li data-sid="${s.id}"${sh.open === s.id ? ' class="on"' : ''}><div class="t"><span class="tmark" title="${esc(t.label)}">${shIcon(s.type)}</span><b>${esc(shapeName(s, l))}</b>` +
-            `<label class="sh-eye" title="Show on the map"><input type="checkbox" data-vis="${s.id}"${sh.hidden.has(s.id) ? '' : ' checked'} aria-label="Show on the map"></label></div>` +
-            `<div class="sn">${esc(t.label)} · ${shapeKind(s.geometry) === 'area' ? 'area' : 'line'}${when ? ' · ' + esc(when) : ''}</div>` +
-            (nameMatch(s, sh.modes[sh.mode].q, l) ? `<div class="sn">also called ${esc(nameMatch(s, sh.modes[sh.mode].q, l))}</div>` : '') + // an old name found by the search (T-043)
-            '</li>'
-          );
-        })
-        .join('')
-    : `<li class="empty">${shapes.some((s) => shapeGroup(s) === SH_GROUP[sh.mode]) ? `No ${shWord()} match. Try fewer filters.` : `No ${shWord()} yet.`}</li>`;
+  $('#shCount').textContent = rows.length + ' of ' + all + ' ' + shWord();
+  if (!sh.loaded || !rows.length) {
+    const li = document.createElement('li');
+    kit.state(li, sh.loaded ? 'empty' : 'loading', !sh.loaded ? 'Loading…' : all ? `No ${shWord()} match. Try fewer filters.` : `No ${shWord()} yet.`);
+    ul.replaceChildren(li);
+    return;
+  }
+  ul.replaceChildren(
+    ...rows.map((s) => {
+      const t = shapeType(s.type),
+        when = shapeWhen(s),
+        also = nameMatch(s, sh.modes[sh.mode].q, l), // an old name found by the search (T-043)
+        li = kit.tpl('t-bd-row'),
+        eye = li.querySelector('[data-vis]');
+      li.dataset.sid = s.id;
+      li.classList.toggle('on', sh.open === s.id);
+      li.querySelector('[data-icon]').append(shIconNode(s.type));
+      li.querySelector('[data-icon]').title = t.label;
+      kit.fill(li, { title: shapeName(s, l), sub: `${t.label} · ${shapeKind(s.geometry) === 'area' ? 'area' : 'line'}${when ? ' · ' + when : ''}`, alias: also ? 'also called ' + also : '' });
+      li.querySelector('[data-bind="alias"]').hidden = !also;
+      eye.dataset.vis = s.id;
+      eye.checked = !sh.hidden.has(s.id);
+      return li;
+    })
+  );
 }
 $('#shList').addEventListener('click', (e) => {
-  if (e.target.closest('.sh-eye')) return;
+  if (e.target.closest('.bd-eye')) return;
   const li = e.target.closest('li[data-sid]');
   if (!li || e.detail > 1) return;
   sh.open === li.dataset.sid && !sh.form ? shClose() : shOpen(li.dataset.sid);
 });
 $('#shList').addEventListener('dblclick', (e) => {
   const li = e.target.closest('li[data-sid]');
-  if (li && !e.target.closest('.sh-eye')) shOpen(li.dataset.sid, true);
+  if (li && !e.target.closest('.bd-eye')) shOpen(li.dataset.sid, true);
 });
 $('#shList').addEventListener('change', (e) => {
   const id = e.target.dataset.vis;
@@ -186,12 +218,17 @@ $('#shList').addEventListener('change', (e) => {
   shPush();
 });
 $('#shTypes').addEventListener('click', (e) => {
-  const b = e.target.closest('.chip[data-t]');
+  const b = e.target.closest('[data-t]');
   if (!b) return;
   sh.types.has(b.dataset.t) ? sh.types.delete(b.dataset.t) : sh.types.add(b.dataset.t);
   shRefresh();
 });
 document.addEventListener('input', (e) => e.target.id === 'shQ' && shRefresh());
+$('#shMore').addEventListener('click', (e) => {
+  const open = $('#shIntro').classList.toggle('bd-clamp') === false;
+  e.target.textContent = open ? 'Less' : 'More';
+  e.target.setAttribute('aria-expanded', String(open));
+});
 $('#shFit').onclick = () => AHM.map.fitTo(shVisible().flatMap((s) => bboxCorners(shBox(s))));
 function shFit(id) {
   const s = shapeById(id);
@@ -221,7 +258,18 @@ function shShow(on) {
   $('#shDetail').hidden = !on;
   dockSync();
 }
-/** The card of the open shape: look (saved at once), layers, source; below it the buttons for the details. */
+/** The nodes of the version chips of a series (oldest first); the open one is marked. */
+function shVersionNodes(s) {
+  const all = [...shapeVersions(s), s].sort((a, b) => (dateKey(a.date_from) < dateKey(b.date_from) ? -1 : dateKey(a.date_from) > dateKey(b.date_from) ? 1 : 0));
+  return all.map((v) => {
+    const b = kit.tpl('t-bd-chip');
+    kit.fill(b, { label: shapeWhen(v) || 'no dates' });
+    if (v.id === s.id) (b.classList.add('btn-primary'), b.setAttribute('aria-current', 'true'));
+    else (b.dataset.shact = 'version'), (b.dataset.sid = v.id);
+    return b;
+  });
+}
+/** The card of the open shape: look (saved at once), layers, source; actions are icons on top. */
 function shRenderView() {
   const s = sh.open && shapeById(sh.open),
     d = $('#shDetail');
@@ -234,39 +282,97 @@ function shRenderView() {
     t = shapeType(s.type),
     kind = shapeKind(s.geometry),
     can = shCan(),
-    dis = can ? '' : ' disabled',
     when = shapeWhen(s),
     others = s.names.filter((n) => n.name !== shapeName(s, l)),
+    vs = shapeVersions(s),
     inLy = layers.filter((ly) => lyMembers[ly.id] && lyMembers[ly.id].has(s.id)),
     free = layers.filter((ly) => !inLy.includes(ly)),
-    osm = /^osm:(node|way|relation)\/(\d+)$/.exec(s.source || '');
+    osm = /^osm:(node|way|relation)\/(\d+)$/.exec(s.source || ''),
+    srcs = (s.sources || []).map(sourceById).filter(Boolean),
+    cert = [s.certainty ? CERT_LABELS[s.certainty] : '', s.radius_m ? 'about ' + radiusText(s.radius_m) : ''].filter(Boolean).join(', '),
+    c = kit.tpl('t-bd-card'),
+    q = (x) => c.querySelector(x),
+    w = s.width || t.width;
   if (li) li.classList.add('on');
-  d.innerHTML =
-    `<div class="dock-head"><span class="tmark" title="${esc(t.label)}">${shIcon(s.type)}</span><h3 class="dock-title">${esc(shapeName(s, l))}</h3><span class="dock-btns">` +
-    (can ? shBtn('edit', 'pencil', 'Edit names, type and dates') : '') +
-    shBtn('close', 'close', 'Close') +
-    `</span></div><div class="dock-body">` +
-    (others.length ? `<div class="sn">${others.map((n) => `${esc(n.name)} <span class="sn">(${esc(n.lang)})</span>`).join(' · ')}</div>` : '') +
-    `<div class="sn">${esc(t.label)} · ${kind === 'area' ? 'area' : 'line'}${when ? ' · ' + esc(when) : ''}</div>` +
-    (shapeVersions(s).length
-      ? `<div class="label">Versions in time (${shapeVersions(s).length + 1})</div><div class="chips">${shVersionChips(s)}</div>`
-      : '') +
-    evidenceHTML(s) + // certainty and sources (T-046)
-    `<div class="label">Look</div><div class="sh-look">` +
-    `<label>Colour <input type="color" id="shColor" value="${esc(s.color)}"${dis}></label>` +
-    `<label>${kind === 'area' ? 'Fill opacity' : 'Line opacity'} <input type="range" id="shOp" min="0" max="1" step="0.05" value="${s.opacity}"${dis}> <span id="shOpVal">${Math.round(s.opacity * 100)}%</span></label>` +
-    (kind === 'line' ? `<label>Width <input type="range" id="shWidth" min="0.5" max="12" step="0.5" value="${s.width || t.width}"${dis}> <span id="shWidthVal">${s.width || t.width} px</span></label>` : '') +
-    `<label class="sh-check"><input type="checkbox" id="shLabel"${s.label ? ' checked' : ''}${dis}> Show the name on the map</label></div>` +
-    `<div class="label">In layers</div><div class="chips">` +
-    (inLy.length ? inLy.map((ly) => `<button class="chip ly-chip" data-shact="layer" data-lid="${ly.id}"${ly.color ? ` style="--a:${esc(ly.color)}"` : ''}>${esc(lyName(ly, l))}</button>`).join('') : '<span class="sn">None yet.</span>') +
-    `</div>` +
-    (can && free.length ? `<select id="shAddLayer" aria-label="Add to a layer"><option value="">Add to a layer…</option>${free.map((ly) => `<option value="${ly.id}">${esc(lyName(ly, l))}</option>`).join('')}</select>` : '') +
-    lyOwnerNotesHTML(s.id, l, 'shact') +
-    (osm ? `<div class="sn">Outline © <a href="https://www.openstreetmap.org/${osm[1]}/${osm[2]}" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL).</div>` : '') +
-    `<div class="err-line" id="shErr"></div></div><div class="dock-foot">` +
-    `<button type="button" data-shact="fit">Fit map</button>` +
-    (can ? `${geomToDraw(s.geometry) ? '<button type="button" data-shact="editshape">Edit shape</button>' : ''}<button type="button" data-shact="addversion" title="Move the points to the outline for another time. The outline you see now stays as it is.">New version…</button><button type="button" class="danger" data-shact="delete">Delete</button>` : '') +
-    `</div>`;
+  kit.fill(c, {
+    title: shapeName(s, l),
+    others: others.map((n) => `${n.name} (${n.lang})`).join(' · '),
+    sub: `${t.label} · ${kind === 'area' ? 'area' : 'line'}${when ? ' · ' + when : ''}`,
+    vtitle: `Versions in time (${vs.length + 1})`,
+    cert,
+    opLabel: kind === 'area' ? 'Fill opacity' : 'Line opacity',
+  });
+  q('[data-icon]').append(shIconNode(s.type));
+  q('[data-icon]').title = t.label;
+  kit.show(q('[data-bind="others"]'), others.length > 0);
+  c.querySelectorAll('[data-can]').forEach((b) => (b.hidden = !can || (b.dataset.shact === 'editshape' && !geomToDraw(s.geometry))));
+  kit.show(q('[data-versions]'), vs.length > 0);
+  q('[data-vlist]').append(...shVersionNodes(s));
+  kit.show(q('[data-cert]'), !!cert);
+  kit.show(q('[data-srcs]'), srcs.length > 0);
+  srcs.forEach((x, i) => {
+    const a = kit.tpl('t-bd-src');
+    kit.fill(a, { title: x.title });
+    a.title = x.citation || '';
+    if (/^https?:\/\//i.test(x.url || '')) a.href = x.url;
+    else (a.removeAttribute('href'), a.classList.remove('link', 'link-primary'));
+    q('[data-srclist]').append(...(i ? [document.createTextNode('; ')] : []), a);
+  });
+  // look
+  UI_SWATCHES.forEach((col) => {
+    const b = kit.tpl('t-bd-swatch');
+    b.dataset.color = col;
+    b.style.setProperty('--bd-c', col);
+    b.setAttribute('aria-label', 'Colour ' + col);
+    b.setAttribute('aria-pressed', String(col === String(s.color).toLowerCase()));
+    b.disabled = !can;
+    q('[data-swatches]').append(b);
+  });
+  q('#shColor').value = s.color;
+  q('#shOp').value = s.opacity;
+  q('#shOpVal').textContent = Math.round(s.opacity * 100) + '%';
+  q('#shWidth').value = w;
+  q('#shWidthVal').textContent = w + ' px';
+  kit.show(q('[data-widthrow]'), kind === 'line');
+  q('#shLabel').checked = !!s.label;
+  [q('#shColor'), q('#shOp'), q('#shWidth'), q('#shLabel')].forEach((x) => (x.disabled = !can));
+  // layers
+  inLy.forEach((ly) => {
+    const b = kit.tpl('t-bd-chip');
+    kit.fill(b, { label: lyName(ly, l) });
+    b.dataset.shact = 'layer';
+    b.dataset.lid = ly.id;
+    if (ly.color) (b.classList.add('bd-layer'), b.style.setProperty('--bd-c', ly.color));
+    q('[data-layers]').append(b);
+  });
+  if (!inLy.length) {
+    const n = document.createElement('span');
+    n.className = 'ahm-hint';
+    n.textContent = 'None yet.';
+    q('[data-layers]').append(n);
+  }
+  kit.show(q('#shAddLayer'), can && free.length > 0);
+  free.forEach((ly) => {
+    const o = document.createElement('option');
+    o.value = ly.id;
+    o.textContent = lyName(ly, l);
+    q('#shAddLayer').append(o);
+  });
+  // notes (the Foundation note template)
+  const ns = layerNotes.filter((n) => n.layer === s.id && (!l || n.lang === l)).sort((a, b) => dateKey(a.date) - dateKey(b.date) || a.title.localeCompare(b.title));
+  kit.show(q('[data-nonotes]'), !ns.length);
+  ns.forEach((n) => {
+    const a = fields.note({ title: n.title, lang: langName(n.lang), when: n.date ? dateText(n.date) : '', text: n.text });
+    if (can) {
+      const eb = kit.tpl('t-bd-notebtn');
+      eb.dataset.id = n.id;
+      a.querySelector('[data-actions]').append(eb);
+    }
+    q('[data-notes]').append(a);
+  });
+  kit.show(q('[data-osm]'), !!osm);
+  if (osm) q('[data-osmlink]').href = `https://www.openstreetmap.org/${osm[1]}/${osm[2]}`;
+  d.replaceChildren(c);
   shShow(true);
   if (li) revealRow(li);
 }
@@ -322,10 +428,6 @@ $('#shDetail').addEventListener('click', async (e) => {
   const act = b.dataset.shact,
     s = shCur();
   if (act === 'close') return sh.form ? shCancelForm() : shClose();
-  if (act === 'typepick') {
-    b.parentElement.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c === b));
-    return;
-  }
   if (act === 'save') return shSaveForm();
   if (act === 'cancel') return shCancelForm();
   if (!s) return;
@@ -335,10 +437,11 @@ $('#shDetail').addEventListener('click', async (e) => {
   else if (act === 'editnote') lyOpenNoteDlg(s, layerNotes.find((n) => n.id === b.dataset.id), 'border');
   else if (act === 'edit') shOpenForm({ id: s.id, kind: shapeKind(s.geometry), ...s });
   else if (act === 'editshape') shStartDraw(shapeKind(s.geometry), s);
+  else if (act === 'swatch') shStyle(s, { color: b.dataset.color });
   else if (act === 'version') shOpen(b.dataset.sid, true);
   else if (act === 'addversion') shStartVersion(s);
   else if (act === 'delete') {
-    if (!confirm(`Delete “${shapeName(s, $('#lang').value)}”? It also leaves its layers. A copy of the old file stays in the archive on the server.`)) return;
+    if (!(await dialogs.confirm('delete', { name: shapeName(s, $('#lang').value) }))) return;
     try {
       await postJSON(shUrl().shapeDelete, { id: s.id });
       sh.open = null;
@@ -350,6 +453,14 @@ $('#shDetail').addEventListener('click', async (e) => {
     }
   }
 });
+
+$('#shDetail').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-act]');
+  if (!b || !sh.form) return;
+  if (b.dataset.act === 'addname') fields.nameAdd($('#shForm [data-names]'), $('#lang').value);
+  else if (b.dataset.act === 'srcadd') shAddSource();
+});
+$('#shDetail').addEventListener('submit', (e) => e.preventDefault());
 
 /** The chips of all versions of a series, the open one marked (oldest first, by the start date); `act` is the data attribute of the click (borders and rivers: shact, routes: rtact). */
 function shVersionChips(s, act = 'data-shact="version"') {
@@ -381,45 +492,88 @@ function shNewUuid() {
 }
 
 // ---- the form: names, type, dates (new shape or details of an existing one) ----
-const shTypeChips = (cur) =>
-  shTypeList().map((t) => `<button type="button" class="chip${t === cur ? ' on' : ''}" data-shact="typepick" data-t="${t}" title="${esc(SHAPE_TYPES[t].label)}">${shIcon(t)}${esc(SHAPE_TYPES[t].label)}</button>`)
-    .join('');
-const shVersionHint = (f) => {
-  const p = shapeById(f.prevId);
-  return `<div class="sn">The outline you just drew is saved as a new version of the same ${f.kind === 'area' ? 'border' : 'line'}. “${esc(shapeWhen(p) || 'no dates')}” stays as it is. Give the dates of the new one; names and type are taken over, change them if they differ.</div>`;
-};
+const shVersionHint = (f) => `The outline you just drew is saved as a new version of the same ${f.kind === 'area' ? 'border' : 'line'}. “${shapeWhen(shapeById(f.prevId)) || 'no dates'}” stays as it is. Give the dates of the new one; names and type are taken over, change them if they differ.`;
+/** The source tick boxes of the form; `ticked` = ids. */
+function shSrcOpts(ticked) {
+  const box = $('#shForm .pf-srcs');
+  box.replaceChildren();
+  if (!sources.length) {
+    const p = document.createElement('p');
+    p.className = 'ahm-hint';
+    p.textContent = 'No sources yet. Add the first one below.';
+    return box.append(p);
+  }
+  sources.forEach((x) => {
+    const n = kit.tpl('t-bd-srcopt'),
+      i = n.querySelector('input');
+    i.value = x.id;
+    i.checked = ticked.includes(x.id);
+    kit.fill(n, { title: x.title });
+    box.append(n);
+  });
+}
+async function shAddSource() {
+  const root = $('#shForm'),
+    box = root.querySelector('.pf-newsrc'),
+    err = box.querySelector('.pf-srcerr'),
+    title = box.querySelector('.pf-st').value.trim();
+  err.textContent = '';
+  try {
+    if (!title) throw Error('Give the source a title.');
+    const r = await postJSON(AHM_CONFIG.url.sourceSave, { title, citation: box.querySelector('.pf-sc').value.trim(), url: box.querySelector('.pf-su').value.trim() });
+    sources = (await loadSources()).slice();
+    shSrcOpts([...root.querySelectorAll('.pf-srcs input')].filter((i) => i.checked).map((i) => i.value).concat(r.id));
+    box.querySelectorAll('input').forEach((i) => (i.value = ''));
+    box.open = false;
+  } catch (e) {
+    err.textContent = e.message;
+  }
+}
 function shOpenForm(f) {
   sh.form = f;
-  const names = f.names && f.names.length ? f.names : [{ lang: $('#lang').value || 'en', name: '' }];
-  $('#shDetail').innerHTML =
-    `<div class="dock-head"><span class="tmark">${shIcon(f.type || shTypeList()[0] || 'territory')}</span><h3 class="dock-title">${f.prevId ? 'New version of “' + esc(shapeName(shapeById(f.prevId), $('#lang').value)) + '”' : f.id ? 'Edit details' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)'}</h3><span class="dock-btns">${shBtn('cancel', 'close', 'Cancel')}</span></div>` +
-    `<div class="dock-body">${f.prevId ? shVersionHint(f) : ''}<div class="pf" id="shForm"><div class="label">Names</div><div class="pf-names" data-dated="1">${names.map((n) => pfRowDated(n)).join('')}</div>` +
-    `<button type="button" class="pf-add">+ Add another name</button><div class="sn">${LANG_HINT}</div>` +
-    `<div class="label">Type</div><div class="chips sh-typepick">${shTypeChips(f.type || shTypeList()[0] || 'territory')}</div>` +
-    `<div class="sn">The type sets the line pattern and the first colour. You can change the colour afterwards.</div>` +
-    `<div class="label">Dates (optional)</div><div class="sn">Leave “Unknown” for a modern border or when you do not know. Borders with dates follow the period filter.</div>` +
-    `<div class="pf-sub">Began</div>${dfHTML('pf-from', f.date_from || null)}<div class="pf-sub">Ended</div>${dfHTML('pf-to', f.date_to || null)}${f.prevId && !shapeById(f.prevId).date_to ? '<label class="sh-check"><input type="checkbox" id="shClosePrev" checked> End the previous version the day before</label>' : ''}` +
-    evidenceFormHTML(f, false) + // certainty and sources (T-046), inside #shForm so that shReadForm finds it
-    '</div>' +
-    `<div class="err-line" id="shErr"></div></div><div class="dock-foot"><button type="button" class="primary" data-shact="save">Save</button><button type="button" data-shact="cancel">Cancel</button></div>`;
+  const l = $('#lang').value,
+    prev = f.prevId && shapeById(f.prevId),
+    names = f.names && f.names.length ? f.names : [{ lang: l || 'en', name: '' }],
+    form = fields.form(prev ? 'New version of “' + shapeName(prev, l) + '”' : f.id ? 'Edit details' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)', { save: prev ? 'Save version' : 'Save' }),
+    b = kit.tpl('t-bd-formbody'),
+    q = (x) => b.querySelector(x);
+  form.querySelector('.ahm-title').classList.add('dock-title');
+  form.querySelector('[data-act="save"]').dataset.shact = 'save';
+  form.querySelector('[data-act="cancel"]').dataset.shact = 'cancel';
+  kit.show(q('[data-vhint]'), !!prev);
+  kit.fill(b, { vtext: prev ? shVersionHint(f) : '', langhint: LANG_HINT });
+  fields.nameList(q('[data-names]'), languages.map((x) => ({ code: x.code, name: langName(x.code) })), names);
+  const cur = f.type || shTypeList()[0] || 'territory';
+  sh.formRefs = {
+    type: fields.typePills(shTypeList().map((t) => ({ code: t, name: SHAPE_TYPES[t].label })), cur),
+    from: fields.date(f.date_from || null),
+    to: fields.date(f.date_to || null),
+  };
+  q('[data-type]').append(sh.formRefs.type);
+  q('[data-from]').append(sh.formRefs.from);
+  q('[data-to]').append(sh.formRefs.to);
+  kit.show(q('[data-closeprev]'), !!(prev && !prev.date_to));
+  q('.pf-cert').value = f.certainty || '';
+  form.querySelector('[data-body]').append(b);
+  $('#shDetail').replaceChildren(form);
+  shSrcOpts(f.sources || []);
   shShow(true);
   tab(sh.mode === 'rivers' ? 'rivers' : 'shapes');
-  const n = $('#shForm .nn');
-  if (n) n.focus();
+  const n = $('#shForm [data-value="name"]');
+  if (n) n.focus({ preventScroll: true });
 }
-placeFormWire($('#shDetail')); // the add / remove name buttons and the date fields (once; the form is drawn many times)
 function shReadForm() {
   const root = $('#shForm'),
-    names = pfReadNames(root);
+    r = sh.formRefs,
+    names = fields.readNames(root.querySelector('[data-names]'));
   if (!names.length) throw Error('Give the border at least one name.');
   names.forEach((n) => {
     if (!languages.some((l) => l.code === n.lang)) throw Error(`The language “${n.lang || '?'}” is not in the list. Ask an administrator to add it.`);
   });
-  const chip = root.querySelector('.sh-typepick .chip.on');
-  if (!chip) throw Error('Choose a type. If there is none, an administrator adds one in More > Types.');
-  const type = chip.dataset.t,
-    from = dfRead(root.querySelector('.pf-from'), 'Began'),
-    to = dfRead(root.querySelector('.pf-to'), 'Ended');
+  const type = r.type.dataset.value;
+  if (!type) throw Error('Choose a type. If there is none, an administrator adds one in More > Types.');
+  const from = fields.dateRead(r.from, 'Began'),
+    to = fields.dateRead(r.to, 'Ended');
   dateOrderCheck(from, to);
   return { names, type, date_from: from, date_to: to, ...evidenceRead(root, false) };
 }
@@ -468,14 +622,32 @@ function shStartDraw(kind, existing, version = null) {
   shRenderView();
   AHM.map.showPreview(null);
   const coords = existing ? geomToDraw(existing.geometry) : [],
-    ctl = AHM.map.drawShape({ kind, coords, expand: shRiverLeg }, (g) => {
-      const f = $('#shFinish');
-      if (f) f.disabled = !g;
-    });
+    ctl = AHM.map.drawShape({ kind, coords, expand: shRiverLeg }, (g) => shDrawSync(g));
   sh.draw = { mode: version ? 'version' : existing ? 'edit' : 'new', kind, id: existing && !version ? existing.id : null, version, ctl };
   shPush();
   shRenderAdd();
   if (existing) AHM.map.fitTo(bboxCorners(shBox(existing)));
+}
+/** The point count, the error and the Finish button of the drawing panel follow the outline. */
+function shDrawSync(g) {
+  const d = sh.draw,
+    out = $('#bdPts');
+  if (!d || !out) return;
+  const n = d.ctl.points().length,
+    bad = n > 0 && !g,
+    err = $('#shDrawErr');
+  out.textContent = n + (n === 1 ? ' point' : ' points');
+  err.textContent = bad ? (d.kind === 'area' ? 'An area needs at least 3 points.' : 'A line needs at least 2 points.') : '';
+  err.hidden = !bad;
+  $('#shFinish').disabled = !g;
+}
+async function shDiscard() {
+  const d = sh.draw;
+  if (d && d.mode === 'new' && d.ctl.points().length) {
+    dialogs.texts['discard-drawing'] = dialogs.texts['discard-drawing'] || { title: () => 'Discard this drawing?', body: () => 'The points you clicked are lost.', ok: 'Discard', danger: true };
+    if (!(await dialogs.confirm('discard-drawing'))) return;
+  }
+  shCancelDraw();
 }
 const shRiverMsg = (m) => ($('#shRiverMsg') ? ($('#shRiverMsg').textContent = m) : $('#shAddMsg') ? ($('#shAddMsg').textContent = m) : 0);
 /** Finds rivers by name on OpenStreetMap: several can come back. They are only shown on the map and used by the drawing tool, never saved. */
@@ -538,7 +710,7 @@ async function shRiverLeg(a, b) {
 async function shFinishDraw() {
   const d = sh.draw;
   let g = d.ctl.getGeometry();
-  if (!g) return ($('#shAddMsg').textContent = d.kind === 'area' ? 'An area needs at least 3 points.' : 'A line needs at least 2 points.');
+  if (!g) return shDrawSync(g);
   const rv = sh.river;
   if (d.mode === 'new' && d.kind === 'line' && rv.on && rv.clicks.length) {
     // the clicks only told where on the river to start and stop: the line keeps the points of the river itself
@@ -584,25 +756,25 @@ AHM.on('shape:click', ({ id }) => (lyState.editing ? lyToggleMember(id) : shOpen
 // ---- adding: OpenStreetMap search, drawing, a file ----
 function shRenderAdd() {
   const box = $('#shAdd');
-  if (!shCan() && sh.mode !== 'rivers') {
-    box.innerHTML = '';
-    return;
-  }
+  if (!shCan() && sh.mode !== 'rivers') return (box.textContent = '');
   if (sh.draw) {
-    const d = sh.draw;
-    box.innerHTML =
-      `<div class="sh-banner"><b>${d.mode === 'version' ? 'New version: move the points' : d.mode === 'edit' ? 'Editing the shape' : d.kind === 'area' ? 'Drawing an area' : sh.mode === 'rivers' ? 'Drawing a river' : 'Drawing a line'}</b>` +
-      (d.mode === 'version' ? `<div class="sn">The outline you started from is not changed. Move the points to the outline for the other time, then press Next to give its dates.</div>` : '') +
-      `<div class="sn">Click the map to add points. Drag a point to move it, right-click to remove it, Backspace undoes. Enter or a double click finishes, Esc cancels.</div>` +
-      (d.kind === 'line' && d.mode === 'new'
-        ? `<label class="sh-check"><input type="checkbox" id="shRiverOn"${sh.river.on ? ' checked' : ''}> Follow a river between the points I click</label>` +
-          (sh.river.on
-            ? `<div class="row"><input type="text" id="shRiverQ" placeholder="River name, e.g. Araks" value="${esc(sh.river.q)}"><button type="button" data-shadd="riverfind">Find</button></div>` +
-              `<div class="sn" id="shRiverMsg">${sh.river.lines.length ? sh.river.lines.length + ' river line(s) loaded (blue). Click near the start, then near the end.' : 'Type the river name and press Find.'}</div>`
-            : '')
-        : '') +
-      `<div class="row"><button type="button" data-shadd="undo">Undo</button><button type="button" class="primary" id="shFinish" data-shadd="finish"${d.ctl.getGeometry() ? '' : ' disabled'}>${d.mode === 'version' ? 'Next: dates' : d.mode === 'edit' ? 'Save shape' : 'Finish'}</button>` +
-      `<button type="button" data-shadd="canceldraw">Cancel</button></div><div class="err-line" id="shAddMsg"></div></div>`;
+    const d = sh.draw,
+      p = kit.tpl('t-bd-draw'),
+      line = d.kind === 'line' && d.mode === 'new',
+      vn = p.querySelector('[data-bind="vnote"]');
+    kit.fill(p, {
+      title: d.mode === 'version' ? 'New version: move the points' : d.mode === 'edit' ? 'Editing the shape' : d.kind === 'area' ? 'Drawing an area' : sh.mode === 'rivers' ? 'Drawing a river' : 'Drawing a line',
+      vnote: 'The outline you started from is not changed. Move the points to the outline for the other time, then press Next to give its dates.',
+    });
+    vn.hidden = d.mode !== 'version';
+    kit.show(p.querySelector('[data-river]'), line);
+    p.querySelector('#shRiverOn').checked = sh.river.on;
+    kit.show(p.querySelector('[data-riverq]'), sh.river.on);
+    p.querySelector('#shRiverQ').value = sh.river.q;
+    p.querySelector('#shRiverMsg').textContent = sh.river.on ? (sh.river.lines.length ? sh.river.lines.length + ' river line(s) loaded (blue). Click near the start, then near the end.' : 'Type the river name and press Find.') : '';
+    p.querySelector('#shFinish').textContent = d.mode === 'version' ? 'Next: dates' : d.mode === 'edit' ? 'Save shape' : 'Finish';
+    box.replaceChildren(p);
+    shDrawSync(d.ctl.getGeometry());
   } else if (sh.mode === 'rivers') {
     box.innerHTML =
       `<div class="sh-banner"><b>Find rivers</b><div class="sn">Search OpenStreetMap by name. Several rivers can be found; they are only shown (blue), not saved.</div>` +
@@ -612,40 +784,46 @@ function shRenderAdd() {
         : '');
     shRenderRivers();
   } else if (sh.adding) {
-    box.innerHTML =
-      `<div class="sh-banner"><b>Add a border</b><div class="label">Find it on OpenStreetMap</div>` +
-      `<div class="row">${searchFieldHTML('shGeoQ', 'Country, region, district…')}<button type="button" data-shadd="search">Search</button></div><ul id="shGeoRes"></ul>` +
-      `<div class="label">Or draw it</div><div class="row"><button type="button" data-shadd="drawarea">${AHM.icons.svg('area', 16)} Draw an area</button><button type="button" data-shadd="drawline">${AHM.icons.svg('line', 16)} Draw a line</button></div>` +
-      `<div class="label">Or import it</div><button type="button" data-shadd="import">GeoJSON file…</button><input type="file" id="shFile" accept=".geojson,.json,application/geo+json,application/json" hidden>` +
-      `<div class="sn">Outlines from OpenStreetMap are © OpenStreetMap contributors (ODbL) and are marked as such. Big outlines are simplified. After adding, set the colour and opacity on the card.</div>` +
-      `<div class="err-line" id="shAddMsg"></div><button type="button" data-shadd="closeadd">Close</button></div>`;
+    box.replaceChildren(kit.tpl('t-bd-add'));
     $('#shGeoQ').value = sh.geoQ;
-    searchFieldSync();
     shRenderGeo();
-  } else box.innerHTML = `<button type="button" class="wide" data-shadd="open">+ Add border</button>`;
+  } else box.replaceChildren(kit.tpl('t-bd-addbtn'));
 }
-const shMsg = (m) => ($('#shAddMsg') ? ($('#shAddMsg').textContent = m || '') : 0);
+const shMsg = (m, info) => {
+  const el = $('#shAddMsg');
+  if (!el) return;
+  el.textContent = m || '';
+  el.classList.toggle('alert-info', !!info);
+  el.classList.toggle('alert-error', !info);
+};
 function shRenderGeo() {
-  const ul = $('#shGeoRes');
-  if (!ul) return;
-  ul.innerHTML = sh.geo
-    .map((r, i) => {
-      const t = SHAPE_TYPES[guessShapeType(r)];
-      return `<li data-i="${i}"><div class="t"><span class="tmark">${shIcon(guessShapeType(r))}</span><b>${esc(r.name.split(',').slice(0, 2).join(','))}</b></div><div class="sn">${esc(r.name)}</div><div class="row"><span class="sn">${esc(t.label)} · ${geomCount(r.geometry)} points</span><button type="button" data-shadd="geoadd" data-i="${i}">Add</button></div></li>`;
+  const box = $('#shGeoRes');
+  if (!box) return;
+  box.replaceChildren(
+    ...sh.geo.map((r, i) => {
+      const n = kit.tpl('t-bd-geo'),
+        ty = guessShapeType(r);
+      n.dataset.i = i;
+      n.querySelector('[data-shadd=\"geoadd\"]').dataset.i = i;
+      n.querySelector('[data-icon]').append(shIconNode(ty));
+      kit.fill(n, { title: r.name.split(',').slice(0, 2).join(','), sub: `${SHAPE_TYPES[ty].label} · ${geomCount(r.geometry)} points` });
+      return n;
     })
-    .join('');
+  );
 }
 async function shSearch() {
-  const q = $('#shGeoQ').value.trim();
+  const q = $('#shGeoQ').value.trim(),
+    box = $('#shGeoRes');
   sh.geoQ = q;
   if (!q) return;
-  shMsg('Searching…');
+  sh.geo = [];
+  kit.state(box, 'loading', 'Searching…');
   try {
     sh.geo = await geocodeShapes(q, $('#lang').value);
-    shMsg(sh.geo.length ? '' : 'Nothing with an outline found. Try another spelling, or draw it.');
+    if (!sh.geo.length) return kit.state(box, 'empty', 'Nothing with an outline found. Try another spelling, or draw it.');
     shRenderGeo();
   } catch (e) {
-    shMsg(e.message);
+    kit.state(box, 'down', e.message, shSearch);
   }
 }
 /** Names for a search result: every language of the dictionary that OpenStreetMap knows, or the plain name. */
@@ -661,7 +839,7 @@ async function shCreate(body) {
 }
 async function shAddOsm(i) {
   const r = sh.geo[i];
-  shMsg('Adding…');
+  shMsg('Adding…', true);
   try {
     const id = await shCreate({ names: shOsmNames(r), type: guessShapeType(r), date_from: null, date_to: null, source: 'osm:' + r.osm, geometry: simplifyGeometry(r.geometry) });
     AHM.map.showPreview(null);
@@ -681,7 +859,7 @@ async function shImport(file) {
       );
     if (!feats.length) return shMsg('No areas or lines found in this file.');
     if (feats.length > 100) return shMsg(`The file has ${feats.length} shapes; the limit is 100 at once. Split it.`);
-    if (!confirm(`Import ${feats.length} shape${feats.length > 1 ? 's' : ''} as borders of type “Territory or area”? You can change the type afterwards.`)) return;
+    if (!(await dialogs.confirm('import', { count: feats.length, type: (SHAPE_TYPES[shTypeList()[0]] || { label: 'Territory or area' }).label }))) return;
     const lang = languages.some((l) => l.code === 'en') ? 'en' : languages[0].code;
     let n = 0,
       last = null;
@@ -689,7 +867,7 @@ async function shImport(file) {
       const p = f.properties || {},
         name = String(p.name || p.NAME || p['name:en'] || p.title || p.admin || '').trim() || 'Imported border ' + (n + 1);
       last = await shCreate({ names: [{ lang, name: name.slice(0, 200) }], type: shTypeList()[0] || 'territory', date_from: null, date_to: null, source: '', geometry: simplifyGeometry(f.geometry) });
-      shMsg(`Imported ${++n} of ${feats.length}…`);
+      shMsg(`Imported ${++n} of ${feats.length}…`, true);
     }
     sh.adding = false;
     await shReload();
@@ -700,7 +878,7 @@ async function shImport(file) {
   }
 }
 $('#shAdd').addEventListener('click', (e) => {
-  const li = e.target.closest('#shGeoRes li');
+  const li = e.target.closest('#shGeoRes .bd-geo');
   const b = e.target.closest('[data-shadd]');
   if (!b && li) {
     const r = sh.geo[li.dataset.i];
@@ -720,7 +898,7 @@ $('#shAdd').addEventListener('click', (e) => {
   else if (a === 'import') $('#shFile').click();
   else if (a === 'undo') sh.draw.ctl.undo();
   else if (a === 'finish') shFinishDraw();
-  else if (a === 'canceldraw') shCancelDraw();
+  else if (a === 'canceldraw') shDiscard();
 });
 $('#shAdd').addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;
@@ -742,6 +920,7 @@ $('#shAdd').addEventListener('change', (e) => {
 /** Called once the data is loaded. */
 function shSet(list) {
   shapes = list;
+  sh.loaded = true; // the list leaves its loading skeleton at the next update()
   shRenderAdd();
 }
 

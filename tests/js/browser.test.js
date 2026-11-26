@@ -287,8 +287,8 @@ scenario('browser: a new version of a border in one go: the outline opens for ed
   await pg.click('#shFinish');
   ok(/New version of/.test(await pg.locator('#shDetail .dock-title').innerText()), 'Next opens the details form titled as a new version');
   ok(/stays as it is/.test(await pg.locator('#shDetail').innerText()), 'the form says the first version stays');
-  await pg.click('.pf-add');
-  await pg.locator('#shForm .nn').last().fill('Later outline');
+  await pg.click('#shForm [data-act=addname]');
+  await pg.locator('#shForm [data-value=name]').last().fill('Later outline');
   await pg.click('[data-shact=save]'); await pg.waitForTimeout(800);
   const after = await pg.evaluate(() => shapes.map((s) => ({ id: s.id, series: s.series || null, geometry: JSON.stringify(s.geometry), names: s.names.map((n) => n.name) })));
   eq(old.n + 1, after.length, 'one shape was added');
@@ -297,7 +297,7 @@ scenario('browser: a new version of a border in one go: the outline opens for ed
   eq(old.geometry, first.geometry, 'the first version keeps its outline');
   ok(added.geometry !== first.geometry, 'the new version has the moved outline');
   ok(added.names.includes('Later outline'), 'the new name was saved');
-  ok(/Versions in time \(2\)/i.test(await pg.locator('#shDetail').innerText()) && (await pg.locator('#shDetail .chips .chip.on').count()) >= 1, 'the sheet of the new version lists both versions and marks the open one');
+  ok(/Versions in time \(2\)/i.test(await pg.locator('#shDetail').innerText()) && (await pg.locator('#shDetail [aria-current]').count()) >= 1, 'the sheet of the new version lists both versions and marks the open one');
   // Cancel in the drawing step brings the first version back
   await pg.evaluate((id) => shOpen(id), old.id);
   await pg.click('[data-shact=addversion]');

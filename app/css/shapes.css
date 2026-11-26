@@ -1,4 +1,4 @@
-/* Borders: the card in the dock, the list, the drawing handles. Colours come from base.css. */
+/* Borders: the card in the dock, the list, the drawing handles. Colours come from base.css (daisyUI theme). Own classes: bd-*. */
 #shDetail,
 #rtDetail {
   flex: 1;
@@ -17,33 +17,6 @@
   display: inline-flex;
   cursor: pointer;
 }
-.sh-look {
-  display: grid;
-  gap: 8px;
-}
-.sh-look label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.sh-look input[type="range"] {
-  flex: 1;
-  min-width: 0;
-}
-.sh-look input[type="color"] {
-  width: 40px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: none;
-  cursor: pointer;
-}
-.sh-typepick .chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
 .sh-banner {
   display: flex;
   flex-direction: column;
@@ -53,14 +26,6 @@
   border: 1px solid var(--border-color);
   border-radius: 6px;
   background: var(--bg2-bg-color);
-}
-#shGeoRes {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-#shGeoRes li {
-  cursor: pointer;
 }
 .ahm-vtx {
   width: 14px;
@@ -161,3 +126,33 @@
 #tab-routes.rt-drawing > :not(#rtAdd) {
   display: none;
 }
+
+/* Borders tab (bd-*): only what daisyUI has no class for */
+.bd-tab { display: flex; flex-direction: column; gap: 0.5rem; }
+.bd-intro { display: grid; grid-template-columns: auto 1fr; column-gap: 0.5rem; align-items: start; color: var(--color-primary); }
+#shMore { grid-column: 2; justify-self: start; min-height: 0; height: auto; padding: 0; }
+.bd-info { margin-top: 0.15rem; }
+.bd-intro .bd-clamp { color: var(--color-base-content); margin: 0; }
+.bd-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-wrap: balance; }
+.bd-pin { position: sticky; bottom: 0; padding: 0.5rem 0; background: var(--color-base-100); }
+.bd-eye { color: var(--color-primary); cursor: pointer; }
+.bd-eye:has(input:not(:checked)) { color: color-mix(in oklab, var(--color-base-content) 45%, transparent); }
+#shList .list-row:has(.bd-eye input:not(:checked)) .ahm-rt { opacity: 0.55; }
+#shList .list-row.on { box-shadow: inset 0.2rem 0 0 var(--color-primary); }
+.bd-swatch { background: var(--bd-c); border-color: transparent; }
+.bd-swatch[aria-pressed="true"] { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.bd-layer { border-color: var(--bd-c); background: color-mix(in oklab, var(--bd-c) 15%, transparent); }
+.bd-err:empty { display: none; }
+.bd-panel { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border: 1px solid var(--color-base-300); border-radius: var(--radius-box); background: var(--color-base-200); }
+.bd-h { margin: 0; font-weight: 600; }
+.bd-res { display: flex; flex-direction: column; }
+.bd-hints { line-height: 2; }
+.bd-card { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.bd-card .dock-body, #shDetail > .dock-body { overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+.bd-notes { display: flex; flex-direction: column; gap: 0.5rem; }
+.bd-colour { padding: 0; }
+#shColor { flex: none; width: 2rem; height: 2rem; }
+#shOp, #shWidth { flex: 0 1 8rem; }
+.bd-look .ahm-grow { white-space: nowrap; }
+#shDetail > .ahm-form { flex: 1; padding: 0.5rem 0.9rem 0; }
+#shDetail > .ahm-form > .dock-title { flex: none; }
