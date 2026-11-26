@@ -127,32 +127,61 @@
   display: none;
 }
 
-/* Borders tab (bd-*): only what daisyUI has no class for */
-.bd-tab { display: flex; flex-direction: column; gap: 0.5rem; }
-.bd-intro { display: grid; grid-template-columns: auto 1fr; column-gap: 0.5rem; align-items: start; color: var(--color-primary); }
-#shMore { grid-column: 2; justify-self: start; min-height: 0; height: auto; padding: 0; }
-.bd-info { margin-top: 0.15rem; }
-.bd-intro .bd-clamp { color: var(--color-base-content); margin: 0; }
+/* Borders tab (bd-*): only what daisyUI has no class for. The frames: s073-s077, s033. */
+.pane:has(#tab-shapes:not([hidden])) #foot { display: none; } /* the frames show no Period | Moment footer here; the pinned bar sits at the bottom */
+#tab-shapes:not([hidden]) { display: flex; flex-direction: column; min-height: 100%; }
+#bdMain:not([hidden]), #bdPanel:not([hidden]) { display: flex; flex-direction: column; gap: 0.6rem; flex: 1; }
+.bd-intro { display: grid; grid-template-columns: auto 1fr; column-gap: 0.5rem; align-items: start; }
+.bd-info { margin-top: 0.15rem; color: var(--color-primary); }
+.bd-intro .bd-clamp { margin: 0; }
+#shMore { grid-column: 2; justify-self: start; font-weight: 700; text-decoration: none; }
 .bd-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-wrap: balance; }
-.bd-pin { position: sticky; bottom: 0; padding: 0.5rem 0; background: var(--color-base-100); }
+.bd-search { border-radius: 0.75rem; }
+.bd-search > input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; box-shadow: none; }
+.bd-dot { display: inline-block; width: 0.7rem; height: 0.7rem; border-radius: 0.2rem; background: var(--bd-c); flex: none; }
+.bd-n { font-weight: 400; opacity: 0.65; }
+#shCount b { font-weight: 700; }
+.bd-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.bd-head { padding: 0.5rem; cursor: pointer; }
+.bd-item .ahm-rt { color: var(--color-base-content); }
+.bd-item:has(.bd-eye input:not(:checked)) .ahm-rt { opacity: 0.55; }
+.bd-open { border: 1px solid var(--color-base-300); border-radius: var(--radius-box); background: color-mix(in oklab, var(--color-base-100) 55%, transparent); box-shadow: inset 0.2rem 0 0 var(--color-primary); }
+.bd-open .ahm-rt { color: var(--color-primary); }
+.bd-open .bd-eye { display: none; }
 .bd-eye { color: var(--color-primary); cursor: pointer; }
 .bd-eye:has(input:not(:checked)) { color: color-mix(in oklab, var(--color-base-content) 45%, transparent); }
-#shList .list-row:has(.bd-eye input:not(:checked)) .ahm-rt { opacity: 0.55; }
-#shList .list-row.on { box-shadow: inset 0.2rem 0 0 var(--color-primary); }
+.bd-chev { display: none; color: var(--color-primary); }
+.bd-open .bd-chev { display: block; }
+.bd-body { padding: 0 0.9rem 0.9rem; }
+.bd-in { display: flex; flex-direction: column; gap: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--color-base-300); }
+.bd-cap { margin: 0; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in oklab, var(--color-base-content) 60%, transparent); }
+.bd-tag { margin-left: 0.4rem; font-size: 0.65rem; opacity: 0.6; }
 .bd-swatch { background: var(--bd-c); border-color: transparent; }
 .bd-swatch[aria-pressed="true"] { outline: 2px solid var(--color-primary); outline-offset: 2px; }
-.bd-layer { border-color: var(--bd-c); background: color-mix(in oklab, var(--bd-c) 15%, transparent); }
+.bd-custom { width: 1.5rem; height: 1.5rem; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.bd-addlayer { position: relative; }
+.bd-addlayer > select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
+.bd-notes { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem; }
 .bd-err:empty { display: none; }
-.bd-panel { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; border: 1px solid var(--color-base-300); border-radius: var(--radius-box); background: var(--color-base-200); }
-.bd-h { margin: 0; font-weight: 600; }
-.bd-res { display: flex; flex-direction: column; }
-.bd-hints { line-height: 2; }
-.bd-card { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-.bd-card .dock-body, #shDetail > .dock-body { overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
-.bd-notes { display: flex; flex-direction: column; gap: 0.5rem; }
-.bd-colour { padding: 0; }
-#shColor { flex: none; width: 2rem; height: 2rem; }
-#shOp, #shWidth { flex: 0 1 8rem; }
-.bd-look .ahm-grow { white-space: nowrap; }
-#shDetail > .ahm-form { flex: 1; padding: 0.5rem 0.9rem 0; }
-#shDetail > .ahm-form > .dock-title { flex: none; }
+.bd-view { display: flex; flex-direction: column; gap: 0.6rem; flex: 1; }
+.bd-headcard { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.75rem 0.9rem; border: 1px solid var(--color-base-300); border-radius: var(--radius-box); background: color-mix(in oklab, var(--color-base-100) 55%, transparent); box-shadow: inset 0.2rem 0 0 var(--color-primary); }
+.bd-headcard h3 { margin: 0; font-weight: 700; }
+.bd-headcard p { margin: 0; }
+.bd-geo { padding: 0.25rem 0; }
+.bd-seg { display: flex; padding: 0.25rem; border-radius: 0.75rem; background: var(--color-base-200); }
+.bd-seg > button { flex: 1; }
+.bd-keys { margin: 0; line-height: 1.7; }
+.bd-keys kbd { min-height: 0; padding: 0; border: 0; background: none; box-shadow: none; color: var(--color-primary); font-size: inherit; font-weight: 700; }
+.bd-bar { display: flex; gap: 0.5rem; padding: 0.75rem 14px; border-top: 1px solid var(--border-color); background: var(--base-bg); margin: auto -6px -16px -14px; position: sticky; bottom: -16px; z-index: 1; }
+.bd-bar > button { flex: 1; }
+#shAdd:has(> .bd-bar) { display: contents; }
+#shMore { padding: 0; min-height: 0; height: auto; border: 0; background: none; box-shadow: none; color: var(--color-primary); }
+.bd-search > input[type="search"] { background: transparent !important; border: 0 !important; outline: 0 !important; box-shadow: none !important; }
+.bd-head .ahm-ico { flex: none; }
+#shList > li { border: 0; padding: 0; }
+.bd-item .ahm-rt { font-size: 1rem; }
+#shColor.bd-custom { flex: none; width: 1.5rem; height: 1.5rem; min-height: 0; padding: 0; border: 0; border-radius: 50%; background: none; }
+.bd-in label > span:first-child, .bd-in .ahm-row > .ahm-grow:first-child { white-space: nowrap; }
+.bd-in [data-swatches] { gap: 0.3rem; }
+.bd-keys kbd { font-family: inherit; }
+.bd-headcard h3 { color: var(--color-base-content); }

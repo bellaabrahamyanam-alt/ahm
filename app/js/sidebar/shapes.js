@@ -163,7 +163,7 @@ function shRenderTypes() {
       b.dataset.t = t;
       b.classList.toggle('btn-primary', on);
       b.setAttribute('aria-pressed', String(on));
-      b.querySelector('[data-icon]').append(shIconNode(t));
+      b.querySelector('.bd-dot').style.setProperty('--bd-c', SHAPE_TYPES[t].color || '#475b66');
       kit.fill(b, { label: SHAPE_TYPES[t].label, count: c[t] || 0 });
       box.append(b);
     });
@@ -175,7 +175,7 @@ function shRenderList() {
     all = shapes.filter((s) => shapeGroup(s) === SH_GROUP[sh.mode]).length,
     ul = $('#shList');
   shRenderTypes();
-  $('#shCount').textContent = rows.length + ' of ' + all + ' ' + shWord();
+  kit.fill($('#shCount'), { n: rows.length, rest: 'of ' + all + ' ' + shWord() });
   if (!sh.loaded || !rows.length) {
     const li = document.createElement('li');
     kit.state(li, sh.loaded ? 'empty' : 'loading', !sh.loaded ? 'Loading…' : all ? `No ${shWord()} match. Try fewer filters.` : `No ${shWord()} yet.`);
@@ -190,26 +190,26 @@ function shRenderList() {
         li = kit.tpl('t-bd-row'),
         eye = li.querySelector('[data-vis]');
       li.dataset.sid = s.id;
-      li.classList.toggle('on', sh.open === s.id);
       li.querySelector('[data-icon]').append(shIconNode(s.type));
       li.querySelector('[data-icon]').title = t.label;
       kit.fill(li, { title: shapeName(s, l), sub: `${t.label} · ${shapeKind(s.geometry) === 'area' ? 'area' : 'line'}${when ? ' · ' + when : ''}`, alias: also ? 'also called ' + also : '' });
       li.querySelector('[data-bind="alias"]').hidden = !also;
       eye.dataset.vis = s.id;
       eye.checked = !sh.hidden.has(s.id);
+      if (sh.open === s.id && shOnTab() && !sh.form) shExpand(li, s);
       return li;
     })
   );
 }
 $('#shList').addEventListener('click', (e) => {
-  if (e.target.closest('.bd-eye')) return;
+  if (e.target.closest('.bd-eye') || e.target.closest('.bd-body')) return;
   const li = e.target.closest('li[data-sid]');
   if (!li || e.detail > 1) return;
   sh.open === li.dataset.sid && !sh.form ? shClose() : shOpen(li.dataset.sid);
 });
 $('#shList').addEventListener('dblclick', (e) => {
   const li = e.target.closest('li[data-sid]');
-  if (li && !e.target.closest('.bd-eye')) shOpen(li.dataset.sid, true);
+  if (li && !e.target.closest('.bd-eye') && !e.target.closest('.bd-body')) shOpen(li.dataset.sid, true);
 });
 $('#shList').addEventListener('change', (e) => {
   const id = e.target.dataset.vis;
@@ -240,6 +240,7 @@ function shOpen(id, fit) {
   if (!shapeById(id)) return;
   if (isRoute(shapeById(id))) return rtOpen(id, fit); // a route has its own tab and card (routes.js)
   shCancelForm();
+  if (sh.adding) ((sh.adding = false), AHM.map.showPreview(null), shRenderAdd());
   sh.open = id;
   tab(isRiver(shapeById(id)) ? 'rivers' : 'shapes');
   shRenderList();
@@ -258,6 +259,27 @@ function shShow(on) {
   $('#shDetail').hidden = !on;
   dockSync();
 }
+/** The tab shows the list (null) or one full view (add, drawing, form) in #bdPanel. */
+function shView(node) {
+  $('#bdMain').hidden = !!node;
+  $('#bdPanel').hidden = !node;
+  $('#bdPanel').textContent = '';
+  if (node) $('#bdPanel').append(node);
+}
+/** The open row unfolds into the card; the others fold. */
+function shExpand(li, s) {
+  document.querySelectorAll('#shList .bd-open').forEach((x) => x !== li && shFold(x));
+  const body = li.querySelector('.bd-body');
+  li.classList.add('bd-open');
+  body.replaceChildren(shCardBody(s));
+  body.hidden = false;
+}
+function shFold(li) {
+  const body = li.querySelector('.bd-body');
+  li.classList.remove('bd-open');
+  body.hidden = true;
+  body.replaceChildren();
+}
 /** The nodes of the version chips of a series (oldest first); the open one is marked. */
 function shVersionNodes(s) {
   const all = [...shapeVersions(s), s].sort((a, b) => (dateKey(a.date_from) < dateKey(b.date_from) ? -1 : dateKey(a.date_from) > dateKey(b.date_from) ? 1 : 0));
@@ -269,20 +291,12 @@ function shVersionNodes(s) {
     return b;
   });
 }
-/** The card of the open shape: look (saved at once), layers, source; actions are icons on top. */
-function shRenderView() {
-  const s = sh.open && shapeById(sh.open),
-    d = $('#shDetail');
-  if (!(rts.open && curTab === 'routes')) AHM.map.highlightShape(s && shOnTab() ? s.id : null); // a route card owns the highlight (routes.js)
-  document.querySelectorAll('#shList li.on').forEach((x) => x.classList.remove('on'));
-  if (sh.form) return shShow(shOnTab());
-  if (!s || !shOnTab()) return shShow(false);
-  const li = $(`#shList li[data-sid="${s.id}"]`),
-    l = $('#lang').value,
+/** The card of a shape (it unfolds inside its row): names, versions, look (saved at once), layers, notes. */
+function shCardBody(s) {
+  const l = $('#lang').value,
     t = shapeType(s.type),
     kind = shapeKind(s.geometry),
     can = shCan(),
-    when = shapeWhen(s),
     others = s.names.filter((n) => n.name !== shapeName(s, l)),
     vs = shapeVersions(s),
     inLy = layers.filter((ly) => lyMembers[ly.id] && lyMembers[ly.id].has(s.id)),
@@ -290,35 +304,31 @@ function shRenderView() {
     osm = /^osm:(node|way|relation)\/(\d+)$/.exec(s.source || ''),
     srcs = (s.sources || []).map(sourceById).filter(Boolean),
     cert = [s.certainty ? CERT_LABELS[s.certainty] : '', s.radius_m ? 'about ' + radiusText(s.radius_m) : ''].filter(Boolean).join(', '),
+    ns = layerNotes.filter((n) => n.layer === s.id && (!l || n.lang === l)).sort((a, b) => dateKey(a.date) - dateKey(b.date) || a.title.localeCompare(b.title)),
     c = kit.tpl('t-bd-card'),
     q = (x) => c.querySelector(x),
     w = s.width || t.width;
-  if (li) li.classList.add('on');
-  kit.fill(c, {
-    title: shapeName(s, l),
-    others: others.map((n) => `${n.name} (${n.lang})`).join(' · '),
-    sub: `${t.label} · ${kind === 'area' ? 'area' : 'line'}${when ? ' · ' + when : ''}`,
-    vtitle: `Versions in time (${vs.length + 1})`,
-    cert,
-    opLabel: kind === 'area' ? 'Fill opacity' : 'Line opacity',
-  });
-  q('[data-icon]').append(shIconNode(s.type));
-  q('[data-icon]').title = t.label;
-  kit.show(q('[data-bind="others"]'), others.length > 0);
+  kit.fill(c, { vtitle: `Versions in time · ${vs.length + 1}`, cert: cert ? 'Certainty: ' + cert : '', opLabel: kind === 'area' ? 'Fill opacity' : 'Line opacity', ntitle: `Notes · ${ns.length}` });
   c.querySelectorAll('[data-can]').forEach((b) => (b.hidden = !can || (b.dataset.shact === 'editshape' && !geomToDraw(s.geometry))));
+  others.forEach((n) => {
+    const r = kit.tpl('t-bd-name');
+    kit.fill(r, { name: n.name, lang: n.lang.toUpperCase() });
+    q('[data-names]').append(r);
+  });
+  kit.show(q('[data-names]'), others.length > 0);
   kit.show(q('[data-versions]'), vs.length > 0);
   q('[data-vlist]').append(...shVersionNodes(s));
-  kit.show(q('[data-cert]'), !!cert);
+  kit.show(q('[data-evid]'), !!cert || srcs.length > 0);
   kit.show(q('[data-srcs]'), srcs.length > 0);
+  kit.fill(q('[data-srcs]'), { sp: (cert ? ' · ' : '') + 'Sources: ' });
   srcs.forEach((x, i) => {
     const a = kit.tpl('t-bd-src');
     kit.fill(a, { title: x.title });
     a.title = x.citation || '';
     if (/^https?:\/\//i.test(x.url || '')) a.href = x.url;
     else (a.removeAttribute('href'), a.classList.remove('link', 'link-primary'));
-    q('[data-srclist]').append(...(i ? [document.createTextNode('; ')] : []), a);
+    q('[data-srclist]').append(...(i ? [document.createTextNode(', ')] : []), a);
   });
-  // look
   UI_SWATCHES.forEach((col) => {
     const b = kit.tpl('t-bd-swatch');
     b.dataset.color = col;
@@ -336,31 +346,20 @@ function shRenderView() {
   kit.show(q('[data-widthrow]'), kind === 'line');
   q('#shLabel').checked = !!s.label;
   [q('#shColor'), q('#shOp'), q('#shWidth'), q('#shLabel')].forEach((x) => (x.disabled = !can));
-  // layers
   inLy.forEach((ly) => {
-    const b = kit.tpl('t-bd-chip');
+    const b = kit.tpl('t-bd-lychip');
     kit.fill(b, { label: lyName(ly, l) });
-    b.dataset.shact = 'layer';
     b.dataset.lid = ly.id;
-    if (ly.color) (b.classList.add('bd-layer'), b.style.setProperty('--bd-c', ly.color));
+    b.querySelector('.bd-dot').style.setProperty('--bd-c', ly.color || '#475b66');
     q('[data-layers]').append(b);
   });
-  if (!inLy.length) {
-    const n = document.createElement('span');
-    n.className = 'ahm-hint';
-    n.textContent = 'None yet.';
-    q('[data-layers]').append(n);
-  }
-  kit.show(q('#shAddLayer'), can && free.length > 0);
+  kit.show(q('[data-addlayer]'), can && free.length > 0);
   free.forEach((ly) => {
     const o = document.createElement('option');
     o.value = ly.id;
     o.textContent = lyName(ly, l);
     q('#shAddLayer').append(o);
   });
-  // notes (the Foundation note template)
-  const ns = layerNotes.filter((n) => n.layer === s.id && (!l || n.lang === l)).sort((a, b) => dateKey(a.date) - dateKey(b.date) || a.title.localeCompare(b.title));
-  kit.show(q('[data-nonotes]'), !ns.length);
   ns.forEach((n) => {
     const a = fields.note({ title: n.title, lang: langName(n.lang), when: n.date ? dateText(n.date) : '', text: n.text });
     if (can) {
@@ -372,11 +371,24 @@ function shRenderView() {
   });
   kit.show(q('[data-osm]'), !!osm);
   if (osm) q('[data-osmlink]').href = `https://www.openstreetmap.org/${osm[1]}/${osm[2]}`;
-  d.replaceChildren(c);
-  shShow(true);
-  if (li) revealRow(li);
+  return c;
 }
-const shErr = (m) => ($('#shErr') ? ($('#shErr').textContent = m || '') : m && alert(m));
+/** Keeps the map and the open row in step with sh.open. */
+function shRenderView() {
+  const s = sh.open && shapeById(sh.open);
+  if (!(rts.open && curTab === 'routes')) AHM.map.highlightShape(s && shOnTab() ? s.id : null); // a route card owns the highlight (routes.js)
+  const li = s && shOnTab() && !sh.form ? $(`#shList li[data-sid=\"${s.id}\"]`) : null;
+  document.querySelectorAll('#shList .bd-open').forEach((x) => x !== li && shFold(x));
+  if (li) {
+    shExpand(li, s);
+    revealRow(li);
+  }
+}
+const shErr = (m) => {
+  const el = document.querySelector('#bdPanel #shErr') || document.querySelector('#shErr');
+  if (el) el.textContent = m || '';
+  else if (m) alert(m);
+};
 const shBody = (s, o = {}) => ({ id: s.id, names: s.names, type: s.type, color: s.color, opacity: s.opacity, ...(s.width ? { width: s.width } : {}), label: s.label, date_from: s.date_from, date_to: s.date_to, source: s.source || '', ...o });
 /** Saves a look change at once (the map is already showing it). */
 async function shStyle(s, patch) {
@@ -395,7 +407,7 @@ async function shStyle(s, patch) {
   }
 }
 const shCur = () => sh.open && shapeById(sh.open);
-$('#shDetail').addEventListener('input', (e) => {
+$('#tab-shapes').addEventListener('input', (e) => {
   const s = shCur();
   if (!s || sh.form) return;
   if (e.target.id === 'shColor') AHM.map.previewShape(s.id, { color: e.target.value });
@@ -405,7 +417,7 @@ $('#shDetail').addEventListener('input', (e) => {
   }
   if (e.target.id === 'shWidth') $('#shWidthVal').textContent = e.target.value + ' px';
 });
-$('#shDetail').addEventListener('change', async (e) => {
+$('#tab-shapes').addEventListener('change', async (e) => {
   const s = shCur();
   if (!s || sh.form) return;
   if (e.target.id === 'shColor') shStyle(s, { color: e.target.value });
@@ -422,7 +434,7 @@ $('#shDetail').addEventListener('change', async (e) => {
     }
   }
 });
-$('#shDetail').addEventListener('click', async (e) => {
+$('#tab-shapes').addEventListener('click', async (e) => {
   const b = e.target.closest('[data-shact]');
   if (!b) return;
   const act = b.dataset.shact,
@@ -454,13 +466,13 @@ $('#shDetail').addEventListener('click', async (e) => {
   }
 });
 
-$('#shDetail').addEventListener('click', (e) => {
+$('#tab-shapes').addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
   if (!b || !sh.form) return;
   if (b.dataset.act === 'addname') fields.nameAdd($('#shForm [data-names]'), $('#lang').value);
   else if (b.dataset.act === 'srcadd') shAddSource();
 });
-$('#shDetail').addEventListener('submit', (e) => e.preventDefault());
+$('#tab-shapes').addEventListener('submit', (e) => e.preventDefault());
 
 /** The chips of all versions of a series, the open one marked (oldest first, by the start date); `act` is the data attribute of the click (borders and rivers: shact, routes: rtact). */
 function shVersionChips(s, act = 'data-shact="version"') {
@@ -492,7 +504,6 @@ function shNewUuid() {
 }
 
 // ---- the form: names, type, dates (new shape or details of an existing one) ----
-const shVersionHint = (f) => `The outline you just drew is saved as a new version of the same ${f.kind === 'area' ? 'border' : 'line'}. “${shapeWhen(shapeById(f.prevId)) || 'no dates'}” stays as it is. Give the dates of the new one; names and type are taken over, change them if they differ.`;
 /** The source tick boxes of the form; `ticked` = ids. */
 function shSrcOpts(ticked) {
   const box = $('#shForm .pf-srcs');
@@ -534,14 +545,14 @@ function shOpenForm(f) {
   const l = $('#lang').value,
     prev = f.prevId && shapeById(f.prevId),
     names = f.names && f.names.length ? f.names : [{ lang: l || 'en', name: '' }],
-    form = fields.form(prev ? 'New version of “' + shapeName(prev, l) + '”' : f.id ? 'Edit details' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)', { save: prev ? 'Save version' : 'Save' }),
-    b = kit.tpl('t-bd-formbody'),
-    q = (x) => b.querySelector(x);
-  form.querySelector('.ahm-title').classList.add('dock-title');
-  form.querySelector('[data-act="save"]').dataset.shact = 'save';
-  form.querySelector('[data-act="cancel"]').dataset.shact = 'cancel';
-  kit.show(q('[data-vhint]'), !!prev);
-  kit.fill(b, { vtext: prev ? shVersionHint(f) : '', langhint: LANG_HINT });
+    v = kit.tpl('t-bd-formview'),
+    q = (x) => v.querySelector(x);
+  kit.fill(v, {
+    title: prev ? 'New version of “' + shapeName(prev, l) + '”' : f.id ? 'Edit details' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)',
+    sub: prev ? `Move the points on the map, then save with the dates when this shape was true. “${shapeWhen(prev) || 'no dates'}” stays as it is.` : f.id ? 'Names, type, dates and sources.' : 'Name it, choose a type and give the dates it was true.',
+    save: prev ? 'Save version' : 'Save',
+    langhint: LANG_HINT,
+  });
   fields.nameList(q('[data-names]'), languages.map((x) => ({ code: x.code, name: langName(x.code) })), names);
   const cur = f.type || shTypeList()[0] || 'territory';
   sh.formRefs = {
@@ -554,12 +565,10 @@ function shOpenForm(f) {
   q('[data-to]').append(sh.formRefs.to);
   kit.show(q('[data-closeprev]'), !!(prev && !prev.date_to));
   q('.pf-cert').value = f.certainty || '';
-  form.querySelector('[data-body]').append(b);
-  $('#shDetail').replaceChildren(form);
+  shView(v);
   shSrcOpts(f.sources || []);
-  shShow(true);
   tab(sh.mode === 'rivers' ? 'rivers' : 'shapes');
-  const n = $('#shForm [data-value="name"]');
+  const n = $('#shForm [data-value=\"name\"]');
   if (n) n.focus({ preventScroll: true });
 }
 function shReadForm() {
@@ -594,6 +603,7 @@ async function shSaveForm() {
       if (end) await postJSON(shUrl().shapeSave, shBody(prev, { date_to: end }));
     }
     sh.form = null;
+    shRenderAdd();
     AHM.map.showPreview(null);
     await shReload();
     shOpen(id, !f.id);
@@ -605,6 +615,7 @@ function shCancelForm() {
   if (!sh.form) return;
   const back = sh.form.prevId;
   sh.form = null;
+  shRenderAdd();
   AHM.map.showPreview(null);
   shRenderView();
   if (back && shapeById(back)) shOpen(back);
@@ -636,8 +647,8 @@ function shDrawSync(g) {
   const n = d.ctl.points().length,
     bad = n > 0 && !g,
     err = $('#shDrawErr');
-  out.textContent = n + (n === 1 ? ' point' : ' points');
-  err.textContent = bad ? (d.kind === 'area' ? 'An area needs at least 3 points.' : 'A line needs at least 2 points.') : '';
+  out.textContent = n ? `${n} point${n === 1 ? '' : 's'} so far.` : 'No points yet.';
+  err.querySelector('[data-bind="err"]').textContent = bad ? (d.kind === 'area' ? 'An area needs at least 3 points.' : 'A line needs at least 2 points.') : '';
   err.hidden = !bad;
   $('#shFinish').disabled = !g;
 }
@@ -756,26 +767,28 @@ AHM.on('shape:click', ({ id }) => (lyState.editing ? lyToggleMember(id) : shOpen
 // ---- adding: OpenStreetMap search, drawing, a file ----
 function shRenderAdd() {
   const box = $('#shAdd');
-  if (!shCan() && sh.mode !== 'rivers') return (box.textContent = '');
+  if (sh.form) return; // the form view is up (shOpenForm)
+  if (!shCan() && sh.mode !== 'rivers') return shView(null), (box.textContent = '');
   if (sh.draw) {
     const d = sh.draw,
       p = kit.tpl('t-bd-draw'),
-      line = d.kind === 'line' && d.mode === 'new',
-      vn = p.querySelector('[data-bind="vnote"]');
+      line = d.kind === 'line' && d.mode === 'new';
     kit.fill(p, {
       title: d.mode === 'version' ? 'New version: move the points' : d.mode === 'edit' ? 'Editing the shape' : d.kind === 'area' ? 'Drawing an area' : sh.mode === 'rivers' ? 'Drawing a river' : 'Drawing a line',
       vnote: 'The outline you started from is not changed. Move the points to the outline for the other time, then press Next to give its dates.',
     });
-    vn.hidden = d.mode !== 'version';
+    p.querySelector('[data-bind="vnote"]').hidden = d.mode !== 'version';
     kit.show(p.querySelector('[data-river]'), line);
     p.querySelector('#shRiverOn').checked = sh.river.on;
     kit.show(p.querySelector('[data-riverq]'), sh.river.on);
     p.querySelector('#shRiverQ').value = sh.river.q;
-    p.querySelector('#shRiverMsg').textContent = sh.river.on ? (sh.river.lines.length ? sh.river.lines.length + ' river line(s) loaded (blue). Click near the start, then near the end.' : 'Type the river name and press Find.') : '';
+    p.querySelector('#shRiverMsg').textContent = sh.river.on ? (sh.river.lines.length ? sh.river.lines.length + ' river lines loaded (blue). Click near the start, then near the end.' : 'Type the river name and press Find.') : '';
     p.querySelector('#shFinish').textContent = d.mode === 'version' ? 'Next: dates' : d.mode === 'edit' ? 'Save shape' : 'Finish';
-    box.replaceChildren(p);
+    box.textContent = '';
+    shView(p);
     shDrawSync(d.ctl.getGeometry());
   } else if (sh.mode === 'rivers') {
+    shView(null);
     box.innerHTML =
       `<div class="sh-banner"><b>Find rivers</b><div class="sn">Search OpenStreetMap by name. Several rivers can be found; they are only shown (blue), not saved.</div>` +
       `<div class="row"><input type="text" id="shRvQ" placeholder="River name, e.g. Araks" value="${esc(sh.river.q)}"><button type="button" data-shadd="rvfind">Find</button></div><ul id="shRvRes"></ul><div class="err-line" id="shAddMsg"></div></div>` +
@@ -784,10 +797,14 @@ function shRenderAdd() {
         : '');
     shRenderRivers();
   } else if (sh.adding) {
-    box.replaceChildren(kit.tpl('t-bd-add'));
+    box.textContent = '';
+    shView(kit.tpl('t-bd-add'));
     $('#shGeoQ').value = sh.geoQ;
     shRenderGeo();
-  } else box.replaceChildren(kit.tpl('t-bd-addbtn'));
+  } else {
+    shView(null);
+    box.replaceChildren(kit.tpl('t-bd-addbtn'));
+  }
 }
 const shMsg = (m, info) => {
   const el = $('#shAddMsg');
@@ -802,11 +819,12 @@ function shRenderGeo() {
   box.replaceChildren(
     ...sh.geo.map((r, i) => {
       const n = kit.tpl('t-bd-geo'),
-        ty = guessShapeType(r);
+        ty = guessShapeType(r),
+        parts = r.name.split(',').map((x) => x.trim());
       n.dataset.i = i;
-      n.querySelector('[data-shadd=\"geoadd\"]').dataset.i = i;
+      n.querySelector('[data-shadd="geoadd"]').dataset.i = i;
       n.querySelector('[data-icon]').append(shIconNode(ty));
-      kit.fill(n, { title: r.name.split(',').slice(0, 2).join(','), sub: `${SHAPE_TYPES[ty].label} · ${geomCount(r.geometry)} points` });
+      kit.fill(n, { title: parts[0], sub: SHAPE_TYPES[ty].label + (parts.length > 1 ? ' · ' + parts[parts.length - 1] : '') });
       return n;
     })
   );
@@ -877,7 +895,7 @@ async function shImport(file) {
     shMsg('Import failed: ' + e.message);
   }
 }
-$('#shAdd').addEventListener('click', (e) => {
+$('#tab-shapes').addEventListener('click', (e) => {
   const li = e.target.closest('#shGeoRes .bd-geo');
   const b = e.target.closest('[data-shadd]');
   if (!b && li) {
@@ -900,18 +918,18 @@ $('#shAdd').addEventListener('click', (e) => {
   else if (a === 'finish') shFinishDraw();
   else if (a === 'canceldraw') shDiscard();
 });
-$('#shAdd').addEventListener('keydown', (e) => {
+$('#tab-shapes').addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;
   if (e.target.id === 'shGeoQ') shSearch();
   else if (e.target.id === 'shRvQ') shRiverFind(e.target.value);
   else if (e.target.id === 'shRiverQ') e.stopPropagation(), shRiverFind(e.target.value);
 });
 // a found river: show it alone on the map
-$('#shAdd').addEventListener('click', (e) => {
+$('#tab-shapes').addEventListener('click', (e) => {
   const li = e.target.closest('#shRvRes li[data-i]');
   if (li) shRiverShow(+li.dataset.i);
 });
-$('#shAdd').addEventListener('change', (e) => {
+$('#tab-shapes').addEventListener('change', (e) => {
   if (e.target.id === 'shRiverOn') (sh.river.on = e.target.checked), shRenderAdd();
   if (e.target.id === 'shFile' && e.target.files[0]) shImport(e.target.files[0]);
   if (e.target.id === 'shFile') e.target.value = '';

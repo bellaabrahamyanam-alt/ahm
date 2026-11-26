@@ -175,10 +175,10 @@ scenario('browser: the Rivers tab lists only rivers, has its own add panel and f
   ok(leg.far === null && leg.farClicks === 0, 'a click that gets no river section is kept in the line (not recorded to be dropped)');
   ok(leg.near > 25 && leg.nearClicks === 2 && leg.first[0] === 44.1, 'two clicks on the river give its points between them, and only then the clicks are recorded');
   await pg.evaluate(() => tab('shapes'));
-  ok(!/Test river/.test(await pg.locator('#shList').innerText()) && /\+ Add border/.test(await pg.locator('#shAdd').innerText()), 'the Borders tab does not list the river and has its own add button');
+  ok(!/Test river/.test(await pg.locator('#shList').innerText()) && /Add border/.test(await pg.locator('#shAdd').innerText()), 'the Borders tab does not list the river and has its own add button');
   await pg.evaluate(() => tab('rivers'));
   await pg.click('#shList li[data-sid] b');
-  ok(/Test river/.test(await pg.locator('#shDetail').innerText()) && (await pg.locator('#shWidth').count()) === 1, 'the river card opens with a Width slider');
+  ok(/Test river/.test(await pg.locator('#shList').innerText()) && (await pg.locator('#shWidth').count()) === 1, 'the river card opens with a Width slider');
 });
 
 scenario('browser: tabs, sheets, filters, layers (only / hide / search / create / choose places / notes / delete), categories', null, async (pg, S) => {
@@ -282,11 +282,11 @@ scenario('browser: a new version of a border in one go: the outline opens for ed
   ok((await pg.locator('[data-shact=addversion]').innerText()).startsWith('New version'), 'the sheet has one button for a new version');
   await pg.click('[data-shact=addversion]');
   ok(await pg.evaluate(() => sh.draw && sh.draw.mode === 'version' && sh.draw.version.prevId !== undefined), 'the button opens the outline for editing (version mode), no form yet');
-  ok(/New version: move the points/.test(await pg.locator('#shAdd').innerText()) && /Next: dates/.test(await pg.locator('#shFinish').innerText()), 'the banner says what to do and the button is Next');
+  ok(/New version: move the points/.test(await pg.locator('#bdPanel').innerText()) && /Next: dates/.test(await pg.locator('#shFinish').innerText()), 'the banner says what to do and the button is Next');
   eq(old.n, await pg.evaluate(() => shapes.length), 'nothing is saved yet');
   await pg.click('#shFinish');
-  ok(/New version of/.test(await pg.locator('#shDetail .dock-title').innerText()), 'Next opens the details form titled as a new version');
-  ok(/stays as it is/.test(await pg.locator('#shDetail').innerText()), 'the form says the first version stays');
+  ok(/New version of/.test(await pg.locator('#bdPanel h3').innerText()), 'Next opens the details form titled as a new version');
+  ok(/stays as it is/.test(await pg.locator('#bdPanel').innerText()), 'the form says the first version stays');
   await pg.click('#shForm [data-act=addname]');
   await pg.locator('#shForm [data-value=name]').last().fill('Later outline');
   await pg.click('[data-shact=save]'); await pg.waitForTimeout(800);
@@ -297,7 +297,7 @@ scenario('browser: a new version of a border in one go: the outline opens for ed
   eq(old.geometry, first.geometry, 'the first version keeps its outline');
   ok(added.geometry !== first.geometry, 'the new version has the moved outline');
   ok(added.names.includes('Later outline'), 'the new name was saved');
-  ok(/Versions in time \(2\)/i.test(await pg.locator('#shDetail').innerText()) && (await pg.locator('#shDetail [aria-current]').count()) >= 1, 'the sheet of the new version lists both versions and marks the open one');
+  ok(/Versions in time · 2/i.test(await pg.locator('#shList').innerText()) && (await pg.locator('#shList [aria-current]').count()) >= 1, 'the sheet of the new version lists both versions and marks the open one');
   // Cancel in the drawing step brings the first version back
   await pg.evaluate((id) => shOpen(id), old.id);
   await pg.click('[data-shact=addversion]');

@@ -29,17 +29,17 @@ test('borders (node): the borders code builds no markup from strings (list, card
 });
 test('borders (node): the templates and the static regions exist; the tab keeps its ids', () => {
   const html = read('app/index.html');
-  for (const id of ['t-bd-card', 't-bd-type', 't-bd-row', 't-bd-chip', 't-bd-swatch', 't-bd-src', 't-bd-notebtn', 't-bd-srcopt', 't-bd-formbody', 't-bd-addbtn', 't-bd-add', 't-bd-geo', 't-bd-draw']) ok(html.includes(`<template id="${id}">`), 'template ' + id);
+  for (const id of ['t-bd-card', 't-bd-type', 't-bd-row', 't-bd-chip', 't-bd-swatch', 't-bd-src', 't-bd-notebtn', 't-bd-srcopt', 't-bd-lychip', 't-bd-name', 't-bd-formview', 't-bd-addbtn', 't-bd-add', 't-bd-geo', 't-bd-draw']) ok(html.includes(`<template id="${id}">`), 'template ' + id);
   const tab = html.slice(html.indexOf('<!-- ahm:region tab-borders -->'), html.indexOf('<!-- /ahm:region tab-borders -->'));
   for (const id of ['shIntro', 'shQ', 'shTypes', 'shCount', 'shFit', 'shList', 'shAdd', 'rvSel']) ok(tab.includes(`id="${id}"`), '#' + id);
-  ok(/class="list"/.test(tab) && /class="input w-full"/.test(tab), 'daisyUI list and input classes');
+  ok(/id="bdPanel"/.test(tab) && /class="input w-full/.test(tab), 'the panel container and the daisyUI input');
 });
 test('borders (node): shapes.css defines no class that daisyUI owns in the new (bd-) rules', () => {
   const css = read('app/css/shapes.css').slice(read('app/css/shapes.css').indexOf('Borders tab (bd-*)'));
   const own = new Set([...css.matchAll(/\.([a-z][a-z0-9_-]*)/gi)].map((m) => m[1]));
   const daisy = ['stack', 'label', 'tabs', 'badge', 'sm', 'list', 'toast', 'card', 'menu', 'tab', 'modal', 'table', 'status', 'stat', 'filter', 'dock', 'join', 'kbd', 'link', 'toggle', 'range', 'select', 'input', 'radio', 'checkbox', 'btn', 'alert', 'skeleton', 'loading', 'progress', 'tooltip', 'indicator', 'collapse', 'dropdown', 'fieldset', 'validator', 'swap'];
-  eq([], [...own].filter((c) => daisy.includes(c) && !/^list-row$/.test(c)), 'bd css classes that daisyUI owns');
-  eq([], [...own].filter((c) => !/^(bd-|ahm-|list-row|on$)/.test(c) && !['dock-body', 'dock-title'].includes(c)), 'classes without the bd- prefix');
+  eq([], [...own].filter((c) => daisy.includes(c) ), 'bd css classes that daisyUI owns');
+  eq([], [...own].filter((c) => !/^(bd-|ahm-|pane$)/.test(c) && true), 'classes without the bd- prefix');
 });
 
 // ---- browser ----
@@ -105,6 +105,7 @@ const shot = async (pg, name) => {
 const open = async (pg, S) => {
   await pg.goto(S.base + '/');
   await pg.waitForTimeout(1200);
+  await pg.addStyleTag({ content: '.campaigns-badge { display: none !important; }' }); // the dev badge of another feature floats over the bottom of the phone sheet
   await pg.evaluate(() => { AHM.map.showPreview = () => {}; tab('shapes'); });
 };
 // a drawing tool stand-in whose points the test controls
@@ -128,7 +129,7 @@ scenario('borders (browser): list: intro with More, search, type chips with coun
   const clamped = await pg.locator('#shIntro').evaluate((e) => e.classList.contains('bd-clamp'));
   await pg.click('#shMore');
   ok(clamped && !(await pg.locator('#shIntro').evaluate((e) => e.classList.contains('bd-clamp'))), 'More unfolds the intro');
-  const chips = await pg.locator('#shTypes [data-t]').evaluateAll((els) => els.map((e) => ({ t: e.dataset.t, n: +e.querySelector('.badge').textContent })));
+  const chips = await pg.locator('#shTypes [data-t]').evaluateAll((els) => els.map((e) => ({ t: e.dataset.t, n: +e.querySelector('.bd-n').textContent })));
   ok(chips.length > 0 && chips.reduce((a, c) => a + c.n, 0) === n, 'the type chips count every border once: ' + JSON.stringify(chips));
   await pg.click('#shTypes [data-t]');
   ok(await pg.locator('#shTypes [data-t].btn-primary').count() === 1, 'a clicked type chip is on');
@@ -145,9 +146,9 @@ scenario('borders (browser): list: intro with More, search, type chips with coun
   await row.locator('.bd-eye').click();
   eq(0, await pg.evaluate(() => sh.hidden.size), 'the eye shows it again');
   ok(/Kingdom|Territory|Province|Country|·/.test(await row.locator('.ahm-hint').first().innerText()), 'the sub line has type, kind and dates');
-  eq('sticky', await pg.locator('#shAdd').evaluate((e) => getComputedStyle(e).position), 'Add border is pinned');
-  ok(/\+ Add border/.test(await pg.locator('#shAdd').innerText()), 'the pinned button');
-  eq(true, await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth && $('#tab-shapes').scrollWidth <= $('#tab-shapes').clientWidth + 1), 'no sideways scroll at 400px');
+  eq('sticky', await pg.locator('#shAdd .bd-bar').evaluate((e) => getComputedStyle(e).position), 'Add border is pinned');
+  ok(/Add border/.test(await pg.locator('#shAdd').innerText()), 'the pinned button');
+  eq(true, await pg.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('.body').scrollWidth <= document.querySelector('.body').clientWidth + 1), 'no sideways scroll at 400px');
   await shot(pg, 's073-list');
 });
 
@@ -162,15 +163,17 @@ scenario('borders (browser): card: icons on top, look, layers, notes; a version 
     shOpen(s.id);
     return { a: s.id, b: id2, n: shapes.length };
   });
-  const card = pg.locator('#shDetail');
-  for (const a of ['edit', 'editshape', 'addversion', 'fit', 'delete', 'close']) ok((await card.locator(`[data-shact=${a}]`).count()) === 1, 'icon action ' + a);
+  let card = pg.locator('#shList .bd-open');
+  eq(1, await card.count(), 'the open row unfolds into the card');
+  for (const a of ['edit', 'editshape', 'addversion', 'fit', 'delete']) ok((await card.locator(`[data-shact=${a}]`).count()) === 1, 'icon action ' + a);
   ok(await card.locator('[data-shact=delete]').evaluate((e) => e.classList.contains('text-error')), 'delete is red');
-  ok(/Versions in time \(2\)/.test(await card.innerText()) && (await card.locator('[data-vlist] [aria-current]').count()) === 1, 'Versions in time lists both, one marked');
+  ok(/versions in time · 2/i.test(await card.innerText()) && (await card.locator('[data-vlist] [aria-current]').count()) === 1, 'Versions in time lists both, one marked');
   ok(/no dates/.test(await card.locator('[data-vlist]').innerText()), 'a version without dates says "no dates"');
   ok((await card.locator('[data-swatches] .bd-swatch').count()) >= 6 && (await card.locator('#shLabel').count()) === 1 && (await card.locator('#shOp').count()) === 1, 'LOOK has swatches, opacity and the name toggle');
-  ok(/In layers/.test(await card.innerText()) && /Notes/.test(await card.innerText()) && (await card.locator('[data-shact=addnote]').count()) === 1, 'In layers and Notes (with Add note)');
+  ok(/in layers/i.test(await card.innerText()) && /notes/i.test(await card.innerText()) && (await card.locator('[data-shact=addnote]').count()) === 1, 'In layers and Notes (with Add note)');
   await shot(pg, 's074-card');
   await card.locator('[data-vlist] [data-shact=version]').click();
+  card = pg.locator('#shList .bd-open');
   eq(ids.b, await pg.evaluate(() => sh.open), 'a version chip opens the other version');
   const col = await pg.evaluate(() => shapeById(sh.open).color);
   await card.locator('[data-swatches] .bd-swatch').nth(2).click();
@@ -188,21 +191,21 @@ scenario('borders (browser): drawing an area: point count, error under 3 points,
   await open(pg, S);
   await pg.evaluate(DRAW);
   await pg.click('[data-shadd=open]');
-  ok(/Add a border/.test(await pg.locator('#shAdd').innerText()), 'the add panel opens');
+  ok(/Add a border/.test(await pg.locator('#bdPanel').innerText()) && (await pg.locator('#bdMain').isHidden()), 'the add view replaces the list');
   await pg.click('[data-shadd=drawarea]');
   ok(await pg.evaluate(() => !!sh.draw && sh.draw.kind === 'area'), 'drawing starts');
-  eq('0 points', await pg.locator('#bdPts').innerText(), 'the counter starts at 0');
+  eq('No points yet.', await pg.locator('#bdPts').innerText(), 'the counter starts empty');
   ok((await pg.locator('#shFinish').isDisabled()) && (await pg.locator('#shDrawErr').isHidden()), 'Finish disabled, no error before the first click');
   await pg.evaluate(() => __push(2));
-  eq('2 points', await pg.locator('#bdPts').innerText(), 'the counter follows');
+  eq('2 points so far.', await pg.locator('#bdPts').innerText(), 'the counter follows');
   eq('An area needs at least 3 points.', (await pg.locator('#shDrawErr').innerText()).trim(), 'the error under 3 points');
   ok(await pg.locator('#shFinish').isDisabled(), 'Finish stays disabled');
   await shot(pg, 's076-drawing-area-error');
   await pg.evaluate(() => __push(1));
   ok((await pg.locator('#shFinish').isEnabled()) && (await pg.locator('#shDrawErr').isHidden()), 'Finish enabled at 3 points, error gone');
-  ok(/Click/.test(await pg.locator('.bd-hints kbd').first().innerText()) && (await pg.locator('.bd-hints kbd').count()) === 5, 'the five key hints are kbd');
+  ok(/Click/.test(await pg.locator('.bd-keys kbd').first().innerText()) && (await pg.locator('.bd-keys kbd').count()) === 4, 'the four key hints are kbd');
   await pg.click('[data-shadd=undo]');
-  eq('2 points', await pg.locator('#bdPts').innerText(), 'Undo removes a point');
+  eq('2 points so far.', await pg.locator('#bdPts').innerText(), 'Undo removes a point');
   await pg.click('[data-shadd=canceldraw]');
   ok(await pg.locator('#ahm-confirm').isVisible() && /Discard this drawing/.test(await pg.locator('#ahm-confirm h3').innerText()), 'Cancel with points asks to discard');
   await pg.click('#ahm-confirm form .btn-soft');
@@ -214,7 +217,7 @@ scenario('borders (browser): drawing an area: point count, error under 3 points,
   // a line: follow a river block
   await pg.click('[data-shadd=open]');
   await pg.click('[data-shadd=drawline]');
-  ok(await pg.locator('[data-river]').isVisible() && /Drawing a line/.test(await pg.locator('#shAdd').innerText()), 'a line offers Follow a river');
+  ok(await pg.locator('[data-river]').isVisible() && /Drawing a line/.test(await pg.locator('#bdPanel').innerText()), 'a line offers Follow a river');
   await pg.evaluate(() => shCancelDraw());
 });
 
@@ -225,8 +228,8 @@ scenario('borders (browser): a new version: the form has the banner, names, type
     shOpenForm({ kind: 'area', prevId: s.id, series: shNewUuid(), names: s.names, type: s.type, source: '', geometry: s.geometry, look: { color: s.color, opacity: s.opacity, label: s.label } });
     return { id: s.id, n: shapes.length };
   });
-  const f = pg.locator('#shDetail');
-  ok(/New version of/.test(await f.locator('.dock-title').innerText()) && /stays as it is/.test(await f.locator('.alert-info').innerText()), 'title and banner');
+  const f = pg.locator('#bdPanel');
+  ok(/New version of/.test(await f.locator('h3').innerText()) && /stays as it is/.test(await f.locator('.bd-headcard').innerText()), 'title and subtitle');
   eq(2, await f.locator('.ahm-date').count(), 'Began and Ended use the shared date field');
   ok((await f.locator('[data-type] .ahm-pill').count()) > 0 && (await f.locator('[data-type] .btn-primary').count()) === 1, 'type pills with one chosen');
   eq('Save version', (await f.locator('[data-shact=save]').innerText()).trim(), 'the save button');
@@ -238,11 +241,11 @@ scenario('borders (browser): a new version: the form has the banner, names, type
   await pg.click('[data-shact=save]');
   await pg.waitForTimeout(800);
   eq(old.n + 1, await pg.evaluate(() => shapes.length), 'saved as a new version');
-  ok(/Versions in time \(2\)/.test(await pg.locator('#shDetail').innerText()), 'the saved card lists both versions');
+  ok(/versions in time · 2/i.test(await pg.locator('#shList').innerText()), 'the saved card lists both versions');
   // an error does not save and says so
   await pg.evaluate((id) => shOpenForm({ id: null, kind: 'area', geometry: shapeById(id).geometry }), old.id);
   await pg.click('[data-shact=save]');
-  ok(/at least one name/.test(await pg.locator('#shErr').innerText()), 'a form error shows in the alert');
+  ok(/at least one name/.test(await pg.locator('#bdPanel #shErr').innerText()), 'a form error shows in the alert');
   eq(old.n + 1, await pg.evaluate(() => shapes.length), 'nothing saved on error');
 });
 
@@ -281,7 +284,7 @@ scenario('borders (browser): add a border: OSM search (results, none, service do
   await pg.click('#shGeoRes [data-shadd=geoadd]');
   await pg.waitForTimeout(800);
   eq(n0 + 1, await pg.evaluate(() => shapes.length), 'the + button adds the border');
-  ok(/OpenStreetMap contributors/.test(await pg.locator('#shDetail').innerText()), 'its card shows the OSM attribution');
+  ok(/OpenStreetMap contributors/.test(await pg.locator('#shList').innerText()), 'its card shows the OSM attribution');
   // import
   await pg.evaluate(() => tab('shapes'));
   await pg.click('[data-shadd=open]');
@@ -307,5 +310,5 @@ scenario('borders (browser): Rivers mode still opens, lists and offers its own a
   ok(await pg.locator('#rvSel').isVisible() && /Find rivers/.test(await pg.locator('#shAdd').innerText()), 'rivers: selection block and Find rivers');
   ok(/rivers/.test(await pg.locator('#shCount').innerText()) && (await pg.locator('#shList').innerText()).length > 0, 'rivers: the list renders');
   await pg.evaluate(() => tab('shapes'));
-  ok(await pg.locator('#rvSel').isHidden() && /\+ Add border/.test(await pg.locator('#shAdd').innerText()), 'borders: Add border is back');
+  ok(await pg.locator('#rvSel').isHidden() && /Add border/.test(await pg.locator('#shAdd').innerText()), 'borders: Add border is back');
 });
