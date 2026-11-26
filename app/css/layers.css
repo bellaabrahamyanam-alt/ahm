@@ -534,3 +534,69 @@
 #tab-layers .ly-mem [data-act='leave'] {
   margin-inline-start: auto;
 }
+
+/* typography measured against the frames: name 15px semibold, category 10.5px, meta 12px, info 13px */
+#tab-layers .ly-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+#tab-layers .ly-cat {
+  font-size: 0.65625rem;
+  line-height: 1.3;
+}
+#tab-layers .ly-meta {
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+#tab-layers .ly-info {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  padding: 0.625rem 0.75rem;
+  gap: 0.5rem;
+}
+#tab-layers .ly-count {
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+}
+#tab-layers .ly-row {
+  gap: 0.25rem;
+  padding-block: 0.625rem;
+}
+#tab-layers label.input,
+#tab-layers .ly-catsel {
+  height: 2.375rem;
+  font-size: 0.875rem;
+}
+
+/* round 2: visible fills, regular member names, 36px tiles, readable description, bigger Add note */
+#tab-layers label.input,
+#tab-layers .ly-catsel,
+#tab-layers .ly-wide.select,
+#tab-layers .ly-form .select {
+  background: color-mix(in oklab, var(--color-base-300) 80%, var(--color-base-200));
+}
+#tab-layers .ly-link {
+  font-weight: 400;
+}
+#tab-layers .ly-tile {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+#tab-layers .ly-mem {
+  padding-block: 0.1875rem;
+}
+#tab-layers .ly-desc {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-base-content);
+}
+#tab-layers [data-act='addnote'] {
+  min-height: 2.25rem;
+  padding-inline: 1rem;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+}
+#tab-layers .ly-more {
+  font-weight: 400;
+}
