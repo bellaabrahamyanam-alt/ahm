@@ -110,28 +110,14 @@ test('layers: lyName falls back to English, then the first name', () => {
   eq('Первый', p.X('lyName({names:[{lang:"ru",name:"Первый"}]}, "en")'));
 });
 
-test('layers: layer names and descriptions are escaped when drawn (no HTML injection)', () => {
-  const bad = L('X', '<img src=x onerror=alert(1)>', 'p1');
-  bad.descriptions = [{ lang: 'en', text: '<script>alert(1)</script>' }];
-  const p = page([bad]);
-  p.el('#lang').value = 'en';
-  p.X('lyOpen("X")');
-  const html = p.el('#lyList').innerHTML + p.el('#lyDetail').innerHTML;
-  ok(html.includes('&lt;img'), 'name escaped');
-  ok(!/<img|<script/i.test(html), 'no raw tag in the output: ' + html.slice(0, 200));
-});
-
-test('layers: categories list is sorted, filtered by search, and the category name is searchable', () => {
+// (the escaping of names and the drawn list are checked in a real browser: ui-layers.test.js)
+test('layers: the list rows are filtered by search (the category name is searchable) and counted', () => {
   const c = [{ id: 'c1', names: [{ lang: 'en', name: 'Military campaign' }] }];
   const l = { ...L('A', 'Alpha', 'p1'), category: 'c1' };
   const p = page([l, L('B', 'Beta')], c);
-  p.el('#lang').value = 'en';
-  p.el('#lyQ').value = 'military';
-  p.el('#lyCat').value = '';
-  p.X('lyRenderList()');
-  const html = p.el('#lyList').innerHTML;
-  ok(html.includes('Alpha') && !html.includes('Beta'), html);
-  eq('1 of 2 layers', p.el('#lyCount').textContent);
+  eq(['A'], p.X('lyRows("military", "", "en").map(x => x.id)'));
+  eq(['A', 'B'], p.X('lyRows("", "", "en").map(x => x.id)'));
+  eq(['A'], p.X('lyRows("", "c1", "en").map(x => x.id)'));
 });
 
 test('layers: choosing places shows +added −removed and Save sends ONE request with both lists', async () => {

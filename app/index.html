@@ -304,20 +304,44 @@
         <!-- ahm:region tab-layers -->
         <section id="tab-layers" hidden>
           <div id="lyListView">
-            <p class="sn">
-              A layer is a subset of the main map, for example one campaign.
-              Every place stays on the main map. <b>Only</b> shows just the
-              places and borders of the layer, <b>Hide</b> removes them.
-            </p>
-            <div class="label">Search layers</div>
-            <div data-searchfield="lyQ" data-placeholder="Search layers…"></div>
-            <select id="lyCat" aria-label="Category"></select>
-            <div class="bar"><span id="lyCount"></span></div>
-            <ul id="lyList"></ul>
-            <div id="ly-add">
-              <button id="lyNew" class="wide">+ Add layer</button>
+            <div id="lyInfo" class="alert alert-soft ly-info" role="note">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg>
+              <span>A layer is a subset of the main map, for example one campaign. Places stay on the main map; use <b>Only</b> to isolate a layer or <b>Hide</b> to remove it.</span>
+            </div>
+            <div class="ly-find">
+              <label class="input ly-grow"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="lyQ" type="search" placeholder="Search layers…" aria-label="Search layers" autocomplete="off" /></label>
+              <select id="lyCat" class="select ly-catsel" aria-label="Category"></select>
+            </div>
+            <p id="lyCount" class="ly-count" aria-live="polite"></p>
+            <div id="lyBox"></div>
+            <ul id="lyList" class="list ly-list"></ul>
+            <div id="lyCard" hidden></div>
+            <div id="ly-add" class="ly-pin">
+              <button id="lyNew" type="button" class="btn btn-primary btn-block"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add layer</button>
             </div>
           </div>
+          <div id="lyPickView" hidden>
+            <div class="alert alert-soft ly-banner" role="note">
+              <div>
+                <h3 class="ahm-title">Choose the places and borders of this layer</h3>
+                <p class="ahm-muted">Click places or borders on the map, or tick them below. Everything stays on the main map.</p>
+              </div>
+            </div>
+            <p class="ly-delta">
+              <output id="lyPlus" class="badge badge-primary" title="Added to the layer">+0</output>
+              <output id="lyMinus" class="badge badge-ghost" title="Taken out of the layer">−0</output>
+              <span class="ahm-hint">no changes yet when both are 0</span>
+            </p>
+            <label class="input ly-wide"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="lyPickQ" type="search" placeholder="Find a place or border…" aria-label="Find a place or border" autocomplete="off" /></label>
+            <ul id="lyPick" class="list ly-checks"></ul>
+            <p id="lyPickNone" class="ahm-hint" hidden>Nothing matches.</p>
+            <p id="lyPickErr" class="ly-error" role="alert" hidden></p>
+            <div class="ahm-bar">
+              <button id="lyPickSave" type="button" class="btn btn-primary">Save places</button>
+              <button id="lyPickCancel" type="button" class="btn btn-neutral btn-soft">Cancel</button>
+            </div>
+          </div>
+          <div id="lyFormView" hidden></div>
         </section>
         <!-- /ahm:region tab-layers -->
     <!-- ahm:region footer -->
@@ -468,6 +492,67 @@
     <!-- ahm:region tpl-rivers -->
     <!-- /ahm:region tpl-rivers -->
     <!-- ahm:region tpl-layers -->
+    <template id="t-ly-opt"><option></option></template>
+    <template id="t-ly-hint"><p class="ahm-hint" data-bind="text"></p></template>
+    <template id="t-ly-para"><p data-bind="text"></p></template>
+    <template id="t-ly-chip"><button type="button" class="btn btn-primary btn-sm ly-fchip" data-lyact="unfilter" title="Remove this filter"><span data-bind="text"></span> ✕</button></template>
+    <template id="t-ly-tri"><div class="join ly-tri" role="radiogroup" aria-label="On the map">
+      <label class="btn btn-sm btn-square join-item" title="Show on the map"><input class="ahm-sr" type="radio" value="show" aria-label="Show" /><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></label>
+      <label class="btn btn-sm btn-square join-item" title="Show on the map only the places of this layer"><input class="ahm-sr" type="radio" value="only" aria-label="Only" /><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/></svg></label>
+      <label class="btn btn-sm btn-square join-item" title="Hide the places of this layer"><input class="ahm-sr" type="radio" value="hide" aria-label="Hide" /><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.5 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.7 9.700 0 0 0 4-.9M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg></label>
+    </div></template>
+    <template id="t-ly-row"><li class="list-row ly-row">
+      <button type="button" class="list-col-grow ly-main" data-act="open"><span class="ly-name" data-bind="name"></span><span class="ly-cat" data-bind="cat"></span><span class="ly-meta" data-bind="meta"></span></button>
+      <span data-tri></span></li></template>
+    <template id="t-ly-card"><article class="ly-card" aria-label="Layer">
+      <header class="ly-head">
+        <button type="button" class="ly-main" data-act="close" title="Close this layer" aria-label="Close this layer"><span class="ly-name" data-bind="name"></span><span class="ly-cat" data-bind="cat"></span><span class="ly-meta" data-bind="meta"></span></button>
+        <span data-tri></span>
+      </header>
+      <p class="ahm-hint" data-bind="names" hidden></p>
+      <div class="ly-tools" role="toolbar" aria-label="Layer actions">
+        <button type="button" class="btn btn-ghost btn-sm btn-square" data-act="editlayer" title="Edit layer" aria-label="Edit layer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+        <button type="button" class="btn btn-ghost btn-sm btn-square" data-act="editplaces" title="Choose places and borders" aria-label="Choose places and borders"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 6 2 2 3-3M3 13l2 2 3-3M3 20l2 2 3-3M12 7h9M12 14h9M12 21h9" transform="translate(0 -2)"/></svg></button>
+        <button type="button" class="btn btn-ghost btn-sm btn-square" data-act="fit" title="Fit the map to this layer" aria-label="Fit the map to this layer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg></button>
+        <button type="button" class="btn btn-ghost btn-sm btn-square ly-danger ly-end" data-act="delete" title="Delete layer" aria-label="Delete layer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+      </div>
+      <div class="ly-desc" data-desc></div>
+      <section data-sec="places"><h4 class="ly-h">Places · <span data-bind="np"></span></h4><ul class="list ly-mems" data-places></ul><p class="ahm-hint" data-bind="noplaces" hidden></p></section>
+      <section data-sec="shapes"><h4 class="ly-h">Borders and routes · <span data-bind="ns"></span></h4><ul class="list ly-mems" data-shapes></ul></section>
+      <section data-sec="notes"><h4 class="ly-h">Notes about this layer · <span data-bind="nn"></span></h4><div class="ly-notes" data-notes></div><p class="ahm-hint" data-bind="nonotes" hidden></p>
+        <button type="button" class="btn btn-primary btn-sm" data-act="addnote"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add note</button></section>
+      <div data-readonly></div>
+      <p class="ly-error" role="alert" data-error hidden></p>
+    </article></template>
+    <template id="t-ly-member"><li class="list-row ly-mem">
+      <span class="ly-tile" aria-hidden="true"><img class="ly-ti" alt="" hidden /><span class="ly-sym" hidden></span></span>
+      <button type="button" class="list-col-grow ly-link" data-act="goto" data-bind="name"></button>
+      <button type="button" class="btn btn-ghost btn-xs btn-square" data-act="leave" title="Take this out of the layer (it stays on the main map)" aria-label="Take this out of the layer"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></li></template>
+    <template id="t-ly-more"><li class="ly-morebox"><details><summary class="ly-more" data-bind="label"></summary><ul class="list ly-mems" data-rest></ul></details></li></template>
+    <template id="t-ly-note-btn"><button type="button" class="btn btn-ghost btn-xs btn-square" data-act="editnote" title="Edit note" aria-label="Edit note"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></template>
+    <template id="t-ly-pick"><li class="list-row ly-pickrow"><label class="list-col-grow ly-check"><input type="checkbox" class="checkbox checkbox-primary checkbox-sm" /><span data-bind="name"></span></label><span class="badge badge-ghost badge-sm ly-tag" data-bind="tag"></span></li></template>
+    <template id="t-ly-pick-head"><li class="ly-pickhead" data-bind="title"></li></template>
+    <template id="t-ly-form"><div class="ly-form">
+      <fieldset class="fieldset"><legend class="fieldset-legend">Names</legend>
+        <div class="ly-stack" data-names></div>
+        <button type="button" class="btn btn-dash btn-primary btn-sm ly-pill" data-act="addname"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another name</button>
+        <p class="ahm-hint">Language missing? Ask an administrator (More › Languages).</p></fieldset>
+      <fieldset class="fieldset"><legend class="fieldset-legend">Description (one per language, optional)</legend>
+        <div class="ly-stack" data-descs></div>
+        <button type="button" class="btn btn-dash btn-primary btn-sm ly-pill" data-act="adddesc"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a description</button></fieldset>
+      <fieldset class="fieldset"><legend class="fieldset-legend">Category (optional)</legend>
+        <select class="select ly-wide" data-category aria-label="Category"></select></fieldset>
+      <fieldset class="fieldset"><legend class="fieldset-legend">Dates (optional)</legend>
+        <p class="ahm-hint">From</p><div data-from></div>
+        <p class="ahm-hint">To</p><div data-to></div></fieldset>
+      <fieldset class="fieldset ly-colour"><legend class="fieldset-legend">Colour (optional)</legend>
+        <label class="ly-check"><input type="checkbox" class="checkbox checkbox-primary checkbox-sm" data-usecolor /><span>use a colour</span></label>
+        <div data-colour></div></fieldset>
+      <p class="ly-error" role="alert" data-error hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 2.5 20h19Z"/><path d="M12 10v4M12 17v.01"/></svg><span data-bind="error"></span></p>
+    </div></template>
+    <template id="t-ly-desc"><div class="ly-descrow card ly-descrow"><div class="card-body ahm-card-body">
+      <div data-lang></div>
+      <div class="ahm-row"><textarea class="textarea ly-grow" rows="2" placeholder="description" aria-label="Description"></textarea><button type="button" class="btn btn-ghost btn-sm btn-square ly-danger" data-act="deldesc" title="Remove this description" aria-label="Remove this description">✕</button></div></div></div></template>
     <!-- /ahm:region tpl-layers -->
     <!-- ahm:region tpl-more -->
     <!-- /ahm:region tpl-more -->
