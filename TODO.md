@@ -27,7 +27,7 @@ Item format: `- [ ] T-NNN Title` then indented lines: `Done when:` (what can be 
 - 4. Data checks and server rules: T-037, T-031, T-032
 - 5. Tests and code health: T-029, T-030, T-033, T-012, T-011, T-028
 - 6. Campaigns: T-013
-- 7. SQL storage and notes in the forum (after T-090 and T-091): T-097, T-098, T-099, T-100, T-101, T-102, T-103, T-104
+- 7. SQL storage and notes in the forum (after T-090 and T-091): T-097, T-098, T-099, T-100, T-101, T-102, T-103, T-105, T-106
 
 **Done**: the last 15 below.
 
@@ -241,7 +241,7 @@ Waits for T-003 and T-001.
 T-095 and T-096 (Done) were built on the assumed answers of T-090 and T-091; the rest waits for them. One item = one pull request, in this order.
 
 - [ ] T-097 Remove the Node development server
-  Needs: T-104.
+  Needs: T-104 (Done).
   Done when: `dev/save-handler.js` and its parity tests are gone; `tests/fixtures/rules.json` is read by the PHP tests only; `AGENTS.md` ("a validation rule lives in three places") and `tools/ci.sh` are updated (both are protected: this item needs an `Approved:` line).
   Contract: no.
 - [ ] T-098 History of changes
@@ -271,14 +271,20 @@ T-095 and T-096 (Done) were built on the assumed answers of T-090 and T-091; the
   What: deleting an object closes its topic and moves it as T-092 says, and takes the object out of the `members` of layers (a revision on each layer); restoring undoes it from the last revision. "Delete for good" is for admins only (moderators get no `m_delete` in the forums "Map") and removes the object, its revisions, its topic, posts, `ahm_note_meta` and note revisions. `core.delete_post_after` with `is_soft = false` removes the `ahm_note_meta` and the revisions of that note; a soft delete keeps them. A nightly task removes what the events missed (meta and revisions whose post is gone, a `topic_id` whose topic is gone) and stops without deleting when phpBB's tables cannot be read.
   Done when: tests for soft and hard delete of a note, for deleting the last note (the topic stays), for delete and restore of an object, for delete for good, and for the nightly task including the "cannot read" stop.
   Contract: no.
-- [ ] T-104 The map reads and writes the SQL tables
-  Needs: T-096 (Done).
-  What: the file reading and writing of `service/store.php` (66 of its 1534 lines touch files) moves behind an interface; the rules (`clean_*`, dates, languages) stay. The SQL version uses the tables of T-096 through phpBB's database layer. A save with an old `version` is refused. GeoJSON download and upload and the seed use `service/sql_transfer.php`.
-  Done when: all PHP tests pass on SQLite with the SQL store; the download and the upload of GeoJSON give the same `places.geojson` and `shapes.geojson`; `docs/05-data-model.md` and `docs/06-http-interface.md` are updated.
-  Contract: no (the answers of the HTTP interface do not change).
+- [ ] T-105 Refuse a save made on an old version
+  Needs: T-104 (Done).
+  What: `ahm_objects.version` and `ahm_lists.version` go up on every change, but nothing checks them. A save carries the version it read; if the row has gone up since, the save is refused with a clear message ("changed by someone else, reload").
+  Done when: tests on the files and on both SQL repositories show a refused save and an accepted one; the sidebar shows the message.
+  Contract: yes (a field in the save requests and a new error answer).
+- [ ] T-106 Save the rows that changed, without reading the whole document
+  Needs: T-104 (Done).
+  What: `sql_repository::put_doc()` reads every row of a kind, compares them and writes the difference; with 30 000 places each save reads and compares 30 000 rows. The store gets entry-level calls (put or delete one place, shape or layer) for the saves that change one entry, and `doc()` stays for the loads that need all.
+  Done when: saving one place or one note on 30 000 places reads and writes only that row (a test counts the queries); the tests of all three repositories still pass.
+  Contract: no.
 
 ## Done
 
+- [x] T-104 The map reads and writes the SQL tables (2026-11-19, branch `feat/db-only-storage`). Approved: 2026-11-19 owner, in the chat, 2026-11-19: when I create notes or anything else it goes into files and not into the database; I want to persist changes only in the database and move the logic of saving in files. `service/store.php` keeps the rules and keeps nothing in files: its data goes through `service/repository.php`. `file_repository` is the old file code (for the tests, the tools and the seed); `sql_repository` writes the tables (only the rows that changed, a revision for each, a topic with its card for each new object) and keeps a note as a post through `service/post_gateway.php` (`phpbb_gateway` in a board, `memory_gateway` in the tests). `dbal_driver` runs on the connection phpBB uses (`pdo_driver` in the tests). The controller builds the store on it and answers `places` and `notes-index` from it (the 304 now works: phpBB's request class had escaped the quotes of `If-None-Match`); `ext.php` loads the sample data into the tables when the extension is enabled; `store/ahm_map/` holds only the pictures of overlays and a lock file. The PHP suite runs every store test on the files, on SQLite and on MySQL 8.0.46 (286 tests), and `tools/dev/phpbb-up.sh check` writes through the store on a real phpBB (a place with a note, an edit, a rename, a layer, a delete) and finds no data file. phpBB's posting function rolls back inside a transaction of ours, so the forum is called first and the rows are written after, in one transaction; writers are serialised by a lock file. Not done: refusing a save on an old version (T-105), saving one row instead of the whole document (T-106), notes with BBCode and attachments (T-100, T-101), loading the notes of an older install's files, GeoJSON download and upload buttons.
 - [x] T-096 SQL schema, migration and the transfer between the files and the tables (2026-11-19, branch `feat/sql-storage-env`). Approved: 2026-11-19 owner, in the chat, 2026-11-19: asked for a PR with a phpBB board with the forum and a database for test runs, with the tests, the SQL schema and the sample data (covers `tools/domains.json`: the new folder `migrations/` in the data domain; `tools/ci.sh`: the folder in `CODE` and `php-sqlite3` for the tests; `.github/CODEOWNERS` and `.gitlab/CODEOWNERS`, made from `tools/domains.json`). `service/sql/schema.mysql.sql` (native `JSON`) and `schema.sqlite.sql` (text with `json_valid`): `ahm_objects`, `ahm_lists`, `ahm_note_meta`, `ahm_imports`, `ahm_revisions`; `migrations/m001_storage.php` makes them when the extension is enabled; `service/sql_transfer.php` loads the files of a store into them (one `import` revision for each thing) and writes them back; `service/card.php` writes the text of a card. 14 new PHP tests on SQLite, the same on MySQL 8.0.46 with `AHM_TEST_MYSQL_DSN` (3000 places with full-precision coordinates and every note file come back exactly). SQLite reads a decimal text with an error of one unit in the last place now and then (0.7 nm), the tests allow 1e-12 degree there. The map still reads the files (T-104).
 - [x] T-095 Development board on phpBB and SQLite (2026-11-19, branch `feat/sql-storage-env`). Approved: 2026-11-19 owner, in the chat, 2026-11-19: asked for a PR with a phpBB board with the forum and a database for test runs, with the tests, the SQL schema and the sample data. `tools/dev/phpbb-up.sh` (`setup`, `serve`, `check`, `reset`) installs phpBB 3.3.19 on SQLite, enables the extension and runs `tools/dev/seed.php`: the forum Map with Places, Layers and Shapes, the tables from `store/ahm_map/`, a topic with a card for every place, shape and layer and the notes as posts with `ahm_note_meta`. `check` found 13 objects, 13 topics, 20 notes as posts, 51 revisions and answers 200 from the map routes. `dev/save-handler.js` stays until T-097. The board is not run in CI yet.
 - [x] T-069 One asset builder for extensions and styles (2026-11-18, branch `feat/asset-builder`; owner, in the chat). `tools/assets/build.js`: one copyable file + `assets.config.json` (bundles, ordered file lists); terser (no top-level renaming) and lightningcss when installed, else Bun; `--check` for CI; CSS `url()` rewritten, `@import` refused. `tools/build.js` of this repository is NOT changed (the map bundle is unchanged, byte for byte equal to the new tool with Bun).

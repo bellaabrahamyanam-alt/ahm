@@ -2,7 +2,7 @@
 # A phpBB board on SQLite with this extension, the forum "Map" and the sample data, for development and tests (docs/11-local-development.md).
 #   tools/dev/phpbb-up.sh          install phpBB, enable the extension, fill the board (does nothing that is already done)
 #   tools/dev/phpbb-up.sh serve    start the board at http://127.0.0.1:8080/app.php/map (admin / adminadmin)
-#   tools/dev/phpbb-up.sh check    check the board: tables, forum, topics, posts, and the map answers
+#   tools/dev/phpbb-up.sh check    check the board: tables, forum, topics, posts, writes through the store, and the map answers
 #   tools/dev/phpbb-up.sh reset    delete the board
 # Needs git, composer and PHP with sqlite3, pdo_sqlite, mbstring, xml, zip, curl, gd. Variables: AHM_DEV_DIR (default .dev), PHPBB_TAG, PORT.
 set -euo pipefail
@@ -58,6 +58,7 @@ serve() {
 check() {
   [ -f "$BOARD/config.php" ] || { echo "run tools/dev/phpbb-up.sh first" >&2; exit 1; }
   php "$REPO/tools/dev/seed.php" "$BOARD" --check
+  php "$REPO/tools/dev/selftest.php" "$BOARD"
   php -S "127.0.0.1:$PORT" -t "$BOARD" >"$DEV/serve.log" 2>&1 &
   local pid=$!
   trap 'kill $pid 2>/dev/null || true' EXIT

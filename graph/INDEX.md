@@ -11,7 +11,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 | core | 7 | 1199 | `app/js/core/shapes.js` (441) |
 | state | 1 | 44 | `app/js/state/state.js` (44) |
 | campaigns | 1 | 14 | `app/features/campaigns/main.js` (14) |
-| data | 13 | 4991 | `service/store.php` (2055) |
+| data | 20 | 5860 | `service/store.php` (1961) |
 | shared | 5 | 262 | `app/js/config.js` (155) |
 
 ## Flags
@@ -21,7 +21,7 @@ Open `graph/<domain>.md` for one line per file (what it defines, which `AHM.*` c
 - `app/js/sidebar/routes.js` has 655 lines (limit 600); owner: sidebar
 - `app/js/sidebar/shapes.js` has 829 lines (limit 600); owner: sidebar
 - `dev/save-handler.js` has 1239 lines (limit 600); owner: data
-- `service/store.php` has 2055 lines (limit 600); owner: data
+- `service/store.php` has 1961 lines (limit 600); owner: data
 
 ## Cross-domain uses of top-level names (not through `AHM.*`; compare with the contract)
 

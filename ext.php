@@ -1,30 +1,55 @@
 <?php
 namespace ahm\map;
 
-/** On first enable, copies the sample data (ext/ahm/map/data) into store/ahm_map, where the map keeps its live data. */
+/**
+ * When it is enabled, makes the tables (migrations) and, if they are empty, loads the sample data (ext/ahm/map/data) into them, or the files
+ * of an older version when store/ahm_map holds them. The map keeps its data in the database (T-104); store/ahm_map keeps only the pictures
+ * of overlays. Notes are posts: they are made together with the topics of the forum Map (see tools/dev/seed.php for the notes of the sample).
+ */
 class ext extends \phpbb\extension\base
 {
-    public function enable_step($old_state)
+    private static $files = ['places.geojson', 'shapes.geojson', 'layers.json', 'languages.json', 'categories.json', 'types.json', 'sources.json', 'overlays.json'];
+
+    private static function remove($path)
     {
-        if ($old_state === false) {
-            $root = $this->container->getParameter('core.root_path');
-            $dst = $root . 'store/ahm_map/';
-            if (!is_file($dst . 'places.geojson')) {
-                self::copy_tree(__DIR__ . '/data/', $dst);
+        if (is_dir($path) && !is_link($path)) {
+            foreach (scandir($path) as $f) {
+                if ($f !== '.' && $f !== '..') {
+                    self::remove($path . '/' . $f);
+                }
             }
-            (new \ahm\map\service\store($dst))->migrate();      // also converts notes saved by older versions
-            return 'seeded';
+            @rmdir($path);
+        } else {
+            @unlink($path);
         }
-        return parent::enable_step($old_state);
     }
 
-    private static function copy_tree($src, $dst)
+    public function enable_step($old_state)
     {
-        @mkdir($dst, 0775, true);
-        foreach (scandir($src) as $name) {
-            if ($name === '.' || $name === '..') { continue; }
-            if (is_dir($src . $name)) { self::copy_tree($src . $name . '/', $dst . $name . '/'); }
-            else { copy($src . $name, $dst . $name); }
+        $more = parent::enable_step($old_state);   // runs the migrations (the tables), one step at a time
+        if ($more) {
+            return $more;
         }
+        $dst = $this->container->getParameter('core.root_path') . 'store/ahm_map/';
+        @mkdir($dst, 0775, true);
+        $db = new \ahm\map\service\dbal_driver($this->container->get('dbal.conn'), $this->container->getParameter('core.table_prefix'));
+        if ((int) $db->value('SELECT COUNT(*) FROM ' . $db->prefix() . 'ahm_objects')) {
+            return false;
+        }
+        $src = is_file($dst . 'places.geojson') ? $dst : __DIR__ . '/data/';
+        $tmp = $dst . 'import-' . getmypid() . '/';
+        @mkdir($tmp, 0775, true);
+        foreach (self::$files as $f) {
+            if (is_file($src . $f)) {
+                copy($src . $f, $tmp . $f);
+            }
+        }
+        try {
+            (new \ahm\map\service\store($tmp))->migrate();      // the loader reads the current format: convert this copy
+            (new \ahm\map\service\sql_transfer($db))->import($tmp, 'first enable');
+        } finally {
+            self::remove($tmp);
+        }
+        return false;
     }
 }

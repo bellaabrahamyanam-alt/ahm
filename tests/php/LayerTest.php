@@ -245,7 +245,9 @@ test('leaving a layer untags the place\'s notes (archived first) and keeps the n
     $s->save(['place_id' => $P[1], 'note' => ['lang' => 'en', 'title' => 'Tagged', 'text' => 'x', 'layers' => [$a]]]);
     $s->save_members(['id' => $a, 'remove' => [$P[1]]]);
     same([], find_by(note_index($dir), 'title', 'Tagged')['layers']);
-    ok(count(glob("$dir/archive/note-*-untag-*.md")) >= 1, 'archived');
+    files_only(function () use ($dir) {
+        ok(count(glob("$dir/archive/note-*-untag-*.md")) >= 1, 'archived');
+    });
 });
 
 // ---- layer notes ----
@@ -301,8 +303,11 @@ test('delete layer: untags every note, archives layer notes, keeps places and no
     ok($s->delete_layer($id));
     same(null, layer_of($s, $id));
     same(0, count($s->layer_notes_index()['notes']));
+    sync($dir);
     ok(!is_dir("$dir/layer-notes/$id"));
-    same(1, count(glob("$dir/archive/layer-note-$id-*.md")), 'layer note archived');
+    files_only(function () use ($dir, $id) {
+        same(1, count(glob("$dir/archive/layer-note-$id-*.md")), 'layer note archived');
+    });
     same($P, place_ids($dir), 'places kept');
     same($notes, count(note_index($dir)), 'place notes kept');
     foreach (note_index($dir) as $n) {
@@ -314,6 +319,7 @@ test('delete layer: untags every note, archives layer notes, keeps places and no
 });
 
 test('layers.json is archived before every change, under unique names', function () {
+    skip_unless_files();
     $s = fresh_store($dir);
     $id = new_layer($s);
     for ($i = 0; $i < 4; $i++) {
@@ -358,6 +364,9 @@ test('shape notes: deleting the shape moves its notes to archive/ and out of the
     $ix = $s->layer_notes_index()['notes'];
     same(1, count($ix));
     same('Kept', $ix[0]['title']);
+    sync($dir);
     same([], glob("$dir/layer-notes/$sid"));
-    ok(count(glob("$dir/archive/layer-note-$sid-*.md")) === 1, 'archived');
+    files_only(function () use ($dir, $sid) {
+        ok(count(glob("$dir/archive/layer-note-$sid-*.md")) === 1, 'archived');
+    });
 });

@@ -526,11 +526,9 @@ class DataCheck
         exec('cp -r ' . escapeshellarg($this->dir) . '/. ' . escapeshellarg($tmp));
         try {
             $s = new store($tmp . '/');
-            $rb = new \ReflectionMethod($s, 'rebuild_layer_notes_index');
-            $rb->setAccessible(true);
-            foreach (['notes/index.json' => 'rebuild_index', 'layer-notes/index.json' => null] as $file => $m) {
+            $s->rebuild_index();   // rewrites notes/index.json and layer-notes/index.json
+            foreach (['notes/index.json', 'layer-notes/index.json'] as $file) {
                 $have = is_file("$this->dir/$file") ? json_decode(file_get_contents("$this->dir/$file"), true) : null;
-                $m ? $s->rebuild_index() : $rb->invoke($s);
                 $want = is_file("$tmp/$file") ? json_decode(file_get_contents("$tmp/$file"), true) : null;
                 if ($have === null && $want === null) {
                     continue;
