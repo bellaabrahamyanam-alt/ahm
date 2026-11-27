@@ -51,3 +51,9 @@ All files of other tasks; `kit.js`, `fields.js`, `footer.js`, `shell.js`, `dialo
 - `index.html`: edit only between `<!-- ahm:region tab-more -->` and `<!-- ahm:region tpl-more -->` markers (and their closing markers).
 - Tests: `tests/js/ui-more.test.js` (logic in node; UI in a real browser per `05-browser-testing.md`). Run the whole suite; all pass.
 - Report: files changed; what was built per frame; tests (counts); what you could not verify; requests for shared changes. Nothing else.
+
+## Fidelity loop (mandatory; owner request 2026-11-27)
+Read `docs/design-migration/06-visual-fidelity.md` BEFORE you write markup and follow its loop for every frame: transcribe the frame, build, `node tools/ui.js shot` + `compare`, LOOK, list the differences, fix, repeat. First run `node tools/ui.js setup` (once). Your report must contain, per frame, the screenshot path, the comparison path, the differences found and fixed, and what remains. A report without comparison images is rejected.
+
+## Scope note for the first launch (2026-11-27)
+The layers worker is still running and `layers.js` owns the Categories code. Build now: Maps & base map (s037, s038, s090), Directions (s039, s092), Languages (s019, s041 language part, s093), Types (s019, s094, editors s020, s042, s043, s044), Historical maps (s021, s091, s040). Do NOT build the Categories card (s021 Categories part, s041 rename category): it needs `layers.js`; leave its current markup and code untouched and list it as "deferred" in the report. A second small launch does it after layers merges.

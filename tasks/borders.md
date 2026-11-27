@@ -54,3 +54,6 @@ All files of other tasks; `kit.js`, `fields.js`, `footer.js`, `shell.js`, `dialo
 - `index.html`: edit only between `<!-- ahm:region tab-borders -->` and `<!-- ahm:region tpl-borders -->` markers (and their closing markers).
 - Tests: `tests/js/ui-borders.test.js` (logic in node; UI in a real browser per `05-browser-testing.md`). Run the whole suite; all pass.
 - Report: files changed; what was built per frame; tests (counts); what you could not verify; requests for shared changes. Nothing else.
+
+## Fidelity loop (mandatory; owner request 2026-11-27)
+Read `docs/design-migration/06-visual-fidelity.md` BEFORE you write markup and follow its loop for every frame: transcribe the frame, build, `node tools/ui.js shot` + `compare`, LOOK, list the differences, fix, repeat. First run `node tools/ui.js setup` (once). Your report must contain, per frame, the screenshot path, the comparison path, the differences found and fixed, and what remains. A report without comparison images is rejected.

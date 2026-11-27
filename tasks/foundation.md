@@ -41,3 +41,6 @@ Tab logic files of the screen tasks (`places.js`, `searchfield.js`, `actions.js`
 
 ## Hand-off
 Branch `feat/foundation-v2` from `feat/shared-foundation-tasks`; do not push elsewhere; do not commit `app/dist/`, `graph/`, `context/` (main agent builds). Report: files, per-frame result with screenshot paths, tests, what you could not verify, owner decisions needed.
+
+## Fidelity loop (mandatory; owner request 2026-11-27)
+Read `docs/design-migration/06-visual-fidelity.md` BEFORE you write markup and follow its loop for every frame: transcribe the frame, build, `node tools/ui.js shot` + `compare`, LOOK, list the differences, fix, repeat. First run `node tools/ui.js setup` (once). Your report must contain, per frame, the screenshot path, the comparison path, the differences found and fixed, and what remains. A report without comparison images is rejected.
