@@ -194,6 +194,20 @@ scenario('layers ui: form (s088): add with names, description, category, dates, 
   ok((await pg.evaluate(() => layers.length)) === 1, 'nothing saved');
   await f.locator('[data-value=name]').first().fill('Hammurabi campaigns');
   ok(!/Give the layer at least one name/.test(await f.innerText()), 'typing clears the message');
+  // real clicks, as a person does them: BCE before the year, then the year box (fields.date rebuilt its fields on every click inside it)
+  await f.locator('[data-from] .ahm-modes input').nth(1).click();
+  await f.locator('[data-from] [data-era=BCE]').click();
+  ok(await f.locator('[data-from] [data-era=BCE]').isChecked(), 'BCE stays chosen when clicked before a year is typed');
+  await f.locator('[data-from] [data-f=y]').click();
+  await pg.keyboard.type('190');
+  eq('190', await f.locator('[data-from] [data-f=y]').inputValue(), 'clicking the year box keeps the focus: the digits are typed');
+  ok(/190 BCE/.test(await f.locator('[data-from] [data-bind=preview]').innerText()), 'the preview shows the era: 190 BCE');
+  await f.locator('[data-from] .ahm-fmt > summary').click();
+  await f.locator('[data-from] [data-menu] button', { hasText: 'Century' }).click();
+  ok(await f.locator('[data-from] [data-f=n]').isVisible(), 'the format menu still switches the format');
+  await f.locator('[data-from] .ahm-fmt > summary').click();
+  await f.locator('[data-from] [data-menu] button', { hasText: /^Year/ }).first().click();
+  await f.locator('[data-from] .ahm-modes input').nth(0).click();
   // a failed Save must show its message where the person is looking (the bar is at the bottom of a long form)
   await f.locator('[data-to] .ahm-modes input').nth(1).check();
   await f.locator('[data-act=save]').click();

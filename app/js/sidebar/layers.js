@@ -760,6 +760,15 @@ $('#detail').addEventListener('change', async (e) => {
     alert(x.message);
   }
 });
+// fields.date (foundation) treats a click anywhere inside the date as "a format was chosen" (its closest('[data-fmt]') finds the date itself) and rebuilds the
+// fields: clicking BCE, or the year box, wiped the year and put the era back to CE. Only a click in the format menu may reach it; the change event still updates the preview.
+$('#lyFormView').addEventListener(
+  'click',
+  (e) => {
+    if (e.target.closest('.ahm-date') && !e.target.closest('[data-menu]')) e.stopPropagation();
+  },
+  true
+);
 // the layer form: Save and Cancel of the Foundation form frame, the add / remove buttons of its fields
 $('#lyFormView').addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]'),
