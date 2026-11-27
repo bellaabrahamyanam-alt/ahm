@@ -99,7 +99,7 @@
 
 /* choose places and borders */
 .ly-picklist { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
-.ly-picklist label { display: flex; align-items: center; gap: 0.625rem; padding: 0.25rem 0; line-height: 1.2; cursor: pointer; font-size: 0.875rem; }
+.ly-picklist label { display: flex; align-items: center; gap: 0.625rem; padding: 0.15rem 0; line-height: 1.2; cursor: pointer; font-size: 0.875rem; }
 .ly-picklist .checkbox { width: 1.1rem; height: 1.1rem; border-radius: 0.3rem; flex: none; }
 .ly-pname { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .ly-tag { flex: none; height: auto; padding: 0.15rem 0.5rem; border: 0; border-radius: 0.3rem; background: color-mix(in oklab, var(--color-base-300) 85%, #8a8f94); color: var(--ahm-muted, #7b858b); font-size: 0.625rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
@@ -170,3 +170,8 @@
 #lyFormView input[type='color']::-webkit-color-swatch-wrapper { padding: 0; }
 #lyFormView input[type='color']::-webkit-color-swatch { border: 0; border-radius: 50%; }
 #lyFormView > .ahm-form { flex: 1 1 auto; } /* a short form: the bar is still at the bottom of the panel */
+#lyFormView [data-err] .alert { display: flex; align-items: center; gap: 0.5rem; }
+#lyFormView [data-err] .alert::before { content: ''; flex: none; width: 1rem; height: 1rem; background: currentColor; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 2.5 20h19L12 3z'/%3E%3Cpath d='M12 10v4M12 17.2v.1'/%3E%3C/svg%3E") center / contain no-repeat; }
+/* what is focused or scrolled to stays clear of the sticky bar */
+.body:has(.ly-view:not([hidden])) { scroll-padding-bottom: 5rem; }
+.ly-bar2 { border-top: 1px solid var(--color-base-300); }
