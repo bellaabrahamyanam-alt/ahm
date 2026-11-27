@@ -194,6 +194,13 @@ scenario('layers ui: form (s088): add with names, description, category, dates, 
   ok((await pg.evaluate(() => layers.length)) === 1, 'nothing saved');
   await f.locator('[data-value=name]').first().fill('Hammurabi campaigns');
   ok(!/Give the layer at least one name/.test(await f.innerText()), 'typing clears the message');
+  // a failed Save must show its message where the person is looking (the bar is at the bottom of a long form)
+  await f.locator('[data-to] .ahm-modes input').nth(1).check();
+  await f.locator('[data-act=save]').click();
+  await pg.waitForTimeout(800);
+  ok(await f.locator('[data-err]').evaluate((e) => e.getBoundingClientRect().top >= 0 && e.getBoundingClientRect().bottom <= window.innerHeight), 'a failed Save scrolls its message into view');
+  ok((await pg.evaluate(() => layers.length)) === 1, 'a failed Save saves nothing');
+  await f.locator('[data-to] .ahm-modes input').nth(0).check();
   await f.locator('[data-act=adddesc]').click();
   await f.locator('.ly-descrow textarea').fill('Wars of Babylon.');
   const cat = await pg.evaluate(() => categories[0].id);

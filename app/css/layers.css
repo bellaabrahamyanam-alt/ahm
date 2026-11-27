@@ -130,7 +130,7 @@
 #lyFormView :is(input.input, .select) { height: 2.25rem; }
 #lyFormView .select { border-color: var(--color-neutral); background-color: var(--color-neutral); }
 #lyFormView :is(input.input, .select, .textarea):focus { outline: 2px solid var(--color-primary); outline-offset: 1px; }
-#lyFormView .ly-ta { min-height: 4.5rem; }
+#lyFormView .ly-ta { min-height: 4rem; }
 #lyFormView .btn-dash { border-radius: 999px; font-weight: 400; }
 .ly-sub { margin: 0.5rem 0 0; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ahm-muted, #7b858b); }
 #lyFormView .ahm-hint:empty { display: none; }
@@ -157,3 +157,16 @@
 #lyFormView .ly-fields { gap: 1rem; }
 #lyFormView input[type='color'] { width: 2rem; height: 2rem; padding: 0; border: 0; background: none; justify-self: start; }
 #lyFormView .checkbox { border-radius: 0.3rem; }
+/* the forum rule button:hover (sidebar.css) also hits .btn and turns a hovered primary button pale grey; keep the colours of the button */
+#tab-layers .btn-primary:hover:not(:disabled) { background-color: color-mix(in oklab, var(--color-primary) 85%, #000); color: var(--color-primary-content); }
+#tab-layers .btn-neutral:hover:not(:disabled) { background-color: color-mix(in oklab, var(--color-neutral) 90%, #000); color: var(--color-neutral-content); }
+/* a message under the form: red text with its icon, as in frame s088, not a filled box */
+#lyFormView [data-err] .alert { padding: 0; border: 0; background: none; box-shadow: none; color: var(--color-error); font-size: 0.8125rem; }
+/* the preview under a year is the number just typed; it stays for the other formats and for a wrong date */
+#lyFormView .ahm-date[data-fmt='y']:not(.ahm-bad) > .ahm-hint { display: none; }
+/* the other-colour picker is a round swatch at the end of the colour row */
+#lyFormView .ly-swatchrow { gap: 0.375rem; flex-wrap: wrap; }
+#lyFormView input[type='color'] { width: 1.25rem; height: 1.25rem; border-radius: 50%; border: 2px solid var(--color-base-300); cursor: pointer; overflow: hidden; }
+#lyFormView input[type='color']::-webkit-color-swatch-wrapper { padding: 0; }
+#lyFormView input[type='color']::-webkit-color-swatch { border: 0; border-radius: 50%; }
+#lyFormView > .ahm-form { flex: 1 1 auto; } /* a short form: the bar is still at the bottom of the panel */

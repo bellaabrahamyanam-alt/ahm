@@ -467,8 +467,11 @@ function lyFormError(root, msg) {
   kit.clear(root);
   root.querySelector('[data-err]').replaceChildren();
   const n = root.querySelector('[data-value="name"]');
-  if (/name/.test(msg) && n) kit.invalid(n, msg);
-  else kit.state(root.querySelector('[data-err]'), 'error', msg);
+  const at = kit.state(root.querySelector('[data-err]'), 'error', msg); // the message is under the form (frame s088)
+  if (/name/.test(msg) && n) (n.classList.add('input-error'), n.setAttribute('aria-invalid', 'true'));
+  // Save is at the bottom of a long form: bring the message into view, or the click looks like it did nothing
+  if (at.scrollIntoView) at.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  if (n && n.hasAttribute('aria-invalid')) n.focus({ preventScroll: true });
 }
 async function lySaveForm(f) {
   const save = f.querySelector('[data-act="save"]');
@@ -770,7 +773,10 @@ $('#lyFormView').addEventListener('click', (e) => {
   else if (act === 'deldesc') b.closest('.ly-descrow').remove();
 });
 $('#lyFormView').addEventListener('input', (e) => {
-  if (e.target.matches('[data-value="name"]')) kit.clear($('#lyFormView')); // typing a name clears the "at least one name" message
+  if (e.target.matches('[data-value="name"]')) {
+    kit.clear($('#lyFormView')); // typing a name clears the "at least one name" message
+    $('#lyFormView [data-err]').replaceChildren();
+  }
 });
 // categories
 $('#catList').addEventListener('click', (e) => {
