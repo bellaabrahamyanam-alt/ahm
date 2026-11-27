@@ -252,6 +252,7 @@ scenario('layers ui: states: empty, loading, load error with Retry, read-only vi
   ok(await row.locator('[data-card]').isVisible(), 'a visitor can open the card');
   ok(!(await row.locator('.ly-tools').isVisible()) && !(await row.locator('[data-act=addnote]').isVisible()), 'no edit tools and no Add note');
   ok(/Log in to change layers\./.test(await row.locator('[data-readonly]').innerText()), 'the visitor line');
+  eq(0, await row.locator('[data-act=remove]:visible').count(), 'a visitor sees no remove (x) buttons');
   ok(await row.locator('.ly-three input').first().isEnabled(), 'show / only / hide still work');
   await shot('s086-card-visitor');
 });

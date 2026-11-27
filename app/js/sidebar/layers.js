@@ -169,6 +169,9 @@ function lyShapeRow(s, l) {
   li.querySelector('.ly-ti').hidden = true;
   dot.hidden = false;
   dot.style.setProperty('--ly-c', shapeType(s.type).color);
+  const kind = shapeKind(s.geometry);
+  dot.classList.toggle('ly-sq', kind === 'area');
+  dot.classList.toggle('ly-line', kind === 'line');
   return li;
 }
 /** The card of the open layer, inside its row (frame s086). */
@@ -209,12 +212,13 @@ function lyFillCard(card, ly, l) {
   q('shapes').replaceChildren(...ss.map((s) => lyShapeRow(s, l)));
   q('notes').replaceChildren(
     ...ns.map((n) => {
-      const a = fields.note({ title: n.title, lang: n.lang, when: n.date ? dateText(n.date) : '', text: n.text });
+      const a = fields.note({ title: n.title, lang: n.lang, when: n.date ? dateText(n.date) : 'No date', text: n.text });
       a.dataset.id = n.id;
       if (can) a.querySelector('[data-actions]').append(kit.tpl('t-ly-noteact'));
       return a;
     })
   );
+  card.querySelectorAll('[data-act="remove"]').forEach((b) => kit.show(b, can)); // a visitor cannot take members out
   kit.show(q('no-notes'), !ns.length);
   kit.show(card.querySelector('[data-act="addnote"]'), can);
   if (can) q('readonly').replaceChildren();

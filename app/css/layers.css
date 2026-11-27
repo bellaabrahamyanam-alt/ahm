@@ -1,80 +1,124 @@
-/* Layers tab: styles of this screen only (tasks/layers.md). Shared look lives in sidebar.css and base.css (foundation, read only). New class names must not collide with daisyUI (see docs/design-migration/02-shared-components.md). */
+/* Layers tab: styles of this screen only (tasks/layers.md). Shared look lives in sidebar.css and base.css (foundation, read only). New class names must not collide with daisyUI (see docs/design-migration/02-shared-components.md).
+   Sizes are rem (1rem = 16px) and follow frames s085 to s088; colours are the theme tokens (--color-base-100 page, -200 card, -300 inputs, --color-neutral track). */
 .ly-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 .ly-i { width: 1rem; height: 1rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
-.ly-view { container-type: inline-size; display: flex; flex-direction: column; gap: 0.75rem; min-height: 100%; }
+/* the legacy sidebar.css rules for bare li / li b / li:hover (rules, padding, blue bold) do not apply to the rows of this screen */
+.ly-view li, .ly-view li:first-child { padding: 0; border: 0; background: none; cursor: auto; }
+.ly-view li:hover:where(:not(:has(button:hover, a:hover, input:hover))) { background: none; }
+.ly-view li b, .ly-view li:hover:where(:not(:has(button:hover, a:hover, input:hover))) b { color: inherit; }
+
+/* the frames of this tab (s085 to s088) have no Period footer: the bar at the bottom of the panel is Add layer / Save places */
+.pane:has(#tab-layers:not([hidden])) #foot { display: none; }
+
+/* the view fills the panel, so the bar at its end sits at the bottom of the panel (frames s085, s087) */
+#tab-layers:not([hidden]) { display: flex; flex-direction: column; min-height: calc(100% + 1rem); margin-bottom: -1rem; } /* 1rem = the bottom padding of .body: the bar reaches the panel edge */
+.ly-view { flex: 1 1 auto; container-type: inline-size; display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.875rem; }
 .ly-view[hidden] { display: none; }
-.ly-info, .ly-banner { align-items: start; text-align: start; border: 1px solid var(--color-base-300); background: var(--color-base-200); color: var(--content-color); }
+.ly-info, .ly-banner { align-items: start; gap: 0.5rem; padding: 0.75rem 0.875rem; border: 1px solid var(--color-base-300); border-radius: var(--radius-box); background: var(--color-base-200); color: var(--content-color); font-size: 0.8125rem; line-height: 1.45; box-shadow: none; text-align: start; }
+.ly-info .ly-i { color: var(--ahm-muted, #7b858b); margin-top: 0.1rem; }
 .ly-banner { border-inline-start: 0.25rem solid var(--color-primary); }
+.ly-banner b { display: block; margin-bottom: 0.125rem; font-size: 0.875rem; }
 .ly-info p, .ly-banner p { margin: 0; text-wrap: pretty; }
+.ly-banner > div { display: block; }
+/* the open card replaces the intro and the count (frame s086) */
+.ly-view:has(li[data-open='true']) :is(.ly-info, .ly-count) { display: none; }
+
+/* search and category: filled fields, no outline */
+.ly-view label.input, .ly-view .select { height: 2.4rem; border: 1px solid var(--color-base-300); border-radius: var(--radius-field); background-color: var(--color-base-300); box-shadow: none; font-size: 0.875rem; color: var(--content-color); }
+.ly-view .select { background-color: var(--color-neutral); border-color: var(--color-neutral); }
+.ly-view label.input:focus-within, .ly-view .select:focus { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.ly-view label.input .ly-i { color: var(--ahm-muted, #7b858b); }
+.ly-view .ly-bare { width: 100%; height: auto; min-width: 0; margin: 0; padding: 0; border: 0; box-shadow: none; background: none; outline: 0; font-size: inherit; }
+.ly-view .ly-bare::placeholder { color: var(--ahm-muted, #7b858b); opacity: 1; }
 .ly-filters { display: grid; grid-template-columns: 1fr minmax(8rem, 42%); gap: 0.5rem; }
 .ly-filters > * { min-width: 0; }
-.ly-count { margin: 0; font-size: 0.8rem; color: color-mix(in oklab, var(--color-base-content) 70%, transparent); }
+.ly-full { width: 100%; }
+.ly-count { margin: -0.25rem 0 0; font-size: 0.75rem; color: var(--ahm-muted, #7b858b); }
+
+/* +N and -N chips of the choose screen */
 .ly-chips { display: flex; align-items: center; gap: 0.5rem; margin: 0; }
-.ly-num { padding: 0.15rem 0.75rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; background: var(--color-base-100); border: 1px solid var(--color-base-300); color: var(--content-color); }
+.ly-num { padding: 0.2rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: var(--color-base-200); border: 1px solid var(--color-base-300); color: var(--content-color); }
 .ly-num-add { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-primary-content); }
+.ly-chips .ahm-hint { font-size: 0.75rem; }
 
 /* a layer: the colour edge is the layer's own colour (--ly-c, set from the data) */
-.ly-list { display: flex; flex-direction: column; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
-.ly-card { background: var(--color-base-200); border: 1px solid var(--color-base-300); border-inline-start: 0.3rem solid var(--ly-c, var(--color-base-300)); border-radius: var(--radius-box); }
-.ly-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.6rem 0.6rem 0.75rem; }
-.ly-card .ly-open { flex: 1 1 auto; min-width: 0; height: auto; min-height: 0; display: grid; gap: 0.1rem; justify-content: stretch; justify-items: start; padding: 0; border: 0; background: none; box-shadow: none; text-align: start; font-weight: inherit; color: var(--content-color); }
-.ly-name { font-size: 1.05rem; font-weight: 700; color: var(--content-color); line-height: 1.25; text-wrap: balance; }
-.ly-cat { font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ahm-muted, #7b858b); }
-.ly-meta { font-size: 0.8rem; color: var(--ahm-muted, #7b858b); }
-.ly-item:has(.ly-hidden), .ly-hidden .ly-open { opacity: 1; }
+.ly-list { display: flex; flex-direction: column; gap: 0.625rem; margin: 0; padding: 0; list-style: none; }
+.ly-card { overflow: hidden; background: var(--color-base-200); border: 1px solid color-mix(in oklab, var(--color-base-300) 80%, #8a7f4a); border-inline-start: 0.3rem solid var(--ly-c, var(--color-base-300)); border-radius: var(--radius-box); }
+.ly-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 0.75rem 0.75rem 0.85rem; }
+.ly-card .ly-open { flex: 1 1 auto; min-width: 0; height: auto; min-height: 0; display: grid; gap: 0.125rem; justify-content: stretch; justify-items: start; padding: 0; border: 0; background: none; box-shadow: none; text-align: start; font-weight: 400; color: var(--content-color); }
+.ly-card .ly-open:hover { background: none; }
+.ly-name { font-size: 0.9375rem; font-weight: 700; color: var(--content-color); line-height: 1.25; text-wrap: balance; }
+.ly-cat { font-size: 0.6875rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ahm-muted, #7b858b); }
+.ly-meta { font-size: 0.75rem; color: var(--ahm-muted, #7b858b); }
 .ly-hidden .ly-open { opacity: 0.55; }
 
-/* show | only | hide: three radios in a join, no script switches the look */
-.ly-three { position: relative; background: var(--bg1-bg-color, #edeada); padding: 3px; border-radius: 0.6rem; gap: 2px; flex: none; }
-.ly-three label { position: relative; border: 0; box-shadow: none; background: transparent; color: var(--html-body-color); border-radius: 0.45rem; }
-.ly-three label:has(:checked) { background: var(--color-base-100); color: var(--color-primary); box-shadow: 0 1px 3px #0002; }
+/* show | only | hide: three radios in a join on a neutral track, no script switches the look */
+.ly-three { position: relative; background: var(--color-neutral); padding: 0.1875rem; border-radius: 0.625rem; gap: 0.125rem; flex: none; }
+.ly-three label { position: relative; width: 2rem; height: 2rem; min-height: 0; padding: 0; border: 0; box-shadow: none; background: transparent; color: var(--ahm-muted, #7b858b); border-radius: 0.5rem; }
+.ly-three label:has(:checked) { background: var(--color-base-200); color: var(--color-primary); box-shadow: 0 1px 2px #0002; }
 .ly-three label:has(:focus-visible) { outline: 2px solid var(--color-primary); outline-offset: 1px; }
 .ly-three input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; appearance: none; }
 
 /* the open card */
-.ly-body { display: flex; flex-direction: column; gap: 0.5rem; padding: 0 0.75rem 0.75rem; border-top: 1px solid var(--color-base-300); transition: opacity 0.15s; @starting-style { opacity: 0; } }
+.ly-body { display: flex; flex-direction: column; gap: 0.5rem; margin-inline: 0.85rem 0.75rem; padding: 0 0 0.875rem; transition: opacity 0.15s; @starting-style { opacity: 0; } }
 .ly-body[hidden] { display: none; }
-.ly-tools { display: flex; align-items: center; gap: 0.25rem; padding-top: 0.5rem; border-bottom: 1px solid var(--color-base-300); padding-bottom: 0.5rem; }
+.ly-tools { display: flex; align-items: center; gap: 0.125rem; padding: 0.5rem 0; border-top: 1px solid var(--color-base-300); }
 .ly-tools[hidden] { display: none; }
+.ly-tools .btn { width: 1.75rem; height: 1.75rem; min-height: 0; padding: 0; }
 .ly-end { margin-inline-start: auto; }
-.ly-sec { margin: 0.5rem 0 0; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ahm-muted, #7b858b); }
+.ly-sec { margin: 0.625rem 0 0; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ahm-muted, #7b858b); }
 .ly-sec[hidden] { display: none; }
-.ly-p { margin: 0; white-space: pre-line; text-wrap: pretty; }
-.ly-hint { margin: 0; font-size: 0.8rem; color: var(--ahm-muted, #7b858b); }
-.ly-members { padding: 0; }
-.ly-prow { padding: 0.25rem 0; align-items: center; }
-.ly-members .ly-link { display: flex; align-items: center; justify-content: flex-start; gap: 0.6rem; height: auto; min-height: 0; padding: 0; border: 0; background: none; box-shadow: none; text-align: start; font-weight: inherit; color: var(--content-color); min-width: 0; }
-.ly-ico { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; flex: none; border-radius: 0.5rem; background: var(--color-base-100); border: 1px solid var(--bg1-bg-color, #edeada); }
-.ly-dot { width: 0.9rem; height: 0.9rem; border-radius: 0.2rem; background: var(--ly-c); }
+.ly-p { margin: 0; font-size: 0.8125rem; line-height: 1.45; white-space: pre-line; text-wrap: pretty; }
+.ly-hint { margin: 0; font-size: 0.8125rem; color: var(--ahm-muted, #7b858b); }
+.ly-members { display: flex; flex-direction: column; gap: 0.5rem; margin: 0; padding: 0; background: none; border-radius: 0; box-shadow: none; list-style: none; }
+.ly-members .ly-prow { display: flex; align-items: center; gap: 0.5rem; padding: 0; background: none; }
+.ly-members .ly-prow::after { display: none; }
+.ly-members .ly-link { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; justify-content: flex-start; gap: 0.75rem; height: auto; min-height: 0; padding: 0; border: 0; background: none; box-shadow: none; text-align: start; font-size: 0.875rem; font-weight: 400; color: var(--content-color); }
+.ly-members .ly-link:hover { background: none; color: var(--color-primary); }
+.ly-members .btn-square { width: 1.5rem; height: 1.5rem; min-height: 0; padding: 0; }
+.ly-ico { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; flex: none; border-radius: 0.5rem; background: var(--color-base-100); border: 1px solid color-mix(in oklab, var(--color-base-300) 80%, #8a7f4a); }
+.ly-ti { width: 1.25rem; height: 1.25rem; }
+.ly-dot { width: 0.875rem; height: 0.875rem; border-radius: 50%; background: var(--ly-c); }
 .ly-dot[hidden], .ly-ti[hidden] { display: none; }
-.ly-more { align-self: start; margin-inline-start: 2.85rem; }
+.ly-dot.ly-sq { border-radius: 0.2rem; }
+.ly-dot.ly-line { width: 1.1rem; height: 0.15rem; border-radius: 0.1rem; transform: rotate(-35deg); }
+.ly-more { align-self: start; margin-inline-start: 2.75rem; height: auto; min-height: 0; padding: 0; font-size: 0.75rem; font-weight: 400; color: var(--ahm-muted, #7b858b); }
+.ly-more[hidden] { display: none; }
 .ly-notes { display: flex; flex-direction: column; }
+.ly-notes .ahm-note h4 { font-size: 0.875rem; }
 .ly-self { align-self: start; }
+[data-act='addnote'] { align-self: start; height: 2.25rem; padding-inline: 1rem; font-size: 0.875rem; }
+[data-readonly]:empty { display: none; }
+[data-readonly] .alert { padding: 0.25rem 0; border: 0; background: none; color: var(--ahm-muted, #7b858b); font-size: 0.75rem; }
 
-/* the bar that stays at the bottom: Add layer, Save places */
-.ly-bar { position: sticky; bottom: 0; margin-top: auto; padding: 0.75rem 0; background: var(--base-bg); }
+/* the bar that stays at the bottom: Add layer, Save places | Cancel */
+.ly-bar { position: sticky; bottom: -1rem; z-index: 1; margin: auto 0 0 -0.875rem; padding: 0.625rem 0 0.875rem 0.875rem; background: var(--color-base-100); }
+.ly-bar .btn { height: 2.75rem; border-radius: var(--radius-field); font-weight: 700; }
 .ly-bar2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 
 /* choose places and borders */
 .ly-picklist { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
-.ly-picklist label { display: flex; align-items: center; gap: 0.6rem; padding: 0.35rem 0; cursor: pointer; }
+.ly-picklist label { display: flex; align-items: center; gap: 0.625rem; padding: 0.25rem 0; line-height: 1.2; cursor: pointer; font-size: 0.875rem; }
+.ly-picklist .checkbox { width: 1.1rem; height: 1.1rem; border-radius: 0.3rem; flex: none; }
 .ly-pname { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
-.ly-tag { text-transform: uppercase; letter-spacing: 0.05em; flex: none; }
+.ly-tag { flex: none; height: auto; padding: 0.15rem 0.5rem; border: 0; border-radius: 0.3rem; background: color-mix(in oklab, var(--color-base-300) 85%, #8a8f94); color: var(--ahm-muted, #7b858b); font-size: 0.625rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+#lyPickShapesHead { margin-top: 0.25rem; }
 
 /* the form */
 .ly-fields { display: flex; flex-direction: column; gap: 0.5rem; }
+.ly-fields .fieldset-legend { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ahm-muted, #7b858b); }
 .ly-ta { field-sizing: content; min-height: 4rem; resize: none; }
 .ly-descrow .ahm-row { align-items: start; }
+.ly-check { display: flex; align-items: center; gap: 0.5rem; text-transform: none; letter-spacing: 0; font-size: 0.875rem; color: var(--content-color); }
+.ly-fields input[type='color'] { width: 2.5rem; height: 2rem; margin: 0; padding: 0.1rem; }
+#lyState:empty { display: none; }
 
 @container (max-width: 20rem) {
   .ly-filters { grid-template-columns: 1fr; }
   .ly-head { flex-wrap: wrap; }
 }
 
-/* a search field: daisyUI label.input with a bare field inside (the legacy sidebar.css would draw a second box) */
-.ly-view .ly-bare { width: 100%; height: auto; min-width: 0; margin: 0; padding: 0; border: 0; box-shadow: none; background: none; outline: 0; font-size: inherit; }
-.ly-full { width: 100%; }
-.ly-check { display: flex; align-items: center; gap: 0.5rem; text-transform: none; letter-spacing: 0; font-size: 0.9rem; color: var(--content-color); }
-#lyState:empty { display: none; }
-.ly-fields input[type='color'] { width: 2.5rem; height: 2rem; margin: 0; padding: 0.1rem; }
+/* frames s085 to s088: Cancel is the grey neutral button with blue text, the form title is dark (the Foundation form frame draws them softer / blue) */
+.ly-view .ahm-bar .btn-soft, .ly-view .ly-bar2 .btn-soft { background-color: var(--color-neutral); border-color: var(--color-neutral); color: var(--color-neutral-content); box-shadow: none; }
+#lyFormView .ahm-title { color: var(--content-color); }
