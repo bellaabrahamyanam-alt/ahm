@@ -469,7 +469,8 @@ $('#tab-shapes').addEventListener('click', async (e) => {
 $('#tab-shapes').addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
   if (!b || !sh.form) return;
-  if (b.dataset.act === 'addname') fields.nameAdd($('#shForm [data-names]'), $('#lang').value);
+  if (b.dataset.act === 'addname') (fields.nameAdd($('#shForm [data-names]'), $('#lang').value), shPeriodMark());
+  else if (b.dataset.act === 'period') setTimeout(shPeriodMark);
   else if (b.dataset.act === 'srcadd') shAddSource();
 });
 $('#tab-shapes').addEventListener('submit', (e) => e.preventDefault());
@@ -540,6 +541,15 @@ async function shAddSource() {
     err.textContent = e.message;
   }
 }
+/** A name's Period row shows only when it has a period or is being edited; a clock button in the name row opens it (s033 shows no Period row). */
+function shPeriodMark() {
+  document.querySelectorAll('#shForm .ahm-name').forEach((r) => {
+    const p = r._period || {},
+      body = r.querySelector('[data-period-body]');
+    r.toggleAttribute('data-per', !!(p.from || p.to || (body && !body.hidden)));
+    if (!r.querySelector('.bd-pbtn')) r.querySelector('[data-act="up"]').before(kit.tpl('t-bd-pbtn'));
+  });
+}
 function shOpenForm(f) {
   sh.form = f;
   const l = $('#lang').value,
@@ -559,12 +569,14 @@ function shOpenForm(f) {
     from: fields.date(f.date_from || null),
     to: fields.date(f.date_to || null),
   };
+  sh.formRefs.type._pills.forEach((b) => b.prepend(shIconNode(b.dataset.code))); // the type marker in front of the name, as in s033
   q('[data-type]').append(sh.formRefs.type);
   q('[data-from]').append(sh.formRefs.from);
   q('[data-to]').append(sh.formRefs.to);
   kit.show(q('[data-closeprev]'), !!(prev && !prev.date_to));
   q('.pf-cert').value = f.certainty || '';
   shView(v);
+  shPeriodMark();
   shSrcOpts(f.sources || []);
   tab(sh.mode === 'rivers' ? 'rivers' : 'shapes');
   const n = $('#shForm [data-value=\"name\"]');

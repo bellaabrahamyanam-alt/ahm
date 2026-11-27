@@ -241,6 +241,10 @@ scenario('borders (browser): a new version: the form has the banner, names, type
   ok((await f.locator('[data-type] .ahm-pill').count()) > 0 && (await f.locator('[data-type] .btn-primary').count()) === 1, 'type pills with one chosen');
   eq('Save version', (await f.locator('[data-shact=save]').innerText()).trim(), 'the save button');
   await shot(pg, 's033-version-form');
+  ok(await pg.locator('#shForm .ahm-name [data-period]').first().isHidden(), 'an empty Period row is not shown (s033)');
+  await pg.locator('#shForm .bd-pbtn').first().click();
+  ok(await pg.locator('#shForm .ahm-name [data-period]').first().isVisible(), 'the clock button opens the name period');
+  await pg.locator('#shForm .bd-pbtn').first().click();
   await pg.click('#shForm [data-act=addname]');
   await pg.locator('#shForm [data-value=name]').last().fill('Later outline');
   await pg.locator('#shForm .ahm-date').first().locator('input[type=radio]').nth(1).check({ force: true });

@@ -227,3 +227,13 @@
 #shForm > .bd-cap, #shForm > .bd-ev > .bd-cap:not(:first-child) { margin-top: 0.9rem; }
 #shForm > .bd-ev { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.4rem; }
 #shForm > .ahm-hint { margin-top: 0.25rem; }
+/* the form as in s033: dates (segmented control, format + value row, input + era), names without the empty Period row */
+#shForm .ahm-name:not([data-per]) [data-period] { display: none; }
+#shForm .ahm-date { display: grid; grid-template-columns: auto 1fr; gap: 0.6rem; align-items: center; }
+#shForm .ahm-modes { grid-column: 1 / -1; display: flex; }
+#shForm .ahm-modes > * { flex: 1; }
+#shForm .ahm-fmt { grid-column: 1; }
+#shForm .ahm-date > [data-bind="preview"] { grid-column: 2; grid-row: 2; justify-self: end; margin: 0; font-size: 1rem; font-weight: 700; color: var(--color-base-content); }
+#shForm .ahm-date-body { grid-column: 1 / -1; }
+#shForm .ahm-date-g .ahm-row { flex-wrap: nowrap; }
+#shForm .ahm-date-g input[data-f="y"], #shForm .ahm-date-g input[data-f="n"] { flex: 1; width: auto; min-width: 0; }
