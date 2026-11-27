@@ -80,9 +80,9 @@
 .ly-ico { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; flex: none; border-radius: 0.5rem; background: var(--color-base-100); border: 1px solid color-mix(in oklab, var(--color-base-300) 80%, #8a7f4a); }
 .ly-ti { width: 1.25rem; height: 1.25rem; }
 .ly-dot { width: 0.875rem; height: 0.875rem; border-radius: 50%; background: var(--ly-c); }
-.ly-dot[hidden], .ly-ti[hidden] { display: none; }
+.ly-dot[hidden], .ly-ti[hidden], .ly-route[hidden] { display: none; }
+.ly-route { width: 1.4rem; height: 1.4rem; color: var(--ly-c); stroke-width: 2; }
 .ly-dot.ly-sq { border-radius: 0.2rem; }
-.ly-dot.ly-line { width: 1.1rem; height: 0.15rem; border-radius: 0.1rem; transform: rotate(-35deg); }
 .ly-more { align-self: start; margin-inline-start: 2.75rem; height: auto; min-height: 0; padding: 0; font-size: 0.75rem; font-weight: 400; color: var(--ahm-muted, #7b858b); }
 .ly-more[hidden] { display: none; }
 .ly-notes { display: flex; flex-direction: column; }

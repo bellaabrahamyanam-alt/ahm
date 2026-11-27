@@ -1,4 +1,4 @@
-/* global document, window, getComputedStyle, layers, layerNotes, categories, places, lyState, lyById, lySet, lyOpen, lyFail, lyShowState, run, searchOptions, dateKey, AHM_CONFIG */
+/* global document, window, getComputedStyle, layers, shapes, lyShapeRow, layerNotes, categories, places, lyState, lyById, lySet, lyOpen, lyFail, lyShowState, run, searchOptions, dateKey, AHM_CONFIG */
 // Layers tab: tests of tasks/layers.md (own file, so that parallel workers never edit the same test file).
 // The drawn tab is tested in real Chromium (Playwright) against the dev server on a copy of the data; set AHM_SHOTS=<dir> to also write 400x860 screenshots.
 const fs = require('fs');
@@ -112,6 +112,14 @@ scenario('layers ui: the card (s086) opens inside its row, shows places, borders
   ok(/PLACES|Places/i.test(await row.locator('.ly-sec').first().innerText()), 'PLACES heading');
   ok(await row.locator('[data-places] li').count() > 0, 'place rows');
   ok(await row.locator('[data-places] li img.ly-ti').first().evaluate((i) => i.src.startsWith('data:image/png')), 'place rows show the type symbol');
+  eq(0, await row.locator('[data-shapes] li').evaluateAll((a) => a.filter((li) => !!li.querySelector('.ly-dot:not([hidden])') === !!li.querySelector('.ly-route:not([hidden])')).length), 'a border row shows exactly one glyph: area square or route line');
+  ok(
+    await pg.evaluate(() => {
+      const li = lyShapeRow({ ...shapes[0], id: 'x-line', geometry: { type: 'LineString', coordinates: [] } }, 'en');
+      return !li.querySelector('.ly-route').hasAttribute('hidden') && li.querySelector('.ly-dot').hidden;
+    }),
+    'a line shape shows the route glyph, not the square'
+  );
   ok(await row.locator('[data-act=addnote]').isVisible(), 'Add note');
   await shot('s086-card');
   await row.locator('.ly-open').click();

@@ -311,6 +311,7 @@
             <symbol id="ly-checks" viewBox="0 0 24 24"><path d="m3 6 2 2 3-3M3 13l2 2 3-3M11 7h10M11 14h10M11 20h10"/></symbol>
             <symbol id="ly-fit" viewBox="0 0 24 24"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/></symbol>
             <symbol id="ly-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+            <symbol id="ly-route" viewBox="0 0 24 24"><path d="M3 18c4-1 4-11 9-11s4 8 9 6"/></symbol>
             <symbol id="ly-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
             <symbol id="ly-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
             <symbol id="ly-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></symbol>
@@ -557,7 +558,7 @@
         </article>
       </li>
     </template>
-    <template id="t-ly-place"><li class="list-row ly-prow"><button type="button" class="btn btn-ghost list-col-grow ly-link" data-act="goto"><span class="ly-ico"><img class="ly-ti" alt="" width="16" height="16" /><span class="ly-dot" hidden></span></span><span class="ly-pname" data-bind="name"></span></button><button type="button" class="btn btn-ghost btn-xs btn-square text-primary" data-act="remove" title="Take this out of the layer (it stays on the main map)" aria-label="Take this out of the layer"><svg class="ly-i" aria-hidden="true"><use href="#ly-x"/></svg></button></li></template>
+    <template id="t-ly-place"><li class="list-row ly-prow"><button type="button" class="btn btn-ghost list-col-grow ly-link" data-act="goto"><span class="ly-ico"><img class="ly-ti" alt="" width="16" height="16" /><span class="ly-dot" hidden></span><svg class="ly-i ly-route" aria-hidden="true" hidden><use href="#ly-route"/></svg></span><span class="ly-pname" data-bind="name"></span></button><button type="button" class="btn btn-ghost btn-xs btn-square text-primary" data-act="remove" title="Take this out of the layer (it stays on the main map)" aria-label="Take this out of the layer"><svg class="ly-i" aria-hidden="true"><use href="#ly-x"/></svg></button></li></template>
     <template id="t-ly-pickrow"><li class="ly-pick"><label><input type="checkbox" class="checkbox checkbox-sm checkbox-primary" /><span class="ly-pname" data-bind="name"></span><span class="badge badge-ghost badge-sm ly-tag" data-bind="type"></span></label></li></template>
     <template id="t-ly-p"><p class="ly-p"><span class="badge badge-ghost badge-sm" data-bind="lang" hidden></span> <span data-bind="text"></span></p></template>
     <template id="t-ly-noteact"><button type="button" class="btn btn-ghost btn-xs btn-square text-primary" data-act="editnote" title="Edit note" aria-label="Edit note"><svg class="ly-i" aria-hidden="true"><use href="#ly-pencil"/></svg></button></template>

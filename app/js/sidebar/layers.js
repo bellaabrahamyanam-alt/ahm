@@ -170,8 +170,11 @@ function lyShapeRow(s, l) {
   dot.hidden = false;
   dot.style.setProperty('--ly-c', shapeType(s.type).color);
   const kind = shapeKind(s.geometry);
+  const route = li.querySelector('.ly-route');
+  route.style.setProperty('--ly-c', shapeType(s.type).color);
+  route.toggleAttribute('hidden', kind !== 'line'); // an svg has no .hidden property, kit.show would do nothing
+  kit.show(dot, kind !== 'line');
   dot.classList.toggle('ly-sq', kind === 'area');
-  dot.classList.toggle('ly-line', kind === 'line');
   return li;
 }
 /** The card of the open layer, inside its row (frame s086). */
