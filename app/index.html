@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="css/shapes.css" />
     <link rel="stylesheet" href="css/explore.css" />
     <link rel="stylesheet" href="css/layers.css" />
+    <link rel="stylesheet" href="css/more.css" />
     <!-- /ahm:css -->
   </head>
   <body>
@@ -99,132 +100,155 @@
         <!-- /ahm:region tab-explore -->
         <!-- ahm:region tab-more -->
         <section id="tab-more" hidden>
-        <!-- region:map -->
-        <details class="fold" id="more-maps"><summary>Maps &amp; base map</summary><div class="fold-body">
-          <div class="sn">Base map</div>
-          <select id="basemap"></select>
-          <div id="base-credit" hidden></div>
-          <div class="label">3D view</div>
-          <label>Tilt <input type="range" id="view-pitch" min="0" max="85" step="1" value="0" /></label>
-          <label>Rotation <input type="range" id="view-bearing" min="0" max="359" step="1" value="0" /></label>
-          <div class="rbtns">
-            <button type="button" id="view-flat">Flat</button>
-            <button type="button" id="view-tilt60">Tilt 60</button>
-            <button type="button" id="view-north">North up</button>
-          </div>
-          <div id="view-terrain-opts">
-            <label><input type="checkbox" id="view-terrain" /> 3D terrain</label>
-            <label>Height <input type="range" id="view-exag" min="0.5" max="4" step="0.1" value="1" /></label>
-          </div>
-          <div class="label">Rivers</div>
-          <label>River size <input type="range" id="river-size" min="0.5" max="4" step="0.1" value="1" /> <output id="river-size-out">1x</output></label>
-          <div id="relief-opts" hidden>
-          <div class="label">Relief</div>
-          <label><input type="checkbox" id="relief-color" checked /> Colour by height</label>
-          <label><input type="checkbox" id="relief-shade" checked /> Shading</label>
-          <label><input type="checkbox" id="relief-adapt" checked /> Adapt colours to the view</label>
-          <label><input type="checkbox" id="relief-smooth" checked /> Smooth colours</label>
-          <label><input type="checkbox" id="relief-blend" checked /> Smooth colour transitions</label>
-          <select id="relief-ramp" aria-label="Colour ramp"></select>
-          <details id="relief-edit">
-            <summary>Edit colours</summary>
-            <div id="relief-stops"></div>
-            <button type="button" id="relief-add">+ colour</button>
-            <button type="button" id="relief-reset">Reset</button>
-          </details>
-          <label>Colour strength <input type="range" id="relief-opacity" min="0" max="1" step="0.05" /></label>
-          <label>Shading strength <input type="range" id="relief-strength" min="0" max="1" step="0.05" /></label>
-          <div id="relief-legend"></div>
-          <div id="relief-ticks"></div>
-          <label><input type="checkbox" id="relief-contours" /> Contour lines</label>
-          <select id="relief-interval" aria-label="Contour step">
-            <option value="auto">Step: automatic</option>
-            <option value="10">10 m</option>
-            <option value="20">20 m</option>
-            <option value="50">50 m</option>
-            <option value="100">100 m</option>
-            <option value="200">200 m</option>
-            <option value="500">500 m</option>
-            <option value="1000">1000 m</option>
-          </select>
-          <div class="rbtns">
-            <button type="button" id="relief-profile-btn">Draw height profile</button>
-            <button type="button" id="relief-profile-clear">Clear</button>
-          </div>
-          <canvas id="relief-profile" width="240" height="90"></canvas>
-          <div id="relief-profile-info"></div>
-          <div id="relief-height"></div>
-          </div>
-          <div id="status" class="sn"></div>
-          <div class="label">Show on map</div>
-          <div id="groups"></div>
-          <div class="label">Historical maps</div>
-          <div id="ovList" class="sn">No historical maps yet.</div>
-          <div id="ovAdmin"></div>
-          <div id="ovEditPanel"></div>
-          <input type="file" id="ovFile" accept="image/*" hidden />
-        </div></details>
-        <!-- /region:map -->
-        <details class="fold" id="more-route"><summary>Directions</summary><div class="fold-body">
-          <div class="rp">
-            <span class="dot a"></span>
-            <div>
-              <div class="label">From</div>
-              <div id="rFrom"></div>
-            </div>
-          </div>
-          <div class="rp">
-            <span class="dot b"></span>
-            <div>
-              <div class="label">To</div>
-              <div id="rTo"></div>
-            </div>
-          </div>
-          <div id="rInfo"></div>
-          <div>
-            <button id="rSwap">Swap</button>
-            <button id="rClear">Clear</button>
-          </div>
-          <p class="sn">
-            Click a place or any point on the map, then choose “Directions
-            from/to here”. Car routes only.
-          </p>
-          <p class="sn">
-            Routes:
-            <a href="https://project-osrm.org" target="_blank" rel="noopener"
-              >OSRM</a
-            >
-            demo server · ©
-            <a
-              href="https://www.openstreetmap.org/copyright"
-              target="_blank"
-              rel="noopener"
-            >
-              OpenStreetMap contributors
-            </a>
-            (ODbL).
-          </p>
-        </div></details><details class="fold" id="more-lang"><summary>Languages</summary><div class="fold-body">
-          <p class="sn">
-            Every name and every note uses one of these languages. If a
-            language is missing, ask an administrator to add it.
-          </p>
-          <ul id="langList" class="langs"></ul>
-          <div id="langAdmin"></div>
-        </div></details><details class="fold" id="more-types"><summary>Types</summary><div class="fold-body">
-          <p class="sn">
-            Every place, border and route has one of these types; the type
-            decides its marker, line or colour on the map. If a type is missing
-            (iron mine, cedar forest, sword artefact, a kind of border or
-            route), ask an administrator to add it.
-          </p>
-          <ul id="typeList" class="langs"></ul>
-          <div id="typeAdmin"></div>
-        </div></details><details class="fold" id="more-cat"><summary>Categories</summary><div class="fold-body">
+<svg class="mr-sprite" aria-hidden="true" focusable="false"><defs>
+<symbol id="mr-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/><path d="M9 4v14M15 6v14"/></symbol>
+<symbol id="mr-nav" viewBox="0 0 24 24"><path d="M3 11 21 3l-8 18-2-8-8-2Z"/></symbol>
+<symbol id="mr-lang" viewBox="0 0 24 24"><path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></symbol>
+<symbol id="mr-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.2"/></symbol>
+<symbol id="mr-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></symbol>
+<symbol id="mr-tilt" viewBox="0 0 24 24"><path d="M7 7h14l-4 10H3Z"/></symbol>
+<symbol id="mr-rot" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></symbol>
+<symbol id="mr-cube" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="m3 8 9 5 9-5M12 13v8"/></symbol>
+<symbol id="mr-ud" viewBox="0 0 24 24"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></symbol>
+<symbol id="mr-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/></symbol>
+<symbol id="mr-road" viewBox="0 0 24 24"><path d="M5 21 8 3M19 21 16 3M12 5v3M12 11v3M12 17v3"/></symbol>
+<symbol id="mr-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5Z"/><path d="m3 13 9 5 9-5"/></symbol>
+<symbol id="mr-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+<symbol id="mr-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5Z"/></symbol>
+<symbol id="mr-swap" viewBox="0 0 24 24"><path d="M4 8h15l-3.5-3.5M20 16H5l3.5 3.5"/></symbol>
+<symbol id="mr-palette" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="15.5" cy="10" r="1"/></symbol>
+<symbol id="mr-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="mr-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="mr-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+<symbol id="mr-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16Z"/></symbol>
+<symbol id="mr-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+<symbol id="mr-fit" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+<symbol id="mr-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></symbol>
+<symbol id="mr-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></symbol>
+<symbol id="mr-line" viewBox="0 0 24 24"><path d="M3 17c3-6 5-6 8-2s5 2 10-8"/></symbol>
+<symbol id="mr-alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20Z"/><path d="M12 10v4M12 17h.01"/></symbol>
+<symbol id="mr-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="mr-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="mr-arrow" viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></symbol>
+<symbol id="mr-hex" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9Z"/></symbol>
+<symbol id="mr-dots" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/></symbol>
+</defs></svg>
+
+<div id="mr-cards" class="mr-cards">
+<details class="collapse collapse-arrow mr-card" id="more-maps">
+<summary class="collapse-title mr-head"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-map"/></svg></span><span class="mr-ht"><span class="mr-title">Maps &amp; base map</span><span class="mr-sub">Terrain · 3D view · relief</span></span></summary>
+<div class="collapse-content mr-body">
+<div id="status" class="alert alert-error alert-soft" role="alert"></div>
+<h4 class="mr-cap">Base map</h4>
+<div id="basemap" class="mr-thumbs" role="radiogroup" aria-label="Base map"></div>
+<p id="base-credit" class="mr-hint" hidden></p>
+<h4 class="mr-cap">3D view</h4>
+<div class="mr-slide"><label class="mr-row" for="view-pitch"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-tilt"/></svg></span><span class="mr-grow">Tilt</span><output id="view-pitch-out" for="view-pitch">0°</output></label><input type="range" id="view-pitch" class="range range-primary range-xs" min="0" max="85" step="1" value="0"></div>
+<div class="mr-slide"><label class="mr-row" for="view-bearing"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-rot"/></svg></span><span class="mr-grow">Rotation</span><output id="view-bearing-out" for="view-bearing">0°</output></label><input type="range" id="view-bearing" class="range range-primary range-xs" min="0" max="359" step="1" value="0"></div>
+<div class="mr-pills"><button type="button" id="view-flat" class="btn btn-sm rounded-full btn-primary"><svg class="mr-i" aria-hidden="true"><use href="#mr-line"/></svg><span>Flat</span></button><button type="button" id="view-tilt60" class="btn btn-sm rounded-full btn-neutral"><svg class="mr-i" aria-hidden="true"><use href="#mr-tilt"/></svg><span>Tilt 60</span></button><button type="button" id="view-north" class="btn btn-sm rounded-full btn-neutral"><svg class="mr-i" aria-hidden="true"><use href="#mr-arrow"/></svg><span>North up</span></button></div>
+<div id="view-terrain-opts">
+<label class="mr-row mr-tog"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-cube"/></svg></span><span class="mr-grow">3D terrain</span><input type="checkbox" id="view-terrain" class="toggle toggle-primary mr-tg"></label>
+<div class="mr-slide"><label class="mr-row" for="view-exag"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-ud"/></svg></span><span class="mr-grow">Height</span><output id="view-exag-out" for="view-exag">1.0×</output></label><input type="range" id="view-exag" class="range range-primary range-xs" min="0.5" max="4" step="0.1" value="1"></div>
+</div>
+<h4 class="mr-cap">Rivers</h4>
+<div class="mr-slide"><label class="mr-row" for="river-size"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-drop"/></svg></span><span class="mr-grow">River size</span><output id="river-size-out" for="river-size">1×</output></label><input type="range" id="river-size" class="range range-primary range-xs" min="0.5" max="4" step="0.1" value="1"></div>
+<h4 class="mr-cap">Show on the map</h4>
+<div id="groups" class="mr-list">
+<label class="mr-row mr-tog"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-map"/></svg></span><span class="mr-grow">Borders of today</span><input type="checkbox" class="toggle toggle-primary mr-tg" checked data-g="Boundaries"></label>
+<label class="mr-row mr-tog"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-road"/></svg></span><span class="mr-grow">Roads</span><input type="checkbox" class="toggle toggle-primary mr-tg" checked data-g="Roads"></label>
+<label class="mr-row mr-tog"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-tag"/></svg></span><span class="mr-grow">Place labels</span><input type="checkbox" class="toggle toggle-primary mr-tg" checked data-g="Places"></label>
+<label class="mr-row mr-tog"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-drop"/></svg></span><span class="mr-grow">Water labels</span><input type="checkbox" class="toggle toggle-primary mr-tg" checked data-g="Water"></label>
+</div>
+<div id="relief-opts" hidden>
+<h4 class="mr-cap">Relief</h4>
+<label class="mr-row mr-tog"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-layers"/></svg></span><span class="mr-grow">Colour by height</span><input type="checkbox" id="relief-color" class="toggle toggle-primary mr-tg" checked></label>
+<label class="mr-row mr-tog"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-sun"/></svg></span><span class="mr-grow">Shading</span><input type="checkbox" id="relief-shade" class="toggle toggle-primary mr-tg" checked></label>
+<label class="mr-row mr-tog"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-compass"/></svg></span><span class="mr-grow">Adapt colours to the view</span><input type="checkbox" id="relief-adapt" class="toggle toggle-primary mr-tg" checked></label>
+<label class="mr-row mr-tog"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-drop"/></svg></span><span class="mr-grow">Smooth colours</span><input type="checkbox" id="relief-smooth" class="toggle toggle-primary mr-tg" checked></label>
+<label class="mr-row mr-tog"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-swap"/></svg></span><span class="mr-grow">Smooth colour transitions</span><input type="checkbox" id="relief-blend" class="toggle toggle-primary mr-tg" checked></label>
+<div class="mr-row"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-palette"/></svg></span><span class="mr-grow">Colour ramp</span></div>
+<select id="relief-ramp" class="select select-sm mr-select" aria-label="Colour ramp"></select>
+<div class="mr-ramp"><div id="relief-legend" class="mr-bar"></div><div id="relief-ticks" class="mr-ticks" title="metres above sea level"></div></div>
+<details id="relief-edit" class="mr-edit">
+<summary><span class="mr-edit-add"><svg class="mr-i" aria-hidden="true"><use href="#mr-plus"/></svg><span>Edit colours</span></span><span class="mr-edit-open">Edit colours</span><svg class="mr-i mr-edit-chev" aria-hidden="true"><use href="#mr-chev"/></svg></summary>
+<div id="relief-stops" class="mr-stops"></div>
+<div class="mr-actions"><button type="button" id="relief-add" class="btn btn-sm btn-neutral"><svg class="mr-i" aria-hidden="true"><use href="#mr-plus"/></svg><span>Add colour</span></button><button type="button" id="relief-reset" class="btn btn-sm btn-neutral"><svg class="mr-i" aria-hidden="true"><use href="#mr-reset"/></svg><span>Reset</span></button></div>
+</details>
+<div class="mr-slide"><label class="mr-row" for="relief-opacity"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-palette"/></svg></span><span class="mr-grow">Colour strength</span><output id="relief-opacity-out" for="relief-opacity">70%</output></label><input type="range" id="relief-opacity" class="range range-primary range-xs" min="0" max="1" step="0.05" value="0.7"></div>
+<div class="mr-slide"><label class="mr-row" for="relief-strength"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-sun"/></svg></span><span class="mr-grow">Shading strength</span><output id="relief-strength-out" for="relief-strength">45%</output></label><input type="range" id="relief-strength" class="range range-primary range-xs" min="0" max="1" step="0.05" value="0.45"></div>
+<label class="mr-row mr-tog"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-layers"/></svg></span><span class="mr-grow">Contour lines</span><input type="checkbox" id="relief-contours" class="toggle toggle-primary mr-tg"></label>
+<select id="relief-interval" class="select select-sm mr-select" aria-label="Contour step">
+<option value="auto">Step: automatic</option><option value="10">10 m</option><option value="20">20 m</option><option value="50">50 m</option><option value="100">100 m</option><option value="200">200 m</option><option value="500">500 m</option><option value="1000">1000 m</option></select>
+<p class="mr-hint">Other steps: 10, 20, 50, 100, 200, 500, 1000 m.</p>
+<h4 class="mr-cap">Height profile</h4>
+<div class="mr-pills"><button type="button" id="relief-profile-btn" class="btn btn-sm btn-neutral"><svg class="mr-i" aria-hidden="true"><use href="#mr-line"/></svg><span>Draw height profile</span></button><button type="button" id="relief-profile-clear" class="btn btn-sm btn-neutral"><svg class="mr-i" aria-hidden="true"><use href="#mr-x"/></svg><span>Clear</span></button></div>
+<div class="mr-chart"><canvas id="relief-profile" width="676" height="170" aria-label="Height profile"></canvas></div>
+<p id="relief-profile-info" class="mr-hint"></p>
+<p id="relief-height-line" class="mr-hint" hidden>Height at the pointer: <b id="relief-height"></b></p>
+</div>
+<p class="mr-hint">Relief options appear when the base map is Relief.</p>
+</div></details>
+<details class="collapse collapse-arrow mr-card" id="more-route">
+<summary class="collapse-title mr-head"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-nav"/></svg></span><span class="mr-ht"><span class="mr-title">Directions</span><span class="mr-sub">Car route between two points</span></span></summary>
+<div class="collapse-content mr-body">
+<div class="mr-pt"><div class="mr-field"><span class="mr-dot mr-a"></span><span id="rFrom" class="mr-grow"></span></div><button type="button" id="rSwap" class="btn btn-ghost btn-sm btn-square text-primary" title="Swap start and destination" aria-label="Swap start and destination"><svg class="mr-i" aria-hidden="true"><use href="#mr-swap"/></svg></button></div>
+<div class="mr-pt"><div class="mr-field"><span class="mr-dot mr-b"></span><span id="rTo" class="mr-grow"></span></div><button type="button" id="rClear" class="btn btn-ghost btn-sm btn-square text-primary" title="Clear" aria-label="Clear"><svg class="mr-i" aria-hidden="true"><use href="#mr-x"/></svg></button></div>
+<p id="rInfo" class="mr-hint"></p>
+<div id="rStats" class="stats mr-stats" hidden>
+<div class="stat"><div class="stat-title">Distance</div><div class="stat-value"><span id="rKm"></span><small>km</small></div></div>
+<div class="stat"><div class="stat-title">Car</div><div class="stat-value"><span id="rHours" hidden><span id="rH"></span><small>h</small></span><span id="rM"></span><small>min</small></div></div>
+</div>
+<p class="mr-hint">Click a place or any point on the map, then choose “Directions from/to here”. Car routes only.</p>
+<p class="mr-hint">Routes: <a href="https://project-osrm.org" target="_blank" rel="noopener">OSRM</a> demo server · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>.</p>
+</div></details>
+<details class="collapse collapse-arrow mr-card" id="more-lang">
+<summary class="collapse-title mr-head"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-lang"/></svg></span><span class="mr-ht"><span class="mr-title">Languages</span><span class="mr-sub" id="lgSub"></span></span></summary>
+<div class="collapse-content mr-body">
+<div data-state><div class="ahm-col" role="status" aria-busy="true"><div class="skeleton ahm-skel"></div><div class="skeleton ahm-skel"></div><div class="skeleton ahm-skel"></div></div></div>
+<p id="lgIntro" class="mr-hint">Every name and note uses one of these languages. Missing one? Ask an administrator.</p>
+<div id="lgHead" class="mr-thead"><span>Code</span><span>Name</span><span>In the language</span></div>
+<ul id="langList" class="list mr-rows"></ul>
+<p id="lgEmpty" class="mr-empty" hidden><svg class="mr-i" aria-hidden="true"><use href="#mr-lock"/></svg><span>No languages yet. (empty list)</span></p>
+<div id="langAdmin" class="mr-admin"><button type="button" id="lgNew" class="btn btn-dash btn-primary btn-sm rounded-full"><svg class="mr-i" aria-hidden="true"><use href="#mr-plus"/></svg><span>Add language</span></button></div>
+<p id="lgRO" class="mr-hint" hidden>Only administrators can add a language. Missing one? Ask an administrator.</p>
+</div></details>
+<details class="collapse collapse-arrow mr-card" id="more-types">
+<summary class="collapse-title mr-head"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-tag"/></svg></span><span class="mr-ht"><span class="mr-title">Types</span><span class="mr-sub" id="tySub"></span></span></summary>
+<div class="collapse-content mr-body">
+<div data-state><div class="ahm-col" role="status" aria-busy="true"><div class="skeleton ahm-skel"></div><div class="skeleton ahm-skel"></div><div class="skeleton ahm-skel"></div></div></div>
+<p class="mr-hint">Every place, border and route has one of these types; the type decides its marker, line or colour. Missing one? Ask an administrator.</p>
+<div id="typeList" class="mr-groups"></div>
+<p id="tyEmpty" class="mr-empty" hidden><span>No types yet. (empty list)</span></p>
+<div id="typeAdmin" class="mr-adds">
+<button type="button" class="btn btn-sm btn-neutral" data-tynew="point"><svg class="mr-i" aria-hidden="true"><use href="#mr-plus"/></svg><span>Place type</span></button>
+<button type="button" class="btn btn-sm btn-neutral" data-tynew="line"><svg class="mr-i" aria-hidden="true"><use href="#mr-plus"/></svg><span>Line type</span></button>
+<button type="button" class="btn btn-sm btn-neutral" data-tynew="area"><svg class="mr-i" aria-hidden="true"><use href="#mr-plus"/></svg><span>Area type</span></button>
+<button type="button" class="btn btn-sm btn-neutral" data-tynew="river"><svg class="mr-i" aria-hidden="true"><use href="#mr-plus"/></svg><span>River type</span></button>
+</div>
+<p id="tyRO" class="mr-hint" hidden>Only administrators can add a type. Missing one? Ask an administrator.</p>
+</div></details>
+<details class="fold" id="more-cat"><summary>Categories</summary><div class="fold-body">
           <p class="sn">Categories group the layers (Layers tab).</p>
           <ul id="catList" class="langs"></ul>
           <div id="catAdmin"></div>
-        </div></details></section>
+        </div></details>
+<details class="collapse collapse-arrow mr-card" id="more-hist">
+<summary class="collapse-title mr-head"><span class="mr-tile"><svg class="mr-i" aria-hidden="true"><use href="#mr-image"/></svg></span><span class="mr-ht"><span class="mr-title">Historical maps</span><span class="mr-sub" id="ovSub">Image overlays</span></span></summary>
+<div class="collapse-content mr-body">
+<div data-state></div>
+<p id="ovEmpty" class="mr-hint" hidden>No historical maps yet.</p>
+<div id="ovUp" class="mr-up" hidden>
+<h4 class="mr-cap">Uploading</h4>
+<div class="mr-upbox"><div class="mr-uprow"><b id="ovUpName"></b><span id="ovUpPct" class="mr-hint"></span></div><progress id="ovUpBar" class="progress progress-primary" value="0" max="100"></progress></div>
+</div>
+<div id="ovErrBox" class="alert alert-error alert-soft" role="alert" hidden><svg class="mr-i" aria-hidden="true"><use href="#mr-alert"/></svg><span id="ovErrMsg"></span></div>
+<div id="ovList" class="mr-ovs"></div>
+<div id="ovAdmin" class="mr-admin"><button type="button" id="ovAdd" class="btn btn-primary btn-sm"><span class="mr-addic"><svg class="mr-i" aria-hidden="true"><use href="#mr-upload"/></svg></span><span>Add image overlay</span></button></div>
+<input type="file" id="ovFile" accept="image/*" hidden />
+</div></details>
+</div>
+<div id="mr-sheet" hidden></div>
+</section>
         <!-- /ahm:region tab-more -->
         <!-- ahm:region tab-borders -->
         <section id="tab-shapes" hidden>
@@ -470,6 +494,25 @@
     <!-- ahm:region tpl-layers -->
     <!-- /ahm:region tpl-layers -->
     <!-- ahm:region tpl-more -->
+<template id="t-mr-thumb"><label class="mr-thumb"><input type="radio" name="basemap" class="mr-hide"><span class="mr-thumb-img"></span><span class="mr-thumb-name" data-bind="label"></span></label></template>
+<template id="t-mr-opt"><option></option></template>
+<template id="t-mr-tick"><span></span></template>
+<template id="t-mr-stop"><div class="mr-stop"><input type="color" class="mr-swatch" data-k="c" aria-label="Colour"><input type="text" class="input input-sm mr-hex" data-k="h" maxlength="7" spellcheck="false" pattern="#[0-9a-fA-F]{6}" aria-label="Colour code"><label class="input input-sm mr-m"><input type="number" step="50" data-k="m" aria-label="Height in metres"><span>m</span></label><button type="button" class="btn btn-ghost btn-sm btn-square text-primary" data-act="del" title="Remove" aria-label="Remove colour"><svg class="mr-i" aria-hidden="true"><use href="#mr-x"/></svg></button></div></template>
+<template id="t-mr-lang"><li class="list-row mr-lrow"><span class="mr-code" data-bind="code"></span><span class="mr-lname" data-bind="name"></span><span class="mr-native" data-bind="native"></span><button type="button" class="btn btn-ghost btn-sm btn-square text-primary" data-lgedit aria-label="Edit"><svg class="mr-i" aria-hidden="true"><use href="#mr-pencil"/></svg></button></li></template>
+<template id="t-mr-lgform"><div class="mr-lgform"><h4 class="mr-cap" data-bind="caption"></h4><div class="mr-lgfields"><input id="lgCode" class="input input-sm" maxlength="8" placeholder="hy" aria-label="Language code"><input id="lgName" class="input input-sm" placeholder="Name in English" aria-label="Name in English"><input id="lgNative" class="input input-sm" placeholder="Name in the language itself" aria-label="Name in the language itself"></div><div class="mr-bar2"><button type="button" id="lgAdd" class="btn btn-primary" disabled>Save</button><button type="button" id="lgCancel" class="btn btn-neutral">Cancel</button></div><p id="lgErr" class="mr-err" role="alert"></p></div></template>
+<template id="t-mr-tgroup"><div class="mr-group"><h4 class="mr-cap" data-bind="caption"></h4><ul class="list mr-rows" data-rows></ul><button type="button" class="btn btn-link btn-xs mr-more" data-more hidden></button></div></template>
+<template id="t-mr-type"><li class="list-row mr-trow"><span class="mr-sym" data-icon></span><span class="mr-lname" data-bind="name"></span><span class="mr-kind" data-bind="kind"></span><span class="badge badge-sm" data-bind="count"></span><button type="button" class="btn btn-ghost btn-sm btn-square text-primary" data-tyedit aria-label="Edit"><svg class="mr-i" aria-hidden="true"><use href="#mr-pencil"/></svg></button></li></template>
+<template id="t-mr-ov"><div class="mr-ov"><div class="mr-ovhead"><input type="checkbox" class="checkbox checkbox-primary checkbox-sm" data-ov aria-label="Show on the map"><b class="mr-ovtitle" data-bind="title"></b><button type="button" class="btn btn-ghost btn-sm btn-square text-primary" data-fit title="Zoom to this map" aria-label="Zoom to this map"><svg class="mr-i" aria-hidden="true"><use href="#mr-fit"/></svg></button><button type="button" class="btn btn-ghost btn-sm btn-square text-primary" data-edit title="Edit" aria-label="Edit"><svg class="mr-i" aria-hidden="true"><use href="#mr-pencil"/></svg></button></div><p class="mr-hint ovhint" data-bind="hint" hidden></p><label class="mr-ovop"><span>Opacity</span><input type="range" class="range range-primary range-xs" min="0" max="1" step="0.05" data-opa title="Opacity (only for you)"><output data-bind="opacity"></output></label></div></template>
+<template id="t-mr-ovedit"><div class="mr-edbody"><p class="mr-hint">Drag the corners on the map to place the image.</p><h4 class="mr-cap">Title</h4><input id="ovTitle" class="input input-sm" placeholder="Title" aria-label="Title"><div class="mr-slide"><label class="mr-row" for="ovOp"><span class="mr-grow">Opacity</span><output id="ovOpVal">60%</output></label><input id="ovOp" type="range" class="range range-primary range-xs" min="0" max="1" step="0.05" value="0.6"></div><div class="mr-two"><div class="mr-slide"><label class="mr-row" for="ovRot"><span class="mr-grow">Rotate</span><output id="ovRotVal">0°</output></label><input id="ovRot" type="range" class="range range-primary range-xs" min="-180" max="180" step="0.5" value="0"></div><div class="mr-slide"><label class="mr-row" for="ovScale"><span class="mr-grow">Scale</span><output id="ovScVal">100%</output></label><input id="ovScale" type="range" class="range range-primary range-xs" min="0.2" max="3" step="0.01" value="1"></div></div><h4 class="mr-cap" title="Shown from the first zoom up to, not including, the second. While editing it is always visible.">Zoom range · now <span id="ovZoom"></span></h4><div class="mr-two"><label class="input input-sm"><input id="ovMin" type="number" min="0" max="24" step="0.5" aria-label="Show from zoom"><span>from</span><button type="button" class="btn btn-ghost btn-xs btn-square text-primary" data-z="min" title="Use the current zoom" aria-label="Use the current zoom for from"><svg class="mr-i" aria-hidden="true"><use href="#mr-locate"/></svg></button></label><label class="input input-sm"><input id="ovMax" type="number" min="0" max="24" step="0.5" aria-label="Hide from zoom"><span>to</span><button type="button" class="btn btn-ghost btn-xs btn-square text-primary" data-z="max" title="Use the current zoom" aria-label="Use the current zoom for to"><svg class="mr-i" aria-hidden="true"><use href="#mr-locate"/></svg></button></label></div><p id="ovErr" class="mr-err" role="alert"></p></div></template>
+<template id="t-mr-trash"><button type="button" class="btn btn-ghost btn-sm btn-square text-error mr-del" data-del aria-label="Remove" title="Remove"><svg class="mr-i" aria-hidden="true"><use href="#mr-trash"/></svg></button></template>
+<template id="t-mr-names"><div class="mr-names"><h4 class="mr-cap">Names</h4><div class="mr-namelist" data-names></div><button type="button" class="btn btn-dash btn-primary btn-sm rounded-full" data-act="addname"><svg class="mr-i" aria-hidden="true"><use href="#mr-plus"/></svg><span>Add another name</span></button><p class="mr-hint" data-bind="codeNote"></p></div></template>
+<template id="t-mr-hint"><p class="mr-hint mr-symhint" data-bind="text"></p></template>
+<template id="t-mr-cap"><h4 class="mr-cap" data-bind="text"></h4></template>
+<template id="t-mr-upsym"><button type="button" class="btn btn-square btn-sm ahm-sym mr-upsym" data-upload aria-label="Upload an SVG symbol" title="Upload an SVG symbol"><svg class="mr-i" aria-hidden="true"><use href="#mr-upload"/></svg></button></template>
+<template id="t-mr-svgsym"><button type="button" class="btn btn-square btn-sm ahm-sym mr-svgtile" data-symbol="custom" title="Your uploaded SVG symbol"><span data-icon></span><span class="mr-svgtag">SVG</span></button></template>
+<template id="t-mr-svgzone"><div class="mr-svg" hidden><label class="mr-drop" tabindex="0"><input type="file" id="tyFile" accept=".svg,image/svg+xml" class="mr-hide" aria-label="SVG file"><svg class="mr-i" aria-hidden="true"><use href="#mr-upload"/></svg><b>Choose an SVG file or paste an &lt;svg&gt;</b><span class="mr-hint">Paths, rectangles and circles work. One colour.</span></label><p id="tySvgMsg" class="mr-svgmsg" hidden><svg class="mr-i" aria-hidden="true"><use href="#mr-alert"/></svg><span data-bind="msg"></span></p><h4 class="mr-cap">Advanced: path and box</h4><textarea id="tyPath" class="textarea mr-path" rows="2" maxlength="60000" spellcheck="false" aria-label="SVG path"></textarea><label class="mr-row"><span class="mr-grow">Box</span><input id="tyBox" type="number" class="input input-sm mr-boxin" min="8" max="2048" step="1" value="24" aria-label="Box size"></label><p class="mr-hint">The drawing area (viewBox) must start at 0 0.</p></div></template>
+<template id="t-mr-prev"><div class="mr-prev"><h4 class="mr-cap">Preview</h4><div class="mr-prevbox"><span class="mr-pvic" data-prev="point" data-icon></span><svg class="mr-poly" data-prev="area" viewBox="0 0 150 64" aria-hidden="true"><polygon points="10,40 34,8 100,6 142,30 112,60 30,62"/></svg><b data-bind="name"></b><span class="mr-hint" data-bind="where"></span></div></div></template>
+<template id="t-mr-err"><p class="mr-err" role="alert" data-bind="msg"></p></template>
     <!-- /ahm:region tpl-more -->
 
     <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.1/dist/maplibre-gl.js"></script>

@@ -58,16 +58,18 @@ function syncOverlays() {
     map.setLayoutProperty(id, 'visibility', ovHidden.has(o.id) && !editing ? 'none' : 'visible');
   });
 }
+// Only a map that is not drawn at the current zoom needs a line of explanation.
 const ovHint = (o) => {
   const z = map ? map.getZoom() : 0;
-  return z >= o.minzoom && z < o.maxzoom
-    ? 'Visible at this zoom'
-    : `Hidden at this zoom (shown for zoom ${fmtZ(o.minzoom)}–${fmtZ(o.maxzoom)})`;
+  return z >= o.minzoom && z < o.maxzoom ? '' : `Hidden at this zoom (shown for zoom ${fmtZ(o.minzoom)}–${fmtZ(o.maxzoom)})`;
 };
 function updateOvHints() {
   ovList.forEach((o) => {
-    const e = document.querySelector(`.ovhint[data-id="${o.id}"]`);
-    if (e) e.textContent = ovHint(o);
+    const e = document.querySelector(`[data-id="${o.id}"] .ovhint`);
+    if (e) {
+      e.textContent = ovHint(o);
+      e.hidden = !e.textContent;
+    }
   });
   const z = $('#ovZoom');
   if (z) z.textContent = fmtZ(map.getZoom());
@@ -77,19 +79,32 @@ function overlaysInit() {
 }
 
 function renderOvList() {
-  const shown = ovList.filter((o) => !o.tmpUrl);
-  $('#ovList').innerHTML = shown.length
-    ? shown
-        .map(
-          (
-            o
-          ) => `<div class="ov"><label><input type="checkbox" data-ov="${o.id}" ${ovHidden.has(o.id) ? '' : 'checked'}> <b>${esc(o.title)}</b></label>
-    <div class="sn ovhint" data-id="${o.id}">${ovHint(o)}</div>
-    <div class="row"><input type="range" min="0" max="1" step="0.05" value="${ovLocal[o.id] ?? o.opacity}" data-opa="${o.id}" title="Opacity (only for you)"><button data-fit="${o.id}">Fit</button>${AHM_CONFIG.canOverlay ? `<button data-edit="${o.id}">Edit</button>` : ''}</div></div>`
-        )
-        .join('')
-    : '<div class="sn">No historical maps yet.</div>';
-  $('#ovAdmin').innerHTML = AHM_CONFIG.canOverlay ? '<button id="ovAdd">Add image overlay…</button>' : '';
+  const shown = ovList.filter((o) => !o.tmpUrl),
+    can = AHM_CONFIG.canOverlay;
+  kit.list($('#ovList'), shown.map((o) => ({ id: o.id, o })), 't-mr-ov', (row, { o }) => {
+    const op = ovLocal[o.id] ?? o.opacity,
+      hint = ovHint(o);
+    kit.fill(row, { title: o.title, opacity: Math.round(op * 100) + '%', hint });
+    kit.show(row.querySelector('.ovhint'), !!hint);
+    const cb = row.querySelector('[data-ov]');
+    cb.dataset.ov = o.id;
+    cb.checked = !ovHidden.has(o.id);
+    const r = row.querySelector('[data-opa]');
+    r.dataset.opa = o.id;
+    r.value = op;
+    row.querySelector('[data-fit]').dataset.fit = o.id;
+    const ed = row.querySelector('[data-edit]');
+    ed.dataset.edit = o.id;
+    ed.hidden = !can;
+  });
+  $('#ovEmpty').hidden = !!shown.length;
+  $('#ovSub').textContent = shown.length ? shown.length + (shown.length === 1 ? ' image overlay' : ' image overlays') : 'Image overlays';
+  $('#ovAdmin').hidden = !can;
+  const add = $('#ovAdd');
+  add.classList.toggle('btn-primary', true);
+  add.classList.toggle('btn-dash', !!shown.length);
+  add.classList.toggle('rounded-full', !!shown.length);
+  add.querySelector('use').setAttribute('href', shown.length ? '#mr-plus' : '#mr-upload');
 }
 const ovFit = (c) =>
   map.fitBounds(
@@ -109,14 +124,37 @@ $('#ovList').addEventListener('input', (e) => {
   map.setPaintProperty(ovId(id), 'raster-opacity', +e.target.value);
 });
 $('#ovList').addEventListener('click', (e) => {
-  const f = e.target.dataset.fit,
-    ed = e.target.dataset.edit;
-  if (f) ovFit(ovList.find((o) => o.id === f).coordinates);
-  else if (ed) startEdit(ovList.find((o) => o.id === ed));
+  const b = e.target.closest('[data-fit],[data-edit]');
+  if (!b) return;
+  if (b.dataset.fit) ovFit(ovList.find((o) => o.id === b.dataset.fit).coordinates);
+  else startEdit(ovList.find((o) => o.id === b.dataset.edit));
 });
 $('#ovAdmin').addEventListener('click', (e) => {
-  if (e.target.id === 'ovAdd') $('#ovFile').click();
+  if (e.target.closest('#ovAdd')) $('#ovFile').click();
 });
+// The line under the list: the picture could not be read or saved (hidden when empty).
+function ovShowError(text) {
+  $('#ovErrMsg').textContent = text || '';
+  $('#ovErrBox').hidden = !text;
+}
+// The upload with its progress (fetch has none): fn(0..1) is called while the bytes go out.
+function ovUpload(url, blob, fn) {
+  return new Promise((ok, no) => {
+    const x = new XMLHttpRequest();
+    x.open('POST', url);
+    x.setRequestHeader('Content-Type', blob.type);
+    x.upload.onprogress = (e) => e.lengthComputable && fn(e.loaded / e.total);
+    x.onerror = () => no(Error('the network failed.'));
+    x.onload = () => {
+      let j = {};
+      try {
+        j = JSON.parse(x.responseText);
+      } catch (e) {}
+      x.status >= 200 && x.status < 300 ? ok(j) : no(Error(j.error || (x.status === 413 ? 'the file is too large.' : x.status)));
+    };
+    x.send(blob);
+  });
+}
 
 // ---- adding: shrink the picture if needed, place it in the middle of the current view, then edit ----
 async function ovPrepare(file) {
@@ -158,6 +196,7 @@ $('#ovFile').addEventListener('change', async (e) => {
   const f = e.target.files[0];
   e.target.value = '';
   if (!f) return;
+  ovShowError('');
   try {
     const img = await ovPrepare(f);
     const o = {
@@ -175,7 +214,7 @@ $('#ovFile').addEventListener('change', async (e) => {
     ovList.push(o);
     startEdit(o);
   } catch (err) {
-    alert('Could not read that image: ' + err.message);
+    ovShowError('Could not read that image: ' + err.message);
   }
 });
 
@@ -210,6 +249,8 @@ function ovRebase() {
   $('#ovScale').value = 1;
   $('#ovRotVal').textContent = '0°';
   $('#ovScVal').textContent = '100%';
+  rangeFill($('#ovRot'));
+  rangeFill($('#ovScale'));
 }
 function buildHandles() {
   const mk = (cls, ll) => {
@@ -270,21 +311,30 @@ function ovApplyRS() {
 function renderEditPanel() {
   const e = ovEdit;
   if (!e) {
-    $('#ovEditPanel').innerHTML = '';
+    if ($('#mr-sheet .mr-edbody')) mrSheet.close();
     return;
   }
-  $('#ovEditPanel').innerHTML = `<div class="ovpanel"><b>${e.isNew ? 'New image overlay' : 'Edit image overlay'}</b>
-    <div class="sn">Drag the red squares to stretch and fit the corners, the blue dot to move the whole image.</div>
-    <input id="ovTitle" value="${esc(e.title)}" placeholder="Title">
-    <div class="label">Opacity <span id="ovOpVal">${Math.round(e.opacity * 100)}%</span></div><input id="ovOp" type="range" min="0" max="1" step="0.05" value="${e.opacity}">
-    <div class="label">Rotate <span id="ovRotVal">0°</span> · Scale <span id="ovScVal">100%</span></div>
-    <div class="row"><input id="ovRot" type="range" min="-180" max="180" step="0.5" value="0"><input id="ovScale" type="range" min="0.2" max="3" step="0.01" value="1"></div>
-    <div class="label">Zoom range (now <span id="ovZoom">${fmtZ(map.getZoom())}</span>)</div>
-    <div class="row"><input id="ovMin" type="number" min="0" max="24" step="0.5" value="${e.minzoom}" title="Show from zoom"><button data-z="min">= now</button><input id="ovMax" type="number" min="0" max="24" step="0.5" value="${e.maxzoom}" title="Hide from zoom"><button data-z="max">= now</button></div>
-    <div class="sn">Shown from the first zoom up to, not including, the second. While editing it is always visible.</div>
-    <div class="row"><button id="ovSave">Save</button><button id="ovCancel">Cancel</button>${e.isNew ? '' : '<button id="ovDelete">Delete</button>'}</div><div id="ovErr" class="sn"></div></div>`;
+  const f = fields.form(e.isNew ? 'New image overlay' : 'Edit image overlay');
+  f.querySelector('[data-body]').append(kit.tpl('t-mr-ovedit'));
+  f.querySelector('[data-act="save"]').id = 'ovSave';
+  f.querySelector('[data-act="cancel"]').id = 'ovCancel';
+  if (!e.isNew) {
+    const del = kit.tpl('t-mr-trash');
+    del.id = 'ovDelete';
+    del.title = del.ariaLabel = 'Delete this image overlay';
+    f.append(del);
+  }
+  f.addEventListener('submit', (x) => x.preventDefault());
+  mrSheet.open(f);
+  $('#ovTitle').value = e.title;
+  $('#ovOp').value = e.opacity;
+  $('#ovOpVal').textContent = Math.round(e.opacity * 100) + '%';
+  $('#ovZoom').textContent = fmtZ(map.getZoom());
+  $('#ovMin').value = e.minzoom;
+  $('#ovMax').value = e.maxzoom;
+  ['#ovOp', '#ovRot', '#ovScale'].forEach((s) => rangeFill($(s)));
 }
-$('#ovEditPanel').addEventListener('input', (e) => {
+$('#mr-sheet').addEventListener('input', (e) => {
   if (!ovEdit) return;
   const id = e.target.id;
   if (id === 'ovTitle') ovEdit.title = e.target.value;
@@ -296,9 +346,10 @@ $('#ovEditPanel').addEventListener('input', (e) => {
   else if (id === 'ovMin') ovEdit.minzoom = +e.target.value;
   else if (id === 'ovMax') ovEdit.maxzoom = +e.target.value;
 });
-$('#ovEditPanel').addEventListener('click', async (e) => {
+$('#mr-sheet').addEventListener('click', async (e) => {
   if (!ovEdit) return;
-  const z = e.target.dataset.z,
+  const zb = e.target.closest('[data-z]'),
+    z = zb && zb.dataset.z,
     err = (t) => ($('#ovErr').textContent = t);
   if (z) {
     const v = Math.round(map.getZoom() * 2) / 2;
@@ -309,9 +360,10 @@ $('#ovEditPanel').addEventListener('click', async (e) => {
       ovEdit.maxzoom = v;
       $('#ovMax').value = v;
     }
-  } else if (e.target.id === 'ovCancel') stopEdit();
-  else if (e.target.id === 'ovDelete') {
-    if (!confirm('Delete “' + ovEdit.title + '”? A copy is kept in the archive folder on the server.')) return;
+  } else if (e.target.closest('#ovCancel')) stopEdit();
+  else if (e.target.closest('#ovDelete')) {
+    dialogs.texts['delete-overlay'] = { title: (v) => `Delete “${v.name}”?`, body: () => 'A copy is kept in the archive folder on the server.', ok: 'Delete', danger: true };
+    if (!(await dialogs.confirm('delete-overlay', { name: ovEdit.title }))) return;
     try {
       await ovPost(AHM_CONFIG.url.overlayDelete, { id: ovEdit.id });
       stopEdit();
@@ -319,34 +371,39 @@ $('#ovEditPanel').addEventListener('click', async (e) => {
     } catch (x) {
       err('Delete failed: ' + x.message);
     }
-  } else if (e.target.id === 'ovSave') {
+  } else if (e.target.closest('#ovSave')) {
     const d = ovEdit;
     if (!d.title.trim()) return err('Give it a title.');
-    if (!(d.minzoom >= 0 && d.maxzoom <= 24 && d.minzoom < d.maxzoom))
-      return err('Zoom range: the first number must be smaller than the second (0–24).');
-    const meta = {
-      id: d.isNew ? undefined : d.id,
-      title: d.title.trim(),
-      coordinates: d.coords,
-      minzoom: d.minzoom,
-      maxzoom: d.maxzoom,
-      opacity: d.opacity,
-    };
+    if (!(d.minzoom >= 0 && d.maxzoom <= 24 && d.minzoom < d.maxzoom)) return err('Zoom range: the first number must be smaller than the second (0–24).');
+    const meta = { id: d.isNew ? undefined : d.id, title: d.title.trim(), coordinates: d.coords, minzoom: d.minzoom, maxzoom: d.maxzoom, opacity: d.opacity };
     err('Saving…');
+    ovShowError('');
     try {
       const r = await ovPost(AHM_CONFIG.url.overlaySave, meta);
       if (d.isNew) {
+        const up = (p) => {
+          const pct = Math.round(p * 100);
+          $('#ovUp').hidden = false;
+          $('#ovUpName').textContent = d.title.trim();
+          $('#ovUpPct').textContent = 'Uploading… ' + pct + '%';
+          $('#ovUpBar').value = pct;
+          err('Uploading… ' + pct + '%');
+        };
+        up(0);
         try {
-          await ovPost(AHM_CONFIG.url.overlayUpload(r.id), d.o.blob, d.o.blob.type);
+          await ovUpload(AHM_CONFIG.url.overlayUpload(r.id), d.o.blob, up);
         } catch (x) {
           await ovPost(AHM_CONFIG.url.overlayDelete, { id: r.id }).catch(() => {});
           throw x;
+        } finally {
+          $('#ovUp').hidden = true;
         }
       }
       stopEdit();
       await loadOverlays();
     } catch (x) {
       err('Save failed: ' + x.message);
+      ovShowError('Save failed: ' + x.message);
     }
   }
 });

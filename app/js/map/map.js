@@ -200,12 +200,16 @@ function initMap() {
     zoom: AHM_CONFIG.zoom,
     maxPitch: 85, // T-056: the default of MapLibre is 60
   });
-  $("#basemap").innerHTML =
-    '<option value="">Map</option>' +
-    b.satellites
-      .map((s) => `<option value="${s.id}">${s.label}</option>`)
-      .join("") +
-    (terrainOn() ? `<option value="${RELIEF}">Map + relief</option>` : "");
+  [{ value: "", label: "Map", kind: "plain" }, ...b.satellites.map((s) => ({ value: s.id, label: s.label, kind: "sat" })), ...(terrainOn() ? [{ value: RELIEF, label: "Map + relief", kind: "relief" }] : [])].forEach((o, i) => {
+    const t = kit.tpl("t-mr-thumb"),
+      r = t.querySelector("input");
+    kit.fill(t, { label: o.label });
+    t.dataset.kind = o.kind;
+    r.value = o.value;
+    r.checked = i === 0;
+    t.title = o.label;
+    $("#basemap").append(t);
+  });
   initReliefControls();
   initViewControls();
   map.on("error", (e) => {
@@ -502,12 +506,6 @@ function initMap() {
       paintBubbles();
     });
     map.on("movestart", hideTip); // the tooltip is anchored to a bullet; a moving map moves the bullet
-    $("#groups").innerHTML = Object.keys(GROUPS)
-      .map(
-        (g) =>
-          `<label><input type="checkbox" data-g="${g}" checked> ${g}</label>`,
-      )
-      .join(" ");
     shapesInit();
     initRiverSize();
     overlaysInit();
@@ -527,6 +525,7 @@ function initMap() {
     applyHighlight();
   });
   $("#groups").addEventListener("change", (e) => {
+    if (!e.target.dataset.g) return;
     e.target.checked
       ? view.off.delete(e.target.dataset.g)
       : view.off.add(e.target.dataset.g);
@@ -550,7 +549,18 @@ const inRange = (v, lo, hi) => typeof v === "number" && v >= lo && v <= hi;
 function syncView() {
   $("#view-pitch").value = Math.round(map.getPitch());
   $("#view-bearing").value = wrap360(map.getBearing());
+  $("#view-pitch-out").textContent = $("#view-pitch").value + "°";
+  $("#view-bearing-out").textContent = $("#view-bearing").value + "°";
+  rangeFill($("#view-pitch"));
+  rangeFill($("#view-bearing"));
+  [["#view-flat", 0], ["#view-tilt60", 60]].forEach(([id, v]) => {
+    const on = Math.round(map.getPitch()) === v;
+    $(id).classList.toggle("btn-primary", on);
+    $(id).classList.toggle("btn-neutral", !on);
+  });
 }
+const rangeFill = (r) => r.style.setProperty && r.style.setProperty("--mr-fill", ((r.value - r.min) / (r.max - r.min)) * 100 + "%");
+const fmtX = (v) => (Math.round(v * 10) / 10).toFixed(1) + "×";
 function saveView() {
   try {
     localStorage.setItem(
@@ -582,14 +592,21 @@ function initViewControls() {
   $("#view-terrain-opts").hidden = !terrainOn();
   $("#view-terrain").checked = view3d.terrain;
   $("#view-exag").value = view3d.exag;
+  $("#view-exag-out").textContent = fmtX(view3d.exag);
   syncView();
   const set = (fn, v) => {
     fn.call(map, v);
     syncView();
     saveView();
   };
-  $("#view-pitch").addEventListener("input", (e) => set(map.setPitch, Number(e.target.value)));
-  $("#view-bearing").addEventListener("input", (e) => set(map.setBearing, Number(e.target.value)));
+  $("#view-pitch").addEventListener("input", (e) => {
+    $("#view-pitch-out").textContent = e.target.value + "°";
+    set(map.setPitch, Number(e.target.value));
+  });
+  $("#view-bearing").addEventListener("input", (e) => {
+    $("#view-bearing-out").textContent = e.target.value + "°";
+    set(map.setBearing, Number(e.target.value));
+  });
   $("#view-flat").addEventListener("click", () => set(map.setPitch, 0));
   $("#view-tilt60").addEventListener("click", () => set(map.setPitch, 60));
   $("#view-north").addEventListener("click", () => set(map.setBearing, 0));
@@ -600,6 +617,7 @@ function initViewControls() {
   });
   $("#view-exag").addEventListener("input", (e) => {
     view3d.exag = Number(e.target.value);
+    $("#view-exag-out").textContent = fmtX(view3d.exag);
     if (view3d.terrain) applyTerrain();
     saveView();
   });
@@ -650,7 +668,7 @@ function initRiverSize() {
     // no storage: the value is just not kept
   }
   const el = $("#river-size");
-  const show = () => ($("#river-size-out").textContent = riverSize + "x");
+  const show = () => ($("#river-size-out").textContent = riverSize + "×");
   el.value = riverSize;
   show();
   el.addEventListener("input", (e) => {
@@ -699,26 +717,39 @@ function drawReliefLegend() {
       : st.flatMap(([m, c], i) => [c + " " + pc(m), c + " " + pc(i + 1 < st.length ? st[i + 1][0] : m)])
     ).join(", ") +
     ")";
-  $("#relief-ticks").innerHTML = st.map(([m]) => "<span>" + Math.round(m) + "</span>").join("");
-  $("#relief-ticks").title = "metres above sea level";
+  $("#relief-ticks").replaceChildren(
+    ...st.map(([m], i) => {
+      const t = kit.tpl("t-mr-tick");
+      t.textContent = Math.round(m) + (i === 0 || i === st.length - 1 ? " m" : "");
+      return t;
+    }),
+  );
 }
 function drawRampList() {
   const c = AHM_CONFIG.basemap.terrain.color;
-  $("#relief-ramp").innerHTML =
-    Object.keys(c.ramps)
-      .map((id) => `<option value="${id}">${esc(c.ramps[id].label)}</option>`)
-      .join("") + (relief.custom ? '<option value="__custom">Custom (edited)</option>' : "");
+  const opt = (value, label) => {
+    const o = kit.tpl("t-mr-opt");
+    o.value = value;
+    o.textContent = label;
+    return o;
+  };
+  $("#relief-ramp").replaceChildren(...Object.keys(c.ramps).map((id) => opt(id, c.ramps[id].label)), ...(relief.custom ? [opt("__custom", "Custom (edited)")] : []));
   $("#relief-ramp").value = relief.ramp;
 }
 // The editor rows show the stops of the chosen ramp as they are (not stretched to the view).
 function drawStops() {
-  $("#relief-stops").innerHTML = (relief.ramp === "__custom" && relief.custom ? relief.custom : baseStops())
-    .map(
-      ([m, c], i) =>
-        `<div class="rrow"><input type="number" step="50" data-i="${i}" data-k="m" value="${esc(m)}" aria-label="Height in metres"> m ` +
-        `<input type="color" data-i="${i}" data-k="c" value="${esc(c)}" aria-label="Colour"><button type="button" data-act="del" data-i="${i}" title="Remove">&times;</button></div>`,
-    )
-    .join("");
+  $("#relief-stops").replaceChildren(
+    ...(relief.ramp === "__custom" && relief.custom ? relief.custom : baseStops()).map(([m, c], i) => {
+      const r = kit.tpl("t-mr-stop");
+      r.dataset.i = i;
+      r.querySelectorAll("[data-k]").forEach((x) => (x.dataset.i = i));
+      r.querySelector('[data-k="m"]').value = m;
+      r.querySelector('[data-k="c"]').value = c;
+      r.querySelector('[data-k="h"]').value = c;
+      r.querySelector('[data-act="del"]').dataset.i = i;
+      return r;
+    }),
+  );
 }
 // Editing a stop of a built-in ramp first copies that ramp into "Custom".
 function ensureCustom() {
@@ -761,6 +792,8 @@ function initReliefControls() {
   $("#relief-interval").value = relief.interval;
   $("#relief-opacity").value = relief.opacity;
   $("#relief-strength").value = relief.strength;
+  $("#relief-opacity-out").textContent = Math.round(relief.opacity * 100) + "%";
+  $("#relief-strength-out").textContent = Math.round(relief.strength * 100) + "%";
   drawReliefLegend();
   const onChange = () => {
     const rampChanged = relief.ramp !== $("#relief-ramp").value;
@@ -774,6 +807,8 @@ function initReliefControls() {
     relief.ramp = $("#relief-ramp").value;
     relief.opacity = Number($("#relief-opacity").value);
     relief.strength = Number($("#relief-strength").value);
+    $("#relief-opacity-out").textContent = Math.round(relief.opacity * 100) + "%";
+    $("#relief-strength-out").textContent = Math.round(relief.strength * 100) + "%";
     if (rampChanged) drawStops();
     if (map.getLayer("ahm-relief-color")) map.setPaintProperty("ahm-relief-color", "color-relief-opacity", relief.opacity);
     if (map.getLayer("ahm-relief")) map.setPaintProperty("ahm-relief", "hillshade-exaggeration", relief.strength);
@@ -794,14 +829,22 @@ function initReliefControls() {
     const st = relief.custom[Number(t.dataset.i)];
     if (!st) return;
     if (t.dataset.k === "m") st[0] = Number(t.value);
-    else st[1] = t.value;
+    else if (t.dataset.k === "h") {
+      if (!/^#[0-9a-f]{6}$/i.test(t.value)) return t.classList.add("input-error");
+      t.classList.remove("input-error");
+      st[1] = t.value.toLowerCase();
+      t.closest(".mr-stop").querySelector('[data-k="c"]').value = st[1];
+    } else {
+      st[1] = t.value;
+      t.closest(".mr-stop").querySelector('[data-k="h"]').value = t.value;
+    }
     paintRamp();
     scheduleAdapt();
     saveSettings();
   });
   $("#relief-stops").addEventListener("click", (e) => {
-    const t = e.target;
-    if (!t.dataset || t.dataset.act !== "del") return;
+    const t = e.target.closest ? e.target.closest("[data-act]") : e.target; // the click lands on the icon inside the button
+    if (!t || !t.dataset || t.dataset.act !== "del") return;
     ensureCustom();
     if (relief.custom.length > 2) relief.custom.splice(Number(t.dataset.i), 1);
     drawStops();
@@ -891,10 +934,11 @@ async function showHeight(e) {
   heightBusy = true;
   try {
     const [h] = await sampleAt([[e.lngLat.lng, e.lngLat.lat]]);
-    $("#relief-height").textContent = Number.isNaN(h) ? "" : "Height: " + fmtM(h) + " m";
+    $("#relief-height").textContent = Number.isNaN(h) ? "" : fmtM(h) + " m";
   } catch (err) {
     $("#relief-height").textContent = "";
   }
+  $("#relief-height-line").hidden = !$("#relief-height").textContent;
   heightBusy = false;
 }
 
@@ -1149,8 +1193,7 @@ async function profileNow() {
   let up = 0;
   let down = 0;
   v.forEach((x, i) => i && (x > v[i - 1] ? (up += x - v[i - 1]) : (down += v[i - 1] - x)));
-  $("#relief-profile-info").textContent =
-    total.toFixed(1) + " km \u00b7 min " + fmtM(Math.min(...v)) + " m \u00b7 max " + fmtM(Math.max(...v)) + " m \u00b7 +" + fmtM(up) + " m / \u2212" + fmtM(down) + " m";
+  $("#relief-profile-info").textContent = "Length " + fmtM(total) + " km \u00b7 up " + fmtM(up) + " m \u00b7 down " + fmtM(down) + " m";
   drawChart(v);
 }
 function drawChart(v) {
@@ -1166,9 +1209,10 @@ function drawChart(v) {
   v.forEach((x, i) => cx.lineTo((i / (v.length - 1)) * W, H - 4 - ((x - lo) / (hi - lo)) * (H - 12)));
   cx.lineTo(W, H);
   cx.closePath();
-  cx.fillStyle = "rgba(215,25,28,0.25)";
+  cx.fillStyle = "rgba(17,80,152,0.12)";
   cx.fill();
-  cx.strokeStyle = "#d7191c";
+  cx.strokeStyle = "#115098";
+  cx.lineWidth = 3;
   cx.stroke();
 }
 function clearProfile() {

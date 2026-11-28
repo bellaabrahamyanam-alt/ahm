@@ -1,61 +1,76 @@
-// Sidebar administration: the dictionaries of languages and of place types (only administrators change them).
+// Sidebar administration (More tab): the dictionaries of languages and of place/line/area/river types (only administrators change them).
+// Markup is static in app/index.html (regions tab-more and tpl-more); this file clones templates, fills them and handles events.
+// ---- the sheet: a full-width editor that replaces the cards (type editor, overlay editor; frames s020, s040) ----
+const mrSheet = {
+  open(node) {
+    $("#mr-cards").hidden = true;
+    $("#mr-sheet").hidden = false;
+    $("#mr-sheet").replaceChildren(node);
+    $("#tab-more").scrollTop = 0;
+  },
+  close() {
+    $("#mr-sheet").replaceChildren();
+    $("#mr-sheet").hidden = true;
+    $("#mr-cards").hidden = false;
+  },
+};
+/** The loading / error block of a card (kit.state); kind null clears it. */
+function mrState(cardId, kind, text, retry) {
+  const slot = $("#" + cardId + " [data-state]");
+  if (kind) kit.state(slot, kind, text, retry);
+  else slot.replaceChildren();
+}
+// A canvas symbol (no markup): the type as the map draws it.
+const mrCanvas = (type, px = 20) => iconCanvas(type, px, 2);
 // ---- languages: the dictionary every name and note language is chosen from (only administrators add or edit) ----
-// One table-like layout without lines: [button] [code] [English name] [name in the language itself].
-// Rows: pencil = edit. The last row is the add/edit row (plus = add, pencil = editing); Save and Cancel sit below it.
 let lgEditing = null; // the code being edited, or null = adding
 let lgOpen = false; // the form is shown only while it is open
+const lgNewBtn = $("#lgNew");
 function renderLangs() {
-  $("#langList").innerHTML =
-    languages
-      .slice()
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map(
-        (l) =>
-          `<li class="tr${l.code === lgEditing ? " on" : ""}"><span class="tc-btn">${
-            AHM_CONFIG.canLanguage
-              ? `<button type="button" class="icon-btn" data-lgedit="${esc(l.code)}" title="Edit ${esc(l.name)}" aria-label="Edit ${esc(l.name)}">${ICON_PENCIL}</button>`
-              : ""
-          }</span><b class="tc-code">${esc(l.code)}</b><span>${esc(l.name)}</span><span>${esc(l.native || "")}</span></li>`,
-      )
-      .join("") || '<li class="sn">No languages yet.</li>';
+  if (typeof kit === "undefined") return; // a page without the template kit (a node test) has nothing to draw
+  mrState("more-lang", null);
+  const can = AHM_CONFIG.canLanguage,
+    list = languages.slice().sort((a, b) => a.name.localeCompare(b.name));
+  kit.list($("#langList"), list.map((l) => ({ id: l.code, l })), "t-mr-lang", (li, { l }) => {
+    kit.fill(li, { code: l.code, name: l.name, native: l.native || "" });
+    li.classList.toggle("mr-on", l.code === lgEditing);
+    const b = li.querySelector("[data-lgedit]");
+    b.hidden = !can;
+    b.dataset.lgedit = l.code;
+    b.title = b.ariaLabel = "Edit " + l.name;
+  });
+  $("#lgHead").hidden = !list.length;
+  $("#lgEmpty").hidden = !!list.length;
+  $("#lgEmpty svg").hidden = can;
+  $("#lgIntro").hidden = !can;
+  $("#lgRO").hidden = can;
+  $("#langAdmin").hidden = !can;
+  $("#lgSub").textContent = !can ? "Read only" : lgOpen ? (lgEditing ? "Edit a language" : "Add a language") : list.length + (list.length === 1 ? " language" : " languages");
 }
 // Save stays off until the code and the English name are filled.
 const lgValidate = () => {
   const b = $("#lgAdd");
   if (b) b.disabled = !($("#lgCode").value.trim() && $("#lgName").value.trim());
 };
-// The form is shown only while it is open: "+ Add language" opens it empty, the pencil of a row opens it filled.
-function lgRenderAdmin() {
-  $("#langAdmin").innerHTML = !AHM_CONFIG.canLanguage
-    ? '<div class="sn">Only administrators can add a language. Missing one? Ask an administrator.</div>'
-    : lgOpen
-      ? '<div class="tr tr-edit"><span class="tc-btn"><span class="tc-mode" id="lgMode"></span></span>' +
-        '<input id="lgCode" maxlength="8" placeholder="code, e.g. hy" aria-label="Language code">' +
-        '<input id="lgName" placeholder="Name in English" aria-label="Name in English">' +
-        '<input id="lgNative" placeholder="Name in the language" aria-label="Name in the language itself"></div>' +
-        '<div class="btn-pair"><button id="lgAdd" class="primary" disabled>Save</button><button id="lgCancel">Cancel</button></div><div id="lgErr" class="sn err-line"></div>'
-      : '<button id="lgNew" class="wide">+ Add language</button>';
-}
 function lgFill(l) {
   lgOpen = true;
   lgEditing = l ? l.code : null;
-  lgRenderAdmin();
-  renderLangs();
+  const f = kit.tpl("t-mr-lgform");
+  kit.fill(f, { caption: l ? "Edit language" : "New language" });
+  $("#langAdmin").replaceChildren(f);
   $("#lgCode").value = l ? l.code : "";
   $("#lgCode").readOnly = !!l; // the code is what names and notes refer to, so it never changes
   $("#lgName").value = l ? l.name : "";
   $("#lgNative").value = l ? l.native || "" : "";
-  $("#lgMode").innerHTML = l ? ICON_PENCIL : ICON_PLUS;
-  $("#lgErr").textContent = "";
   lgValidate();
+  renderLangs();
 }
 function lgClose() {
   lgOpen = false;
   lgEditing = null;
-  lgRenderAdmin();
+  $("#langAdmin").replaceChildren(lgNewBtn);
   renderLangs();
 }
-lgRenderAdmin();
 $("#langAdmin").addEventListener("input", lgValidate);
 $("#langList").addEventListener("click", (e) => {
   const b = e.target.closest("[data-lgedit]");
@@ -64,24 +79,19 @@ $("#langList").addEventListener("click", (e) => {
   $("#lgName").focus();
 });
 $("#langAdmin").addEventListener("click", async (e) => {
-  if (e.target.id === "lgNew") {
+  if (e.target.closest("#lgNew")) {
     lgFill(null);
     return $("#lgCode").focus();
   }
-  if (e.target.id === "lgCancel") return lgClose();
-  if (e.target.id !== "lgAdd") return;
+  if (e.target.closest("#lgCancel")) return lgClose();
+  if (!e.target.closest("#lgAdd")) return;
   const err = $("#lgErr");
   try {
     err.textContent = "Saving…";
     const r = await fetch(AHM_CONFIG.url.languageSave, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        code: $("#lgCode").value,
-        name: $("#lgName").value,
-        native: $("#lgNative").value,
-        ...(lgEditing ? { edit: true } : {}),
-      }),
+      body: JSON.stringify({ code: $("#lgCode").value, name: $("#lgName").value, native: $("#lgNative").value, ...(lgEditing ? { edit: true } : {}) }),
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw Error("Save failed: " + (j.error || r.status));
@@ -92,152 +102,260 @@ $("#langAdmin").addEventListener("click", async (e) => {
     err.textContent = x.message;
   }
 });
-// ---- place types: the dictionary every place type is chosen from (only administrators add, change or remove) ----
-// Same layout as languages: [buttons] [marker] [name] [code]. The form is shown only while it is open. The code of a
-// new type is made by the server from its English name and never changes; places point to a type by that code.
+// ---- types: the dictionary every place, line, area and river type is chosen from (only administrators add, change or remove) ----
+// The code of a new type is made by the server from its English name and never changes; places point to a type by that code.
 let tyEditing = null; // the code being edited, or null = adding
-let tyOpen = false;
-let tyGeo = "point"; // the geometry of the type being added or edited: point (a place marker), line (a route), area (a border) or river
+let tyGeo = "point"; // point (a place marker), line (a route), area (a border) or river
+let tyBad = false; // the last SVG could not be read: Save stays off
+const tyOpenGroups = new Set();
 const TY_GEO = { point: "place", line: "line", area: "area", river: "river" };
-const TY_PATTERNS = ["solid", "dashed", "dotted", "dashdot"]; // the patterns the map draws
-function renderTypes() {
-  const l = $("#lang").value,
-    n = {};
+const TY_GROUP = { point: "Places", line: "Routes", area: "Areas", river: "Rivers" };
+const TY_KIND = { point: "Point", line: "Line", area: "Area", river: "River" };
+const TY_SHOWN = 3; // rows of a group shown before "+ N more"
+const TY_DASH = { solid: "", dashed: "6 4", dotted: "1 4", dashdot: "8 3 1 3" };
+const typeUsage = () => {
+  const n = {};
   places.forEach((p) => (n[p.type] = (n[p.type] || 0) + 1));
   shapes.forEach((s) => (n[s.type] = (n[s.type] || 0) + 1));
-  $("#typeList").innerHTML =
-    [...types]
-      .sort((a, b) => Object.keys(TY_GEO).indexOf(a.geometry) - Object.keys(TY_GEO).indexOf(b.geometry) || typeLabel(a.code, l).localeCompare(typeLabel(b.code, l)))
-      .map(
-        (t) =>
-          `<li class="tr${t.code === tyEditing ? " on" : ""}"><span class="tc-btn">${
-            AHM_CONFIG.canTypeAdmin
-              ? `<button type="button" class="icon-btn" data-tyedit="${esc(t.code)}" title="Edit ${esc(typeLabel(t.code, l))}" aria-label="Edit ${esc(typeLabel(t.code, l))}">${ICON_PENCIL}</button>`
-              : ""
-          }</span><b class="tc-code">${t.geometry === "point" ? typeIcon(t.code) : shIcon(t.code)}</b><span>${esc(typeLabel(t.code, l))} <span class="sn">${TY_GEO[t.geometry] || ""}</span></span><span class="sn">${n[t.code] || 0}</span></li>`,
-      )
-      .join("") || '<li class="sn">No types yet.</li>';
-}
-const tyDraft = () => {
-  const d = { color: $("#tyColor").value };
-  if (tyGeo === "point") {
-    d.symbol = $("#tySym").value;
-    d.size = Number($("#tySize").value);
-    if (d.symbol === "custom") {
-      d.path = $("#tyPath").value.trim();
-      d.box = Number($("#tyBox").value);
-    }
-    return d;
-  }
-  d.pattern = $("#tyPat").value;
-  d.width = Number($("#tyWid").value);
-  d.opacity = Number($("#tyOpa").value);
-  if (tyGeo === "line") d.arrow = $("#tyArrow").checked;
-  else if (tyGeo === "area") d.fill = Number($("#tyFill").value);
-  return d;
+  return n;
 };
-// The style the server stores: a place marker { symbol, size }, a line { width, pattern, opacity, arrow }, an area { fill_opacity, outline }.
-const tyStyle = (d) =>
-  tyGeo === "point"
-    ? { symbol: d.symbol, size: d.size, ...(d.symbol === "custom" ? { path: d.path, box: d.box } : {}) }
-    : tyGeo === "river"
-      ? { width: d.width, pattern: d.pattern, opacity: d.opacity }
-      : tyGeo === "line"
-        ? { width: d.width, pattern: d.pattern, opacity: d.opacity, arrow: d.arrow }
-        : { fill_opacity: d.fill, outline: { width: d.width, pattern: d.pattern, opacity: d.opacity } };
-// An SVG (a file the admin chose, or a whole <svg> pasted into the path box) becomes the path and the box of the symbol.
+// The small picture of a shape type: the <img> that shapes.js made, taken over as an element.
+const mrShapeImg = (code) => {
+  const m = /src="([^"]+)"/.exec(shIcon(code)),
+    i = document.createElement("img");
+  i.alt = "";
+  if (m) i.src = m[1];
+  return i;
+};
+function renderTypes() {
+  if (typeof kit === "undefined") return;
+  mrState("more-types", null);
+  const l = $("#lang").value,
+    n = typeUsage(),
+    can = AHM_CONFIG.canTypeAdmin;
+  $("#typeList").replaceChildren(
+    ...Object.keys(TY_GEO)
+      .map((g) => {
+        const rows = types.filter((t) => t.geometry === g).sort((a, b) => typeLabel(a.code, l).localeCompare(typeLabel(b.code, l)));
+        if (!rows.length) return null;
+        const grp = kit.tpl("t-mr-tgroup"),
+          more = grp.querySelector("[data-more]"),
+          all = tyOpenGroups.has(g) || rows.length <= TY_SHOWN + 1,
+          shown = all ? rows : rows.slice(0, TY_SHOWN);
+        kit.fill(grp, { caption: TY_GROUP[g] });
+        kit.list(grp.querySelector("[data-rows]"), shown.map((t) => ({ id: t.code, t })), "t-mr-type", (li, { t }) => {
+          const name = typeLabel(t.code, l);
+          kit.fill(li, { name, kind: TY_KIND[t.geometry], count: n[t.code] || 0 });
+          li.classList.toggle("mr-on", t.code === tyEditing);
+          li.querySelector("[data-icon]").replaceChildren(t.geometry === "point" ? mrCanvas(t.code) : mrShapeImg(t.code));
+          const b = li.querySelector("[data-tyedit]");
+          b.hidden = !can;
+          b.dataset.tyedit = t.code;
+          b.title = b.ariaLabel = "Edit " + name;
+        });
+        more.hidden = rows.length <= TY_SHOWN + 1;
+        more.dataset.more = g;
+        more.textContent = all ? "Show fewer" : "+ " + (rows.length - TY_SHOWN) + " more";
+        return grp;
+      })
+      .filter(Boolean),
+  );
+  $("#tyEmpty").hidden = !!types.length;
+  $("#typeAdmin").hidden = !can;
+  $("#tyRO").hidden = can;
+  $("#tySub").textContent = !can ? "Read only" : types.length + " place, route, area and river types";
+}
+$("#typeList").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-more]");
+  if (!b) return;
+  const g = b.dataset.more;
+  tyOpenGroups.has(g) ? tyOpenGroups.delete(g) : tyOpenGroups.add(g);
+  renderTypes();
+});
+// An SVG (a file the admin chose, or a whole <svg> pasted) becomes the path and the box of the symbol.
 function tyUseSvg(text, from) {
   const r = svgToPath(text),
-    msg = $("#tySvgMsg");
+    msg = $("#tySvgMsg"),
+    say = (t, bad) => {
+      kit.fill(msg, { msg: t });
+      msg.hidden = false;
+      msg.classList.toggle("mr-ok", !bad);
+      msg.querySelector("svg").hidden = !bad;
+      tyBad = !!bad;
+    };
   if (!r.path) {
-    msg.textContent =
+    say(
       r.why === "transform"
         ? "This SVG moves or scales its shapes (transform), which is not supported. Export it again without transforms."
         : r.why === "origin"
           ? "The drawing area (viewBox) of this SVG does not start at 0 0, which is not supported. Export it again with a viewBox that starts at 0 0."
-          : "Nothing to draw in this file. Use a simple one-colour SVG icon (paths, rectangles, circles).";
-    return;
+          : "Nothing to draw in this file. Use a simple one-colour SVG icon (paths, rectangles, circles).",
+      true,
+    );
+    return tyRefresh();
   }
   $("#tyPath").value = r.path;
   $("#tyBox").value = r.box;
-  msg.textContent = from ? "Loaded " + from + "." : "SVG read.";
-  tyValidate();
+  say(from ? "Loaded " + from + "." : "SVG read.", false);
+  tySvgTile(true);
+  tyRefresh();
 }
-const tyNames = () =>
-  [...$("#typeAdmin").querySelectorAll(".pf-name")]
-    .map((r) => ({ lang: r.querySelector(".nl").value, name: r.querySelector(".nn").value.trim() }))
-    .filter((x) => x.name);
-// Save stays off until there is an English name (the code is made from it) when adding, or any name when editing.
-const tyValidate = () => {
-  if (!$("#tyColor")) return; // the form is closed
-  const b = $("#tyAdd");
-  const custom = tyGeo === "point" && $("#tySym").value === "custom";
-  if ($("#tyCustom")) $("#tyCustom").hidden = !custom;
-  if (b) {
-    const d = tyDraft();
-    b.disabled =
-      !(tyEditing ? tyNames().length : tyNames().some((x) => x.lang === "en")) ||
-      (tyGeo !== "point" && !(d.width >= 1 && d.width <= 12 && d.opacity >= 0.1 && d.opacity <= 1)) ||
-      (custom && !(/^\s*[Mm]/.test(d.path) && /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,+\-\s]{2,20000}$/.test(d.path) && d.box >= 8 && d.box <= 2048));
+// The tile of the uploaded SVG symbol of this type (made on first use); select = make it the chosen symbol.
+function tySvgTile(select) {
+  const grid = $("#mr-sheet [data-symbols]");
+  let t = grid.querySelector('[data-symbol="custom"]');
+  if (!t) {
+    t = kit.tpl("t-mr-svgsym");
+    grid.querySelector("[data-upload]").before(t);
   }
-  const pv = $("#tyPrev");
-  if (pv && tyGeo === "point") pv.innerHTML = typeIcon(tyDraft()) + " " + esc($("#tySize").value);
+  if (select) grid.querySelectorAll("[data-symbol]").forEach((x) => x.classList.toggle("ahm-on", x === t));
+  return t;
+}
+const tyReadNames = () => fields.readNames($("#mr-sheet [data-names]"));
+const tyRead = () => {
+  const node = $("#mr-sheet .ahm-style"),
+    d = fields.readStyle(node);
+  if (tyGeo === "point" && d.style.symbol === "custom") {
+    d.style.path = $("#tyPath").value.trim();
+    d.style.box = Number($("#tyBox").value);
+  }
+  return d;
 };
-function tyRenderAdmin(t) {
-  const el = $("#typeAdmin");
-  if (!AHM_CONFIG.canTypeAdmin) {
-    el.innerHTML = '<div class="sn">Only administrators can add a type. Missing one? Ask an administrator.</div>';
+// Everything that depends on the draft: the Save button, the symbol tile of the SVG, the preview.
+function tyRefresh() {
+  const sheet = $("#mr-sheet");
+  if (!$("#tyAdd")) return;
+  let d;
+  try {
+    d = tyRead();
+  } catch (x) {
+    $("#tyAdd").disabled = true;
     return;
   }
-  if (!tyOpen) {
-    el.innerHTML = Object.keys(TY_GEO)
-      .map((g) => `<button data-tynew="${g}" class="wide">+ Add ${TY_GEO[g]} type</button>`)
-      .join("");
-    return;
+  const custom = tyGeo === "point" && d.style.symbol === "custom",
+    names = (() => {
+      try {
+        return tyReadNames();
+      } catch (x) {
+        return [];
+      }
+    })();
+  $("#tyAdd").disabled =
+    !(tyEditing ? names.length : names.some((x) => x.lang === "en")) ||
+    tyBad ||
+    (custom && (!(/^\s*[Mm]/.test(d.style.path) && /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,+\-\s]{2,20000}$/.test(d.style.path) && d.style.box >= 8 && d.style.box <= 2048)));
+  const pv = sheet.querySelector(".mr-prev");
+  if (pv) {
+    kit.fill(pv, { name: (names[0] && names[0].name) || "Name", where: tyGeo === "point" ? "on the map" : "" });
+    if (tyGeo === "point") pv.querySelector("[data-icon]").replaceChildren(mrCanvas({ color: d.color, ...d.style, size: d.style.size }, 28));
+    else {
+      const poly = pv.querySelector("polygon"),
+        o = d.style.outline;
+      poly.setAttribute("fill", d.color);
+      poly.setAttribute("fill-opacity", d.style.fill_opacity);
+      poly.setAttribute("stroke", d.color);
+      poly.setAttribute("stroke-width", o.width);
+      poly.setAttribute("stroke-dasharray", TY_DASH[o.pattern] || "");
+      poly.setAttribute("stroke-linecap", o.pattern === "dotted" ? "round" : "butt");
+    }
   }
-  const names = t && t.names.length ? t.names : [{ lang: "en", name: "" }],
-    st = (t && t.style) || (tyGeo === "point" ? { symbol: "circle", size: 8 } : tyGeo === "river" ? { width: 3, pattern: "solid", opacity: 1 } : tyGeo === "line" ? { width: 2.5, pattern: "solid", opacity: 1, arrow: false } : { fill_opacity: 0.15, outline: { width: 2, pattern: "solid", opacity: 1 } }),
-    ol = tyGeo === "area" ? st.outline || {} : st,
-    pats = `<select id="tyPat" aria-label="Pattern">${TY_PATTERNS.map((p) => `<option${p === (ol.pattern || "solid") ? " selected" : ""}>${p}</option>`).join("")}</select>`,
-    shapeFields =
-      `<div class="label">Pattern</div>${pats}` +
-      `<div class="label">Width</div><input id="tyWid" type="number" min="1" max="12" step="0.5" value="${Number(ol.width) || 2}" aria-label="Width">` +
-      `<div class="label">Opacity</div><input id="tyOpa" type="range" min="0.1" max="1" step="0.05" value="${ol.opacity == null ? 1 : ol.opacity}" aria-label="Opacity">` +
-      (tyGeo === "river"
-        ? ""
-        : tyGeo === "line"
-        ? `<label class="sh-check"><input type="checkbox" id="tyArrow"${st.arrow ? " checked" : ""}> One way (drawn with arrows)</label>`
-        : `<div class="label">Fill</div><input id="tyFill" type="range" min="0" max="0.8" step="0.05" value="${st.fill_opacity == null ? 0.15 : st.fill_opacity}" aria-label="Fill opacity">`);
-  el.innerHTML =
-    `<div class="label">Names</div><div class="pf-names">${names.map((n) => pfRow(n)).join("")}</div>` +
-    `<button type="button" class="pf-add">+ Add another name</button>` +
-    `<div class="sn">${t ? "The code <b>" + esc(t.code) + "</b> never changes." : "The code is made from the English name."}</div>` +
-    (tyGeo !== "point" ? "" : `<div class="label">Symbol</div><select id="tySym">${AHM.map
-      .getSymbols()
-      .map((y) => `<option value="${esc(y.name)}"${y.name === st.symbol ? " selected" : ""}>${esc(y.label)}</option>`)
-      .join("")}<option value="custom"${st.symbol === "custom" ? " selected" : ""}>Custom (SVG path)…</option></select>` +
-    `<div id="tyCustom" hidden><div class="sn">Choose an SVG icon file. It is drawn in the colour above. Simple one-colour icons work best (free ones: game-icons.net, lucide.dev).</div>` +
-    `<input id="tyFile" type="file" accept=".svg,image/svg+xml" aria-label="SVG file"><div id="tySvgMsg" class="sn">${st.path ? "Current symbol kept; choose a file to replace it." : ""}</div>` +
-    `<details><summary>Advanced: path and box</summary><textarea id="tyPath" rows="3" maxlength="60000" spellcheck="false" aria-label="SVG path">${esc(st.path || "")}</textarea>` +
-    `<div class="label">Box</div><input id="tyBox" type="number" min="8" max="2048" step="1" value="${Number(st.box) || 24}" aria-label="Box size"></details></div>`) +
-    `<div class="label">Colour</div><input id="tyColor" type="color" value="${esc((t && t.color) || "#8d6e63").toLowerCase()}" aria-label="Colour">` +
-    (tyGeo === "point" ? `<div class="label">Size</div><input id="tySize" type="range" min="4" max="14" step="0.5" value="${Number(st.size) || 8}" aria-label="Size"> <span id="tyPrev"></span>` : shapeFields) +
-    '<div class="btn-pair"><button id="tyAdd" class="primary" disabled>Save</button><button id="tyCancel">Cancel</button>' +
-    (t ? '<button id="tyDel" title="Remove this type (only when no place or shape uses it)">Remove</button>' : "") +
-    '</div><div id="tyErr" class="sn err-line"></div>';
-  tyValidate();
+  sheet.querySelectorAll("[data-symbol]").forEach((b) => {
+    if (b.dataset.symbol === "custom") b.querySelector("[data-icon]").replaceChildren(mrCanvas({ color: "#425067", symbol: "custom", path: $("#tyPath").value.trim(), box: Number($("#tyBox").value) || 24, size: 8 }, 24));
+    else if (!b.dataset.drawn) {
+      b.dataset.drawn = "1"; // the tiles are drawn once, in the neutral colour of the frames
+      b.querySelector("[data-bind=\"name\"]").replaceChildren(mrCanvas({ color: "#425067", symbol: b.dataset.symbol, size: 8 }, 24));
+    }
+  });
 }
-function tyFill(t) {
-  tyOpen = true;
+function tyOpenEditor(t, geo) {
+  tyGeo = geo;
   tyEditing = t ? t.code : null;
-  if (t) tyGeo = t.geometry;
-  tyRenderAdmin(t);
+  tyBad = false;
+  const name = t ? typeLabel(t.code, $("#lang").value) : "";
+  const f = fields.form(t ? "Edit type · " + name : "New " + TY_GEO[geo] + " type"),
+    body = f.querySelector("[data-body]");
+  mrSheet.open(f); // in the page first: the parts below look each other up by id
+  // names
+  const names = kit.tpl("t-mr-names"),
+    list = names.querySelector("[data-names]");
+  fields.nameList(list, languages, t && t.names.length ? t.names : [{ lang: "en", name: "" }]);
+  names.querySelector('[data-act="addname"]').addEventListener("click", () => {
+    fields.nameAdd(list);
+    tyRefresh();
+  });
+  kit.fill(names, { codeNote: t ? "The code " + t.code + " never changes." : "The code is made from the English name." });
+  // symbol / colour / size / line / area
+  const st = (t && t.style) || (geo === "point" ? { symbol: "circle", size: 8 } : geo === "area" ? { fill_opacity: 0.15, outline: { width: 2, pattern: "solid", opacity: 1 } } : geo === "river" ? { width: 3, pattern: "solid", opacity: 1 } : { width: 2.5, pattern: "solid", opacity: 1, arrow: false });
+  const syms = geo === "point" ? AHM.map.getSymbols().map((y) => ({ name: y.name })) : [],
+    style = fields.styleEditor(geo, (t && t.color) || "#8d6e63", st, syms);
+  const cap = kit.tpl("t-mr-cap");
+  kit.fill(cap, { text: { point: "Colour and size", line: "Line", area: "Area", river: "Line" }[geo] });
+  style.prepend(cap);
+  body.append(names, style);
+  if (geo === "point") {
+    const grid = style.querySelector("[data-symbols]");
+    grid.append(kit.tpl("t-mr-upsym"));
+    const hint = kit.tpl("t-mr-hint");
+    kit.fill(hint, { text: "Built-in symbols, then your uploaded SVG ones. Upload a simple one-colour SVG; it is drawn in the colour below." });
+    grid.after(hint);
+    const zone = kit.tpl("t-mr-svgzone");
+    zone.hidden = !(st.path || st.symbol === "custom");
+    grid.parentElement.append(zone);
+    if (st.path) {
+      $("#tyPath").value = st.path;
+      $("#tyBox").value = Number(st.box) || 24;
+      kit.fill(zone, {});
+      tySvgTile(st.symbol === "custom");
+    }
+    kit.on(grid, "click", "[data-upload]", () => (zone.hidden = !zone.hidden));
+    kit.on(grid, "click", "[data-symbol]", () => (tyBad = false));
+    zone.addEventListener("change", (e) => {
+      const file = e.target.id === "tyFile" && e.target.files[0];
+      if (file) file.text().then((x) => tyUseSvg(x, file.name));
+    });
+    zone.addEventListener("paste", (e) => {
+      const x = e.clipboardData && e.clipboardData.getData("text");
+      if (x && /<svg/i.test(x)) {
+        e.preventDefault();
+        tyUseSvg(x);
+      }
+    });
+    zone.querySelector("#tyPath").addEventListener("input", (e) => {
+      if (/<svg/i.test(e.target.value)) tyUseSvg(e.target.value);
+      else {
+        tyBad = false;
+        if (e.target.value.trim()) tySvgTile(true);
+        tyRefresh();
+      }
+    });
+  }
+  if (geo === "point" || geo === "area") {
+    const pv = kit.tpl("t-mr-prev");
+    pv.querySelectorAll("[data-prev]").forEach((x) => (x.hidden = x.dataset.prev !== geo));
+    body.append(pv);
+  }
+  const err = kit.tpl("t-mr-err");
+  err.id = "tyErr";
+  body.append(err);
+  f.querySelector('[data-act="save"]').id = "tyAdd";
+  f.querySelector('[data-act="cancel"]').id = "tyCancel";
+  if (t) {
+    const del = kit.tpl("t-mr-trash"),
+      used = typeUsage()[t.code] || 0;
+    del.title = del.ariaLabel = used ? "Used by " + used + " places and shapes: change them first." : "Remove this type";
+    del.disabled = !!used;
+    f.append(del);
+  }
+  f.addEventListener("input", tyRefresh);
+  f.addEventListener("change", tyRefresh);
+  f.addEventListener("click", () => setTimeout(tyRefresh));
+  f.addEventListener("submit", (e) => e.preventDefault());
+  tyRefresh();
   renderTypes();
 }
-function tyClose() {
-  tyOpen = false;
+function tyCloseEditor() {
   tyEditing = null;
-  tyRenderAdmin();
+  mrSheet.close();
   renderTypes();
 }
 // The dictionary changed (or was loaded): the map draws from it, the filters, lists and the place form follow.
@@ -256,49 +374,40 @@ async function tyPost(url, body) {
   if (!r.ok) throw Error("Save failed: " + (j.error || r.status));
   return j;
 }
-tyRenderAdmin();
-placeFormWire($("#typeAdmin")); // the add / move up / remove buttons of the name rows
-$("#typeAdmin").addEventListener("input", (e) => {
-  if (e.target.id === "tyPath" && /<svg/i.test(e.target.value)) tyUseSvg(e.target.value);
-  else tyValidate();
-});
-$("#typeAdmin").addEventListener("change", (e) => {
-  const f = e.target.id === "tyFile" && e.target.files[0];
-  if (f) f.text().then((t) => tyUseSvg(t, f.name));
-});
-$("#typeAdmin").addEventListener("change", tyValidate);
-$("#typeAdmin").addEventListener("click", tyValidate);
+const tyShowErr = (msg) => kit.fill($("#tyErr"), { msg });
 $("#typeList").addEventListener("click", (e) => {
   const b = e.target.closest("[data-tyedit]");
-  if (b) tyFill(types.find((t) => t.code === b.dataset.tyedit));
+  if (!b) return;
+  const t = types.find((x) => x.code === b.dataset.tyedit);
+  tyOpenEditor(t, t.geometry);
 });
-$("#typeAdmin").addEventListener("click", async (e) => {
-  const nb = e.target.closest("[data-tynew]");
-  if (nb) {
-    tyGeo = nb.dataset.tynew;
-    return tyFill(null);
-  }
-  if (e.target.id === "tyCancel") return tyClose();
-  const err = $("#tyErr");
+$("#typeAdmin").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-tynew]");
+  if (b) tyOpenEditor(null, b.dataset.tynew);
+});
+$("#mr-sheet").addEventListener("click", async (e) => {
+  if (!$("#tyAdd")) return; // another sheet (the overlay editor) is open
+  if (e.target.closest("#tyCancel")) return tyCloseEditor();
   try {
-    if (e.target.id === "tyDel") {
-      if (!confirm("Remove the type “" + typeLabel(tyEditing, $("#lang").value) + "”?")) return;
-      err.textContent = "Removing…";
+    if (e.target.closest("[data-del]")) {
+      if (!(await dialogs.confirm("remove-type", { name: typeLabel(tyEditing, $("#lang").value) }))) return;
+      tyShowErr("Removing…");
       await tyPost(AHM_CONFIG.url.typeDelete, { code: tyEditing });
-    } else if (e.target.id === "tyAdd") {
-      err.textContent = "Saving…";
-      const d = tyDraft();
-      await tyPost(AHM_CONFIG.url.typeSave, {
-        ...(tyEditing ? { code: tyEditing, edit: true } : {}),
-        geometry: tyGeo,
-        names: tyNames(),
-        color: d.color,
-        style: tyStyle(d),
-      });
+    } else if (e.target.closest("#tyAdd")) {
+      tyShowErr("Saving…");
+      const d = tyRead(),
+        old = types.find((x) => x.code === tyEditing);
+      if (tyGeo === "area" && old && old.style && old.style.outline && old.style.outline.opacity != null) d.style.outline.opacity = old.style.outline.opacity;
+      await tyPost(AHM_CONFIG.url.typeSave, { ...(tyEditing ? { code: tyEditing, edit: true } : {}), geometry: tyGeo, names: tyReadNames(), color: d.color, style: d.style });
     } else return;
     tySet(await loadTypes());
-    tyClose();
+    tyCloseEditor();
   } catch (x) {
-    err.textContent = x.message;
+    tyShowErr(x.message);
   }
 });
+
+// A range is blue up to its thumb: --mr-fill follows the value (typed here; set by the code of the 3D view and overlays too).
+const mrFill = (r) => r.style.setProperty("--mr-fill", ((r.value - r.min) / (r.max - r.min)) * 100 + "%");
+$("#tab-more").addEventListener("input", (e) => e.target.type === "range" && mrFill(e.target));
+$("#tab-more").addEventListener("toggle", () => $("#tab-more").querySelectorAll("input[type=range]").forEach(mrFill), true); // a card that opens: its sliders were set while it was closed

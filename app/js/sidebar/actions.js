@@ -1,19 +1,30 @@
 // Sidebar actions: directions, the actions of the point card, the geocoder search, add / edit a place or a note.
 // ---- directions ----
-const ptName = (p) =>
-  p
-    ? p.name || p.lat.toFixed(4) + ", " + p.lon.toFixed(4)
-    : "—  choose on the map";
+const ptName = (p) => (p ? p.name || p.lat.toFixed(4) + ", " + p.lon.toFixed(4) : "— choose on the map");
+let rtRes = null; // { km, min } of the route that is drawn, or null
 function renderRoute() {
-  $("#rFrom").textContent = ptName(rt.a);
-  $("#rTo").textContent = ptName(rt.b);
-  $("#rInfo").textContent = rtInfo;
+  [["#rFrom", rt.a], ["#rTo", rt.b]].forEach(([id, p]) => {
+    $(id).textContent = ptName(p);
+    $(id).classList.toggle("mr-empty-pt", !p);
+  });
+  $("#rInfo").textContent = rtRes ? "" : rtInfo;
+  $("#rInfo").classList.toggle("mr-err", rtInfo.startsWith("No route found"));
+  $("#rInfo").hidden = !$("#rInfo").textContent;
+  $("#rStats").hidden = !rtRes;
+  if (rtRes) {
+    const m = Math.round(rtRes.min);
+    $("#rKm").textContent = rtRes.km >= 100 ? Math.round(rtRes.km) : rtRes.km.toFixed(1);
+    $("#rHours").hidden = m < 60;
+    $("#rH").textContent = Math.floor(m / 60);
+    $("#rM").textContent = m % 60;
+  }
 }
 function markers() {
   AHM.map.setRouteMarkers(rt);
 }
 function setPt(k, p) {
   rt[k] = p;
+  rtRes = null;
   markers();
   tab("route");
   if (rt.a && rt.b) doRoute();
@@ -26,27 +37,31 @@ function setPt(k, p) {
   }
 }
 function doRoute() {
+  rtRes = null;
   rtInfo = "Routing…";
   renderRoute();
   route(rt.a, rt.b)
     .then((r) => {
       AHM.map.setRoute(r.geometry);
+      rtRes = { km: r.km, min: r.min };
       rtInfo = `${r.km.toFixed(1)} km · ${Math.round(r.min)} min by car`;
       renderRoute();
       AHM.map.fitRoute(r.geometry.coordinates);
     })
     .catch((e) => {
-      rtInfo = "No route found (" + e.message + ")";
+      rtInfo = "No route found (" + e.message + ").";
       renderRoute();
     });
 }
 $("#rSwap").onclick = () => {
   [rt.a, rt.b] = [rt.b, rt.a];
+  rtRes = null;
   markers();
   rt.a && rt.b ? doRoute() : renderRoute();
 };
 $("#rClear").onclick = () => {
   rt = { a: null, b: null };
+  rtRes = null;
   rtInfo = "";
   markers();
   AHM.map.setRoute(null);

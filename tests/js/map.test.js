@@ -12,7 +12,31 @@
 //   - the map listens to AHM.on('state:selected', ({ value }) => ...) and reads AHM.state for nothing else
 //     (AHM.state.get('selected') at most), emits no event of its own and adds no AHM.map command.
 const { test, ok, eq, J } = require('./lib/harness');
-const { load } = require('./lib/ctx');
+const ctxLib = require('./lib/ctx');
+// The controls of the Maps card are cloned from templates (kit.tpl) and appended: the vm page has no templates, so these
+// stand-ins make plain recorders of them (what the template was, what it was filled with). Real templates: ui-more.test.js.
+const KIT_PRE = `
+  const kit = {
+    tpl(id) { const n = document.createElement('x'); n.tplId = id; const c = {}; n.querySelector = (s) => (c[s] ||= document.createElement('x')); n.querySelectorAll = () => []; return n; },
+    fill(n, m) { n.filled = m; n.textContent = String(Object.values(m)[0]); return n; },
+    show(n, on) { n.hidden = !on; return n; },
+  };
+  (() => { const q = document.querySelector; document.querySelector = (s) => { const e = q(s); if (!e.append) { e.append = (...n) => e.children.push(...n); e.replaceChildren = (...n) => { e.children = n; }; } return e; }; })();
+`;
+const load = (scripts, pre = '') => ctxLib.load(scripts, KIT_PRE + pre);
+
+
+/** What the recorded children of a container stand for (thumbs, options, ticks, stop rows), as a string the old regexes can read. */
+const inner = (p, sel) =>
+  (p.el(sel).children || [])
+    .map((n) => {
+      if (n.tplId === 't-mr-thumb') return `<option value="${n.querySelector('input').value}">${n.filled.label}</option>`;
+      if (n.tplId === 't-mr-opt') return `<option value="${n.value}">${n.textContent}</option>`;
+      if (n.tplId === 't-mr-tick') return `<span>${n.textContent}</span>`;
+      if (n.tplId === 't-mr-stop') return `data-k="m" value="${n.querySelector('[data-k="m"]').value}" value="${n.querySelector('[data-k="c"]').value}"`;
+      return '';
+    })
+    .join('');
 
 const HL = 'ahm-highlight';
 const CONFIG = {
@@ -1164,7 +1188,7 @@ const withTerrain = (terrain) => (p) => {
 test('map: relief: without terrain tiles in the config there is no relief entry and nothing is added', () => {
   for (const terrain of [undefined, { ...TERRAIN, tiles: [] }]) {
     const { p, ml, switchBasemap } = boot({ before: withTerrain(terrain) });
-    ok(!/relief/i.test(p.el('#basemap').innerHTML), 'no entry in the dropdown');
+    ok(!/relief/i.test(inner(p, '#basemap')), 'no entry in the dropdown');
     switchBasemap('@relief');
     ok(!ml.rec.sources['ahm-terrain'] && !ml.rec.layers.some((l) => l.id === 'ahm-relief'), 'no source, no layer');
   }
@@ -1172,8 +1196,8 @@ test('map: relief: without terrain tiles in the config there is no relief entry 
 
 test('map: relief: with tiles the dropdown has "Map + relief"; the source and layer appear only when chosen', () => {
   const { p, ml, switchBasemap } = boot({ before: withTerrain(TERRAIN) });
-  ok(p.el('#basemap').innerHTML.includes('<option value="@relief">Map + relief</option>'), p.el('#basemap').innerHTML);
-  ok(p.el('#basemap').innerHTML.includes('value="sat1"'), 'the satellite entry stays');
+  ok(inner(p, '#basemap').includes('<option value="@relief">Map + relief</option>'), inner(p, '#basemap'));
+  ok(inner(p, '#basemap').includes('value="sat1"'), 'the satellite entry stays');
   ok(!ml.rec.sources['ahm-terrain'], 'no source before the choice (no tile request)');
   switchBasemap('@relief');
   const src = ml.rec.sources['ahm-terrain'].def;
@@ -1226,7 +1250,7 @@ test('map: relief: the shipped config uses the AWS terrarium tiles (no own hosti
   eq(15, t.maxzoom, 'the AWS tiles go up to zoom 15');
   ok(/Mapzen|Tilezen/.test(t.attribution) && /USGS/.test(t.attribution), t.attribution);
   const { p, switchBasemap, ml } = boot({ before: withTerrain(t) });
-  ok(p.el('#basemap').innerHTML.includes('Map + relief'), 'the entry is there by default');
+  ok(inner(p, '#basemap').includes('Map + relief'), 'the entry is there by default');
   ok(!ml.rec.sources['ahm-terrain'], 'but nothing is requested before it is chosen');
   switchBasemap('@relief');
   eq(t.tiles, ml.rec.sources['ahm-terrain'].def.tiles);
@@ -1339,12 +1363,12 @@ test('map: relief colours: the controls switch colour and shading, set the stren
 
 test('map: relief colours: the legend shows the ramp in metres and the ramp list comes from the config', () => {
   const { p, change } = bootRelief();
-  ok(/Low/.test(p.el('#relief-ramp').innerHTML) && /Alt/.test(p.el('#relief-ramp').innerHTML), p.el('#relief-ramp').innerHTML);
+  ok(/Low/.test(inner(p, '#relief-ramp')) && /Alt/.test(inner(p, '#relief-ramp')), inner(p, '#relief-ramp'));
   eq('low', p.el('#relief-ramp').value);
   ok(/linear-gradient/.test(p.el('#relief-legend').style.background), p.el('#relief-legend').style.background);
-  ok(/0 m|>0</.test(p.el('#relief-ticks').innerHTML) && /3000/.test(p.el('#relief-ticks').innerHTML), p.el('#relief-ticks').innerHTML);
+  ok(/0 m|>0</.test(inner(p, '#relief-ticks')) && /3000/.test(inner(p, '#relief-ticks')), inner(p, '#relief-ticks'));
   change('#relief-ramp', { value: 'alt' });
-  ok(/>100</.test(p.el('#relief-ticks').innerHTML), 'the legend follows the ramp: ' + p.el('#relief-ticks').innerHTML);
+  ok(/>100( m)?</.test(inner(p, '#relief-ticks')), 'the legend follows the ramp: ' + inner(p, '#relief-ticks'));
 });
 
 test('map: relief colours: moving the mouse shows the height in metres read from the Terrarium tile', async () => {
@@ -1363,7 +1387,7 @@ test('map: relief colours: moving the mouse shows the height in metres read from
   ml.fire('mousemove', { lngLat: { lng: 44.5, lat: 40 } });
   await new Promise((r) => setTimeout(r, 0));
   eq(['https://forum.example/ahm-terrain/v1/7/79/48.webp'], urls, 'tile of lng 44.5, lat 40 at zoom 7');
-  eq('Height: 1,000 m', p.el('#relief-height').textContent);
+  eq('1,000 m', p.el('#relief-height').textContent);
   ml.fire('mousemove', { lngLat: { lng: 44.51, lat: 40.01 } });
   await new Promise((r) => setTimeout(r, 0));
   eq(1, urls.length, 'the same tile is not fetched twice');
@@ -1391,10 +1415,10 @@ test('map: relief credit: the terrain attribution is plain visible text while re
   ok(p.el('#base-credit').hidden, 'and on the plain map');
 });
 
-test('map: relief credit: the element sits in the page under the base-map select and wraps on a phone (index.html, map.css)', () => {
+test('map: relief credit: the element sits in the page under the base-map choice and wraps on a phone (index.html, map.css)', () => {
   const fs = require('fs');
   const html = fs.readFileSync(require('path').join(__dirname, '..', '..', 'app', 'index.html'), 'utf8');
-  ok(/<select id="basemap"><\/select>\s*<div id="base-credit" hidden><\/div>/.test(html), 'under the select, hidden at first');
+  ok(/<div id="basemap"[^>]*><\/div>\s*<p id="base-credit"[^>]*hidden><\/p>/.test(html), 'under the base-map choice, hidden at first');
   const css = fs.readFileSync(require('path').join(__dirname, '..', '..', 'app', 'css', 'map.css'), 'utf8');
   ok(/#base-credit\s*\{[^}]*overflow-wrap:\s*anywhere/.test(css), 'long words and URLs wrap');
   ok(!/#base-credit\s*\{[^}]*(white-space:\s*nowrap|width:\s*\d+px)/.test(css), 'no fixed width, no nowrap');
@@ -1416,7 +1440,7 @@ test('map: relief colours: the ramp is stretched over the heights in view (2nd t
   eq(2304, e[7], 'highest stop at the highest height in view');
   ok(Math.abs(e[5] - (500 + (1000 / 3000) * 1804)) < 0.01, 'the middle stop keeps its relative place: ' + e[5]);
   eq('#00ff00', e[4]);
-  ok(/>500</.test(p.el('#relief-ticks').innerHTML) && />2304</.test(p.el('#relief-ticks').innerHTML), p.el('#relief-ticks').innerHTML);
+  ok(/>500( m)?</.test(inner(p, '#relief-ticks')) && />2304( m)?</.test(inner(p, '#relief-ticks')), inner(p, '#relief-ticks'));
   ok(ml.rec.handlers.moveend && ml.rec.handlers.moveend.length, 'the map listens to moveend');
 });
 
@@ -1437,25 +1461,25 @@ const lastColor = (layer) => layer('ahm-relief-color').paint['color-relief-color
 
 test('map: ramp editor: editing a stop makes a "custom" ramp, adding and removing stops works, reset goes back', () => {
   const { p, layer, handlers, change } = bootRelief();
-  ok(/data-k="m"[^>]*value="0"/.test(p.el('#relief-stops').innerHTML) && /value="#00ff00"/.test(p.el('#relief-stops').innerHTML), p.el('#relief-stops').innerHTML);
+  ok(/data-k="m"[^>]*value="0"/.test(inner(p, '#relief-stops')) && /value="#00ff00"/.test(inner(p, '#relief-stops')), inner(p, '#relief-stops'));
   handlers['#relief-stops:input']({ target: { dataset: { i: '1', k: 'm' }, value: '1200' } });
   eq('__custom', p.el('#relief-ramp').value);
-  ok(/Custom/.test(p.el('#relief-ramp').innerHTML), 'the list has the custom entry');
+  ok(/Custom/.test(inner(p, '#relief-ramp')), 'the list has the custom entry');
   eq(['interpolate', ['linear'], ['elevation'], 0, '#00ff00', 1200, '#ffff00', 3000, '#ffffff'], lastColor(layer), 'the edited height is used');
-  handlers['#relief-stops:input']({ target: { dataset: { i: '1', k: 'c' }, value: '#123456' } });
+  handlers['#relief-stops:input']({ target: { dataset: { i: '1', k: 'c' }, value: '#123456', closest: () => ({ querySelector: () => ({}) }) } });
   eq('#123456', lastColor(layer)[6]);
   handlers['#relief-add']({});
-  eq(4, (p.el('#relief-stops').innerHTML.match(/data-k="m"/g) || []).length, 'a stop was added');
+  eq(4, (inner(p, '#relief-stops').match(/data-k="m"/g) || []).length, 'a stop was added');
   handlers['#relief-stops:click']({ target: { dataset: { act: 'del', i: '3' } } });
   handlers['#relief-stops:click']({ target: { dataset: { act: 'del', i: '2' } } });
   handlers['#relief-stops:click']({ target: { dataset: { act: 'del', i: '1' } } });
-  eq(2, (p.el('#relief-stops').innerHTML.match(/data-k="m"/g) || []).length, 'two stops stay: no deleting below two');
+  eq(2, (inner(p, '#relief-stops').match(/data-k="m"/g) || []).length, 'two stops stay: no deleting below two');
   handlers['#relief-reset']({});
   eq('low', p.el('#relief-ramp').value);
-  eq(3, (p.el('#relief-stops').innerHTML.match(/data-k="m"/g) || []).length);
-  ok(!/Custom/.test(p.el('#relief-ramp').innerHTML));
+  eq(3, (inner(p, '#relief-stops').match(/data-k="m"/g) || []).length);
+  ok(!/Custom/.test(inner(p, '#relief-ramp')));
   change('#relief-ramp', { value: 'alt' });
-  ok(/value="100"/.test(p.el('#relief-stops').innerHTML), 'the editor shows the chosen ramp');
+  ok(/value="100"/.test(inner(p, '#relief-stops')), 'the editor shows the chosen ramp');
 });
 
 test('map: settings are saved in localStorage and read again at the start', () => {
@@ -1583,8 +1607,8 @@ test('map: height profile: clicks on the map add points, the length and heights 
   click(44.1, 40.1);
   await idle();
   const info = p.el('#relief-profile-info').textContent;
-  ok(/19\.\d km/.test(info) || /18\.\d km/.test(info), 'length of two legs of ~11.1 km and ~8.5 km: ' + info);
-  ok(/min 1,000 m/.test(info) && /max 1,000 m/.test(info), info);
+  ok(/Length (19|20) km/.test(info), 'length of two legs of ~11.1 km and ~8.5 km: ' + info);
+  ok(/^Length \d+ km · up 0 m · down 0 m/.test(info), info);
   eq(3, ml.rec.sources['ahm-profile'].data.features.filter((f) => f.geometry.type === 'Point').length, 'three points');
   handlers['#relief-profile-clear']({});
   eq('', p.el('#relief-profile-info').textContent);

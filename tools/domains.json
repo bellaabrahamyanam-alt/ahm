@@ -14,6 +14,7 @@
       "app/css/shapes.css",
       "app/css/explore.css",
       "app/css/layers.css",
+      "app/css/more.css",
       "tests/js/ui-rules.test.js",
       "tests/js/ui-explore.test.js",
       "tests/js/ui-layers.test.js",
