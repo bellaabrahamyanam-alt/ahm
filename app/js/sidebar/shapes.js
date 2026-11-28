@@ -197,6 +197,7 @@ function shRenderList() {
       eye.dataset.vis = s.id;
       eye.checked = !sh.hidden.has(s.id);
       if (sh.open === s.id && shOnTab() && !sh.form) shExpand(li, s);
+      else if (sh.form && sh.formNode && sh.form.id === s.id) shFormInRow(li);
       return li;
     })
   );
@@ -272,6 +273,13 @@ function shExpand(li, s) {
   const body = li.querySelector('.bd-body');
   li.classList.add('bd-open');
   body.replaceChildren(shCardBody(s));
+  body.hidden = false;
+}
+/** The form of Edit details takes the place of the card in its row. */
+function shFormInRow(li) {
+  const body = li.querySelector('.bd-body');
+  li.classList.add('bd-open');
+  body.replaceChildren(sh.formNode);
   body.hidden = false;
 }
 function shFold(li) {
@@ -377,7 +385,8 @@ function shCardBody(s) {
 function shRenderView() {
   const s = sh.open && shapeById(sh.open);
   if (!(rts.open && curTab === 'routes')) AHM.map.highlightShape(s && shOnTab() ? s.id : null); // a route card owns the highlight (routes.js)
-  const li = s && shOnTab() && !sh.form ? $(`#shList li[data-sid=\"${s.id}\"]`) : null;
+  if (sh.form) return; // the form (in its row or full view) owns the row
+  const li = s && shOnTab() ? $(`#shList li[data-sid=\"${s.id}\"]`) : null;
   document.querySelectorAll('#shList .bd-open').forEach((x) => x !== li && shFold(x));
   if (li) {
     shExpand(li, s);
@@ -469,8 +478,7 @@ $('#tab-shapes').addEventListener('click', async (e) => {
 $('#tab-shapes').addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]');
   if (!b || !sh.form) return;
-  if (b.dataset.act === 'addname') (fields.nameAdd($('#shForm [data-names]'), $('#lang').value), shPeriodMark());
-  else if (b.dataset.act === 'period') setTimeout(shPeriodMark);
+  if (b.dataset.act === 'addname') fields.nameAdd($('#shForm [data-names]'), $('#lang').value);
   else if (b.dataset.act === 'srcadd') shAddSource();
 });
 $('#tab-shapes').addEventListener('submit', (e) => e.preventDefault());
@@ -541,19 +549,11 @@ async function shAddSource() {
     err.textContent = e.message;
   }
 }
-/** A name's Period row shows only when it has a period or is being edited; a clock button in the name row opens it (s033 shows no Period row). */
-function shPeriodMark() {
-  document.querySelectorAll('#shForm .ahm-name').forEach((r) => {
-    const p = r._period || {},
-      body = r.querySelector('[data-period-body]');
-    r.toggleAttribute('data-per', !!(p.from || p.to || (body && !body.hidden)));
-    if (!r.querySelector('.bd-pbtn')) r.querySelector('[data-act="up"]').before(kit.tpl('t-bd-pbtn'));
-  });
-}
 function shOpenForm(f) {
   sh.form = f;
   const l = $('#lang').value,
     prev = f.prevId && shapeById(f.prevId),
+    inline = !!f.id && !prev,
     names = f.names && f.names.length ? f.names : [{ lang: l || 'en', name: '' }],
     v = kit.tpl('t-bd-formview'),
     q = (x) => v.querySelector(x);
@@ -561,6 +561,7 @@ function shOpenForm(f) {
     title: prev ? 'New version of “' + shapeName(prev, l) + '”' : f.id ? 'Edit “' + shapeName(f, l) + '”' : sh.mode === 'rivers' ? 'New river' : f.kind === 'area' ? 'New border (area)' : 'New border (line)',
     sub: prev ? `Move the points on the map, then save with the dates when this shape was true. “${shapeWhen(prev) || 'no dates'}” stays as it is.` : f.id ? 'Names, type, dates and sources. The outline is changed with Edit shape.' : 'Name it, choose a type and give the dates it was true.',
     save: prev ? 'Save version' : 'Save',
+    langhint: prev ? '' : LANG_HINT,
   });
   fields.nameList(q('[data-names]'), languages.map((x) => ({ code: x.code, name: langName(x.code) })), names);
   const cur = f.type || shTypeList()[0] || 'territory';
@@ -575,8 +576,20 @@ function shOpenForm(f) {
   q('[data-to]').append(sh.formRefs.to);
   kit.show(q('[data-closeprev]'), !!(prev && !prev.date_to));
   q('.pf-cert').value = f.certainty || '';
-  shView(v);
-  shPeriodMark();
+  if (inline) {
+    // s007: editing happens inside the open card; Save / Cancel take the pinned slot of Add border
+    const bar = q('.bd-bar'),
+      head = kit.tpl('t-bd-edithead');
+    kit.fill(head, { title: sh.mode === 'rivers' ? 'Edit river' : 'Edit border' });
+    q('.bd-headcard').replaceWith(head);
+    bar.remove();
+    sh.formNode = v;
+    shView(null);
+    shRenderList();
+    $('#shAdd').replaceChildren(bar);
+    const row = $(`#shList li[data-sid="${f.id}"]`);
+    if (row) row.scrollIntoView({ block: 'start' });
+  } else shView(v);
   shSrcOpts(f.sources || []);
   tab(sh.mode === 'rivers' ? 'rivers' : 'shapes');
   const n = $('#shForm [data-value=\"name\"]');
@@ -614,6 +627,7 @@ async function shSaveForm() {
       if (end) await postJSON(shUrl().shapeSave, shBody(prev, { date_to: end }));
     }
     sh.form = null;
+    sh.formNode = null;
     shRenderAdd();
     AHM.map.showPreview(null);
     await shReload();
@@ -626,6 +640,7 @@ function shCancelForm() {
   if (!sh.form) return;
   const back = sh.form.prevId;
   sh.form = null;
+  sh.formNode = null;
   shRenderAdd();
   AHM.map.showPreview(null);
   shRenderView();

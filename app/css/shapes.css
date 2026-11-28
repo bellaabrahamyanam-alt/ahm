@@ -228,7 +228,6 @@
 #shForm > .bd-ev { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.4rem; }
 #shForm > .ahm-hint { margin-top: 0.25rem; }
 /* the form as in s033: dates (segmented control, format + value row, input + era), names without the empty Period row */
-#shForm .ahm-name:not([data-per]) [data-period] { display: none; }
 #shForm .ahm-date { display: grid; grid-template-columns: auto 1fr; gap: 0.6rem; align-items: center; }
 #shForm .ahm-modes { grid-column: 1 / -1; display: flex; }
 #shForm .ahm-modes > * { flex: 1; }
@@ -243,7 +242,13 @@
 #shForm .ahm-pill:not([aria-pressed="true"]), #shForm .ahm-more > summary { border: 0; background: color-mix(in oklab, var(--color-base-content) 9%, transparent); color: var(--color-base-content); box-shadow: none; }
 #shForm .ahm-more > summary { color: var(--color-primary); font-weight: 700; }
 #shForm .ahm-name input[data-value="name"] { height: 2.5rem; border-radius: 0.6rem; background: color-mix(in oklab, var(--color-base-content) 7%, var(--color-base-100)); border-color: transparent; }
-#shForm [data-names] > .ahm-name:only-child :is([data-act="up"], [data-act="del"], [data-act="remove"]) { display: none; }
+#shForm [data-names] > .ahm-name:first-child [data-act="up"] { display: none; }
 #shForm .ahm-fmt > summary { border: 0; background: transparent; color: var(--color-primary); font-weight: 700; padding-inline: 0.25rem; }
 #shForm .ahm-pill, #shForm .ahm-more > summary { border-radius: 999px; }
 #shForm > .bd-cap { margin-top: 0.5rem; }
+.bd-edittitle { margin: 0; font-size: 1.05rem; font-weight: 700; }
+.bd-body > .bd-view { padding-top: 0.5rem; border-top: 1px solid var(--color-base-300); }
+.bd-edittitle { color: var(--color-base-content); font-family: inherit; }
+#shForm [data-type] .ahm-pill-row { flex-wrap: wrap; overflow: visible; }
+#shForm [data-type] .ahm-more { display: none !important; }
+.bd-open, .bd-headcard { background: color-mix(in oklab, white 45%, var(--color-base-100)); }

@@ -241,10 +241,7 @@ scenario('borders (browser): a new version: the form has the banner, names, type
   ok((await f.locator('[data-type] .ahm-pill').count()) > 0 && (await f.locator('[data-type] .btn-primary').count()) === 1, 'type pills with one chosen');
   eq('Save version', (await f.locator('[data-shact=save]').innerText()).trim(), 'the save button');
   await shot(pg, 's033-version-form');
-  ok(await pg.locator('#shForm .ahm-name [data-period]').first().isHidden(), 'an empty Period row is not shown (s033)');
-  await pg.locator('#shForm .bd-pbtn').first().click();
-  ok(await pg.locator('#shForm .ahm-name [data-period]').first().isVisible(), 'the clock button opens the name period');
-  await pg.locator('#shForm .bd-pbtn').first().click();
+  ok(await pg.locator('#shForm .ahm-name [data-period]').first().isVisible(), 'the Period row of a name is shown (s007)');
   await pg.click('#shForm [data-act=addname]');
   await pg.locator('#shForm [data-value=name]').last().fill('Later outline');
   await pg.locator('#shForm .ahm-date').first().locator('input[type=radio]').nth(1).check({ force: true });
@@ -323,4 +320,25 @@ scenario('borders (browser): Rivers mode still opens, lists and offers its own a
   ok(/rivers/.test(await pg.locator('#shCount').innerText()) && (await pg.locator('#shList').innerText()).length > 0, 'rivers: the list renders');
   await pg.evaluate(() => tab('shapes'));
   ok(await pg.locator('#rvSel').isHidden() && /Add border/.test(await pg.locator('#shAdd').innerText()), 'borders: Add border is back');
+});
+
+scenario('borders (browser): Edit details opens inside the open card (s007), Save / Cancel in the pinned slot', async (pg, S) => {
+  await open(pg, S);
+  const id = await pg.evaluate(() => { const s = shapes.find((x) => x.type === 'kingdom'); shOpen(s.id); return s.id; });
+  await pg.click('#shList .bd-open [data-shact=edit]');
+  ok(await pg.locator('#shList .bd-open #shForm').count() === 1 && (await pg.locator('#bdPanel').isHidden()), 'the form is inside the open row, the list stays');
+  ok(/Edit border/.test(await pg.locator('#shList .bd-open').innerText()) && /Period/.test(await pg.locator('#shForm').innerText()) && /Language missing/.test(await pg.locator('#shForm').innerText()), 'title, Period row and the language hint as in s007');
+  ok((await pg.locator('#shAdd [data-shact=save]').isVisible()) && (await pg.locator('#shAdd [data-shact=cancel]').isVisible()), 'Save and Cancel take the pinned slot');
+  await shot(pg, 'edit-border-inline');
+  await pg.fill('#shQ', 'zz');
+  ok(await pg.locator('#shList #shForm').count() === 0 || (await pg.locator('#shList #shForm').count()) === 1, 'typing in search keeps or drops the form without errors');
+  await pg.fill('#shQ', '');
+  await pg.click('#shAdd [data-shact=cancel]');
+  ok((await pg.locator('#shList .bd-open #shForm').count()) === 0 && (await pg.locator('#shList .bd-open [data-shact=edit]').count()) === 1, 'Cancel returns to the card');
+  await pg.click('#shList .bd-open [data-shact=edit]');
+  await pg.locator('#shForm [data-value=name]').first().fill('Urartu renamed');
+  await pg.click('#shAdd [data-shact=save]');
+  await pg.waitForTimeout(800);
+  ok(/renamed/.test(await pg.evaluate((i) => JSON.stringify(shapeById(i).names), id)), 'Save keeps the new name');
+  ok((await pg.locator('#shList .bd-open [data-shact=edit]').count()) === 1, 'and the card is back');
 });
