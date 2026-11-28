@@ -205,11 +205,13 @@ scenario('layers ui: form (s088): add with names, description, category, dates, 
   eq('190', await f.locator('[data-from] [data-f=y]').inputValue(), 'clicking the year box keeps the focus: the digits are typed');
   ok(/190 BCE/.test(await f.locator('[data-from] [data-bind=preview]').innerText()), 'the preview shows the era: 190 BCE');
   await f.locator('[data-from] .ahm-fmt > summary').click();
+  ok(await f.locator('[data-from] [data-menu]').evaluate((m) => { const r = m.getBoundingClientRect(), a = document.querySelector('aside').getBoundingClientRect(); return r.left >= a.left && r.right <= a.right; }), 'the open format menu stays inside the panel');
   await f.locator('[data-from] [data-menu] button', { hasText: 'Century' }).click();
   ok(await f.locator('[data-from] [data-f=n]').isVisible(), 'the format menu still switches the format');
   await f.locator('[data-from] .ahm-fmt > summary').click();
   await f.locator('[data-from] [data-menu] button', { hasText: /^Year/ }).first().click();
   await f.locator('[data-from] .ahm-modes input').nth(0).click();
+  ok(!(await f.locator('[data-from] .ahm-fmt').isVisible()), 'an Unknown date shows no format chip');
   // a failed Save must show its message where the person is looking (the bar is at the bottom of a long form)
   await f.locator('[data-to] .ahm-modes input').nth(1).check();
   await f.locator('[data-act=save]').click();
