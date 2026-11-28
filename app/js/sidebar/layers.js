@@ -376,11 +376,21 @@ function lyFit() {
 // ---- the layer form (frame s088): a view of the tab, with the Foundation form frame and fields ----
 let lyForm = null; // the layer being changed, or null for a new one
 const lyLangs = () => languages.map((x) => ({ code: x.code, name: x.name }));
+// fields.nameRow fills every [data-bind="name"] of the row with the typed name, which also blanks the labels of the language menu; the labels are put back here (code + language name, frame s056)
+const lyFixMenus = (root) =>
+  root.querySelectorAll('.ahm-pills [data-menu] li').forEach((li) => {
+    const r = li.querySelector('input'),
+      span = li.querySelector('[data-bind="name"]'),
+      l = languages.find((x) => x.code === r.value);
+    span.textContent = l ? l.name : r.value;
+    span.dataset.code = r.value;
+  });
 const lyHideNamePeriod = (root) => root.querySelectorAll('.ahm-name [data-period]').forEach((p) => (p.hidden = true)); // a layer name has no period
 function lyDescRow(d) {
   const r = kit.tpl('t-ly-desc');
   r.querySelector('[data-lang]').append(fields.pills(lyLangs(), d.lang));
   kit.fill(r, { text: d.text });
+  lyFixMenus(r);
   return r;
 }
 const lyDateOpts = (d) => ({ modes: d && (d.mode === 'approx' || d.mode === 'range') ? ['none', 'exact', 'approx', 'range'] : ['none', 'exact'], names: { none: 'Unknown' } });
@@ -393,6 +403,7 @@ function lyOpenForm(ly) {
   f.querySelector('[data-body]').append(body);
   fields.nameList(body.querySelector('[data-names]'), lyLangs(), names);
   lyHideNamePeriod(body);
+  lyFixMenus(body);
   body.querySelector('[data-descs]').replaceChildren(...(ly ? ly.descriptions : []).map(lyDescRow));
   const cat = body.querySelector('[data-cat]');
   cat.replaceChildren(
@@ -777,7 +788,11 @@ $('#lyFormView').addEventListener('click', (e) => {
   const act = b.dataset.act;
   if (act === 'save') lySaveForm(f);
   else if (act === 'cancel') lyCloseForm();
-  else if (act === 'addname') lyHideNamePeriod(fields.nameAdd(f.querySelector('[data-names]'), $('#lang').value || 'en').parentElement);
+  else if (act === 'addname') {
+    const row = fields.nameAdd(f.querySelector('[data-names]'), $('#lang').value || 'en');
+    lyHideNamePeriod(row.parentElement);
+    lyFixMenus(row);
+  }
   else if (act === 'adddesc') f.querySelector('[data-descs]').append(lyDescRow({ lang: $('#lang').value || 'en', text: '' }));
   else if (act === 'deldesc') b.closest('.ly-descrow').remove();
 });

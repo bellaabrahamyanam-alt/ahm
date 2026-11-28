@@ -194,6 +194,8 @@ scenario('layers ui: form (s088): add with names, description, category, dates, 
   ok((await pg.evaluate(() => layers.length)) === 1, 'nothing saved');
   await f.locator('[data-value=name]').first().fill('Hammurabi campaigns');
   ok(!/Give the layer at least one name/.test(await f.innerText()), 'typing clears the message');
+  ok(await f.locator('[data-names] [data-menu] [data-bind=name]').evaluateAll((a) => a.length > 0 && a.every((x) => x.textContent.trim() !== '' && x.dataset.code)), 'every language of the +N menu has its code and name (an empty name row used to blank them)');
+  ok((await f.locator('[data-color]').evaluate((e) => e.hidden)) && (await f.locator('[data-swatch]').count()) > 0, 'only the swatches pick a colour, no extra round picker');
   // real clicks, as a person does them: BCE before the year, then the year box (fields.date rebuilt its fields on every click inside it)
   await f.locator('[data-from] .ahm-modes input').nth(1).click();
   await f.locator('[data-from] [data-era=BCE]').click();
