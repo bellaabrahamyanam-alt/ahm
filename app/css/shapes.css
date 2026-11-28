@@ -237,3 +237,13 @@
 #shForm .ahm-date-body { grid-column: 1 / -1; }
 #shForm .ahm-date-g .ahm-row { flex-wrap: nowrap; }
 #shForm .ahm-date-g input[data-f="y"], #shForm .ahm-date-g input[data-f="n"] { flex: 1; width: auto; min-width: 0; }
+/* form details as in s033: flat grey pills, filled name field, single names without up/delete */
+.bd-headcard h3 { font-size: 0.95rem; }
+.bd-headcard p { font-size: 0.8rem; }
+#shForm .ahm-pill:not([aria-pressed="true"]), #shForm .ahm-more > summary { border: 0; background: color-mix(in oklab, var(--color-base-content) 9%, transparent); color: var(--color-base-content); box-shadow: none; }
+#shForm .ahm-more > summary { color: var(--color-primary); font-weight: 700; }
+#shForm .ahm-name input[data-value="name"] { height: 2.5rem; border-radius: 0.6rem; background: color-mix(in oklab, var(--color-base-content) 7%, var(--color-base-100)); border-color: transparent; }
+#shForm [data-names] > .ahm-name:only-child :is([data-act="up"], [data-act="del"], [data-act="remove"]) { display: none; }
+#shForm .ahm-fmt > summary { border: 0; background: transparent; color: var(--color-primary); font-weight: 700; padding-inline: 0.25rem; }
+#shForm .ahm-pill, #shForm .ahm-more > summary { border-radius: 999px; }
+#shForm > .bd-cap { margin-top: 0.5rem; }
