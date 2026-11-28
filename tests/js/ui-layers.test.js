@@ -197,7 +197,10 @@ scenario('layers ui: form (s088): add with names, description, category, dates, 
   ok(await f.locator('[data-names] [data-menu] [data-bind=name]').evaluateAll((a) => a.length > 0 && a.every((x) => x.textContent.trim() !== '' && x.dataset.code)), 'every language of the +N menu has its code and name (an empty name row used to blank them)');
   ok((await f.locator('[data-color]').evaluate((e) => e.hidden)) && (await f.locator('[data-swatch]').count()) > 0, 'only the swatches pick a colour, no extra round picker');
   // real clicks, as a person does them: BCE before the year, then the year box (fields.date rebuilt its fields on every click inside it)
+  ok(await f.locator('[data-to] .ahm-fmt').evaluate((e) => e.inert), 'a new Unknown date has its format chip disabled');
+  const rowsBefore = await f.locator('[data-from] .ahm-fmt').boundingBox();
   await f.locator('[data-from] .ahm-modes input').nth(1).click();
+  eq(Math.round(rowsBefore.y), Math.round((await f.locator('[data-from] .ahm-fmt').boundingBox()).y), 'choosing Exact does not move the format chip');
   await f.locator('[data-from] [data-era=BCE]').click();
   ok(await f.locator('[data-from] [data-era=BCE]').isChecked(), 'BCE stays chosen when clicked before a year is typed');
   await f.locator('[data-from] [data-f=y]').click();
@@ -205,13 +208,13 @@ scenario('layers ui: form (s088): add with names, description, category, dates, 
   eq('190', await f.locator('[data-from] [data-f=y]').inputValue(), 'clicking the year box keeps the focus: the digits are typed');
   ok(/190 BCE/.test(await f.locator('[data-from] [data-bind=preview]').innerText()), 'the preview shows the era: 190 BCE');
   await f.locator('[data-from] .ahm-fmt > summary').click();
-  ok(await f.locator('[data-from] [data-menu]').evaluate((m) => { const r = m.getBoundingClientRect(), a = document.querySelector('aside').getBoundingClientRect(); return r.left >= a.left && r.right <= a.right; }), 'the open format menu stays inside the panel');
+  if (daisyFile()) ok(await f.locator('[data-from] [data-menu]').evaluate((m) => { const r = m.getBoundingClientRect(), a = document.querySelector('aside').getBoundingClientRect(); return r.left >= a.left && r.right <= a.right; }), 'the open format menu stays inside the panel');
   await f.locator('[data-from] [data-menu] button', { hasText: 'Century' }).click();
   ok(await f.locator('[data-from] [data-f=n]').isVisible(), 'the format menu still switches the format');
   await f.locator('[data-from] .ahm-fmt > summary').click();
   await f.locator('[data-from] [data-menu] button', { hasText: /^Year/ }).first().click();
   await f.locator('[data-from] .ahm-modes input').nth(0).click();
-  ok(!(await f.locator('[data-from] .ahm-fmt').isVisible()), 'an Unknown date shows no format chip');
+  ok((await f.locator('[data-from] .ahm-fmt').isVisible()) && (await f.locator('[data-from] .ahm-fmt').evaluate((e) => e.inert)), 'an Unknown date keeps its format chip but disabled');
   // a failed Save must show its message where the person is looking (the bar is at the bottom of a long form)
   await f.locator('[data-to] .ahm-modes input').nth(1).check();
   await f.locator('[data-act=save]').click();

@@ -413,6 +413,7 @@ function lyOpenForm(ly) {
   cat.value = ly && ly.category ? ly.category : '';
   body.querySelector('[data-from]').append(fields.date(ly && ly.date_from, lyDateOpts(ly && ly.date_from)));
   body.querySelector('[data-to]').append(fields.date(ly && ly.date_to, lyDateOpts(ly && ly.date_to)));
+  lyDateFmtSync(body);
   const color = (ly && ly.color) || '#9a3b2e',
     use = body.querySelector('[data-use]'),
     pick = body.querySelector('[data-color]'),
@@ -780,6 +781,14 @@ $('#lyFormView').addEventListener(
   },
   true
 );
+// the format chip is always there (the row does not jump when Exact is chosen); an Unknown date has no format, so the chip is disabled
+const lyDateFmtSync = (root) =>
+  root.querySelectorAll('.ahm-date').forEach((d) => {
+    const chip = d.querySelector('.ahm-fmt');
+    chip.inert = d.dataset.mode === 'none';
+    if (chip.inert) chip.open = false;
+  });
+$('#lyFormView').addEventListener('change', (e) => e.target.closest('.ahm-date') && lyDateFmtSync(e.target.closest('.ahm-date').parentElement));
 // the layer form: Save and Cancel of the Foundation form frame, the add / remove buttons of its fields
 $('#lyFormView').addEventListener('click', (e) => {
   const b = e.target.closest('[data-act]'),
